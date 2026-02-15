@@ -456,6 +456,68 @@ const askRouter = router({
 });
 
 // ============================================================================
+// ADMIN ROUTER
+// ============================================================================
+
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+  }
+  return next({ ctx });
+});
+
+const adminRouter = router({
+  // Get all users
+  getAllUsers: adminProcedure.query(async () => {
+    return await db.getAllUsers();
+  }),
+
+  // Invite a new user
+  inviteUser: adminProcedure
+    .input(z.object({
+      email: z.string().email(),
+      role: z.enum(["user", "admin"]).default("user"),
+    }))
+    .mutation(async ({ input }) => {
+      // Check if user already exists
+      const existingUsers = await db.getAllUsers();
+      if (existingUsers.some(u => u.email === input.email)) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'User already exists' });
+      }
+      
+      // Create placeholder user (they'll complete signup on first login)
+      await db.upsertUser({
+        openId: `pending-${input.email}`,
+        email: input.email,
+        role: input.role,
+      });
+      
+      return { success: true };
+    }),
+
+  // Update user role
+  updateUserRole: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      role: z.enum(["user", "admin"]),
+    }))
+    .mutation(async ({ input }) => {
+      await db.updateUser(input.userId, { role: input.role });
+      return { success: true };
+    }),
+
+  // Delete user
+  deleteUser: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.deleteUser(input.userId);
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // ANALYTICS ROUTER
 // ============================================================================
 
@@ -519,6 +581,7 @@ export const appRouter = router({
   ask: askRouter,
   recap: recapRouter,
   export: exportRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

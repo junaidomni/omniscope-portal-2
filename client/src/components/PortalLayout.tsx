@@ -9,7 +9,8 @@ import {
   CheckSquare,
   Calendar,
   LogOut,
-  Loader2
+  Loader2,
+  Shield
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -66,6 +67,11 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     { path: "/calendar", icon: Calendar, label: "Calendar View" },
     { path: "/tasks", icon: CheckSquare, label: "To-Do" },
   ];
+
+  // Add Admin Panel for admin users
+  if (user?.role === 'admin') {
+    navItems.push({ path: "/admin", icon: Shield, label: "Admin Panel" });
+  }
 
   return (
     <div className="min-h-screen bg-black flex">

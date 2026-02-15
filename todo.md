@@ -171,3 +171,24 @@
 - [x] Add download button for branded reports on meeting cards
 - [x] Add quick stats (participant count, organization count) to meeting cards
 - [x] Test all changes before publishing
+
+
+## Debug Meeting Visibility & UI Issues
+- [ ] Check database to verify Plaud meeting was ingested
+- [ ] Verify user is logged in to portal
+- [ ] Check if meetings are being filtered by user authentication
+- [ ] Add OmniScope-branded template to meeting detail page
+- [ ] Ensure meeting detail page shows all intelligence data in branded format
+- [ ] Test that newest meetings appear first on dashboard
+
+
+## Admin Access Control System
+- [x] Set Junaid (junaid@omniscopex.ae) as admin (auto-promoted on first login)
+- [x] Set Kyle (kyle@omniscopex.ae) as admin (auto-promoted on first login)
+- [x] Create Admin Panel page for user management
+- [x] Add ability to invite new users with email
+- [x] Add ability to set user roles (admin vs user)
+- [x] Add ability to revoke access
+- [x] Restrict admin panel to admin users only
+- [x] Add admin navigation item to sidebar (only visible to admins)
+- [x] Test admin functionality
