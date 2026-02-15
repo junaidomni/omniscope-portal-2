@@ -192,3 +192,9 @@
 - [x] Restrict admin panel to admin users only
 - [x] Add admin navigation item to sidebar (only visible to admins)
 - [x] Test admin functionality
+
+
+## Login Page Design Improvements
+- [x] Increase logo size on login page (h-12 → h-32, much more prominent)
+- [x] Add sovereign-themed background (gold grid pattern + gradient overlays)
+- [x] Ensure design aligns with OmniScope's institutional, discreet positioning

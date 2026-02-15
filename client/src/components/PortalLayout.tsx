@@ -44,14 +44,28 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <img src="/omniscope-logo.svg" alt="OmniScope" className="h-12 mx-auto mb-8" />
-          <h1 className="text-2xl font-bold text-white mb-4">OmniScope Intelligence Portal</h1>
-          <p className="text-zinc-400 mb-8">Secure access required</p>
+      <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
+        {/* Sovereign-themed background */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(202, 138, 4, 0.1) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(202, 138, 4, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }} />
+          <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-yellow-900/10 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-96 bg-gradient-to-t from-yellow-900/10 to-transparent" />
+        </div>
+        
+        {/* Content */}
+        <div className="text-center relative z-10">
+          <img src="/omniscope-logo-unified.svg" alt="OmniScope Intelligence Portal" className="h-32 mx-auto mb-12" />
+          <h1 className="text-3xl font-bold text-white mb-3">Intelligence Portal</h1>
+          <p className="text-zinc-400 mb-10 text-lg">Secure access required</p>
           <Button
             onClick={() => window.location.href = getLoginUrl()}
-            className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium"
+            className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium px-8 py-6 text-lg"
           >
             Sign In
           </Button>
