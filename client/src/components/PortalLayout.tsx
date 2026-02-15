@@ -60,7 +60,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         
         {/* Content */}
         <div className="text-center relative z-10">
-          <img src="/omniscope-logo-unified.svg" alt="OmniScope Intelligence Portal" className="h-32 mx-auto mb-12" />
+          <img src="/omniscope-logo-large.png" alt="OmniScope Intelligence Portal" className="h-48 mx-auto mb-12" />
           <h1 className="text-3xl font-bold text-white mb-3">Intelligence Portal</h1>
           <p className="text-zinc-400 mb-10 text-lg">Secure access required</p>
           <Button

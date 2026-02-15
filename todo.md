@@ -198,3 +198,9 @@
 - [x] Increase logo size on login page (h-12 → h-32, much more prominent)
 - [x] Add sovereign-themed background (gold grid pattern + gradient overlays)
 - [x] Ensure design aligns with OmniScope's institutional, discreet positioning
+
+
+## Logo Size Fix
+- [x] Replace logo file with tighter-cropped version (no excess black background)
+- [x] Increase login page logo size to h-48 for maximum prominence
+- [x] Test login page to ensure logo is clearly visible
