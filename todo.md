@@ -132,3 +132,8 @@
 - [x] Make sidebar fixed/sticky (should not scroll with page content)
 - [x] Remove black space padding from logo SVG to make it appear larger
 - [x] Optimize logo display in sidebar
+
+
+## Logo Alignment
+- [x] Center align OMNISCOPE logo text in sidebar
+- [x] Ensure INTELLIGENCE PORTAL text is perfectly centered
