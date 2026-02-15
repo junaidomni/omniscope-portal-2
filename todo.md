@@ -126,3 +126,9 @@
 - [x] Document Plaud/Fathom webhook endpoint URL and payload format
 - [x] Create webhook integration guide for Zapier/n8n setup
 - [ ] Test webhook data ingestion with sample payload
+
+
+## UI/UX Fixes
+- [x] Make sidebar fixed/sticky (should not scroll with page content)
+- [x] Remove black space padding from logo SVG to make it appear larger
+- [x] Optimize logo display in sidebar

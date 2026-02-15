@@ -67,12 +67,17 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   return (
     <div className="min-h-screen bg-black flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+      {/* Sidebar - Fixed */}
+      <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col fixed left-0 top-0 h-screen">
         {/* Logo */}
         <div className="p-6 border-b border-zinc-800">
-          <img src="/omniscope-logo.svg" alt="OmniScope" className="h-12 w-full object-contain" />
-          <p className="text-xs text-yellow-600 font-medium mt-3 tracking-wide">INTELLIGENCE PORTAL</p>
+          <img 
+            src="/omniscope-logo-optimized.svg" 
+            alt="OmniScope" 
+            className="w-full h-auto px-2" 
+            style={{ maxHeight: '70px' }}
+          />
+          <p className="text-xs text-yellow-600 font-medium mt-3 tracking-wide text-center">INTELLIGENCE PORTAL</p>
         </div>
 
         {/* Navigation */}
@@ -128,10 +133,10 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      {/* Main Content - With left margin to account for fixed sidebar */}
+      <main className="flex-1 overflow-auto ml-64">
         {children}
-      </div>
+      </main>
     </div>
   );
 }
