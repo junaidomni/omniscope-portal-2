@@ -1,5 +1,6 @@
 import { z } from "zod";
 import * as db from "./db";
+import { generateAndUploadBrandedReport } from "./brandedReportGenerator";
 
 /**
  * Schema for the intelligence data JSON sent from the Manus AI processing engine
@@ -168,9 +169,20 @@ export async function processIntelligenceData(rawData: IntelligenceData, created
     }
   }
 
+  // Generate and upload branded report
+  let brandedReportUrl: string | null = null;
+  try {
+    brandedReportUrl = await generateAndUploadBrandedReport(meetingId);
+    // Update meeting with branded report URL
+    await db.updateMeeting(meetingId, { brandedReportUrl });
+    console.log(`[Ingestion] Generated branded report: ${brandedReportUrl}`);
+  } catch (error) {
+    console.error(`[Ingestion] Failed to generate branded report:`, error);
+  }
+
   console.log(`[Ingestion] Successfully processed meeting ${meetingId} from ${data.sourceType}`);
   
-  return { success: true, meetingId };
+  return { success: true, meetingId, brandedReportUrl };
 }
 
 /**

@@ -2,7 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, Building2, CheckCircle2, AlertCircle, TrendingUp, FileText, Download } from "lucide-react";
+import { Calendar, TrendingUp, Users, CheckSquare, FileText, Building2, Download, ExternalLink, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -257,31 +257,68 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-[calc(100vh-16rem)] overflow-y-auto">
-                {metrics?.recentMeetings.map((meeting) => (
-                  <Link key={meeting.id} href={`/meetings/${meeting.id}`}>
-                    <div className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-800 hover:border-yellow-600/30 hover:bg-zinc-800/50 transition-all cursor-pointer">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-white line-clamp-1">
-                            {JSON.parse(meeting.participants || '[]').join(', ')}
-                          </p>
-                          <p className="text-xs text-zinc-500">
-                            {new Date(meeting.meetingDate).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric',
-                              hour: 'numeric',
-                              minute: '2-digit'
-                            })}
-                          </p>
+                {metrics?.recentMeetings.map((meeting) => {
+                  const participants = JSON.parse(meeting.participants || '[]');
+                  const organizations = JSON.parse(meeting.organizations || '[]');
+                  
+                  return (
+                  <div key={meeting.id} className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-800 hover:border-yellow-600/30 transition-all">
+                    <Link href={`/meetings/${meeting.id}`}>
+                      <div className="cursor-pointer">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-white line-clamp-1">
+                              {participants.join(', ')}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                              {new Date(meeting.meetingDate).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="border-zinc-700 text-zinc-400 text-xs">
+                            {meeting.sourceType}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="border-zinc-700 text-zinc-400 text-xs">
-                          {meeting.sourceType}
-                        </Badge>
+                        <p className="text-xs text-zinc-400 line-clamp-2 mb-2">{meeting.executiveSummary}</p>
+                        
+                        {/* Quick Stats */}
+                        <div className="flex items-center gap-3 text-xs text-zinc-500">
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {participants.length}
+                          </span>
+                          {organizations.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {organizations.length}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs text-zinc-400 line-clamp-2">{meeting.executiveSummary}</p>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                    
+                    {/* Download Button */}
+                    {meeting.brandedReportUrl && (
+                      <div className="mt-2 pt-2 border-t border-zinc-800">
+                        <a 
+                          href={meeting.brandedReportUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 text-xs text-yellow-600 hover:text-yellow-500 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Download className="h-3 w-3" />
+                          Download Report
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

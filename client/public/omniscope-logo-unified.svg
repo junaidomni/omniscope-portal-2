@@ -1,0 +1,11 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- OMNISCOPE text -->
+  <text x="100" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#D4AF37" text-anchor="middle" letter-spacing="2">
+    OMNISCOPE
+  </text>
+  
+  <!-- INTELLIGENCE PORTAL text -->
+  <text x="100" y="55" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#D4AF37" text-anchor="middle" letter-spacing="3">
+    INTELLIGENCE PORTAL
+  </text>
+</svg>

@@ -15,6 +15,13 @@
       "when": 1771190703063,
       "tag": "0001_slow_jocasta",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771196946944,
+      "tag": "0002_dark_texas_twister",
+      "breakpoints": true
     }
   ]
 }

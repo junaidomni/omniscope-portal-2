@@ -47,6 +47,9 @@ export const meetings = mysqlTable("meetings", {
   sourceType: mysqlEnum("sourceType", ["plaud", "fathom", "manual"]).notNull(),
   sourceId: varchar("sourceId", { length: 255 }), // External ID from Plaud/Fathom
   
+  // Generated branded report
+  brandedReportUrl: text("brandedReportUrl"), // URL to auto-generated OmniScope-branded PDF report
+  
   // Timestamps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

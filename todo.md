@@ -159,3 +159,15 @@
 - [x] Test with exact Zapier payload format
 - [x] Verify duplicate detection is working
 - [ ] Complete Zapier setup and publish Zap for automatic ingestion
+
+
+## Design Finalization Before Publishing
+- [x] Create unified SVG logo with OMNISCOPE and INTELLIGENCE PORTAL centered together
+- [x] Remove separate "Intelligence Portal" text from sidebar
+- [x] Fix meeting sort order to show newest first (DESC by meetingDate)
+- [x] Apply newest-first sorting to dashboard, Meetings page, and Calendar View
+- [x] Add auto-generation of OmniScope-branded Markdown report on webhook ingestion
+- [x] Store generated report URL in meeting record for easy download/sharing
+- [x] Add download button for branded reports on meeting cards
+- [x] Add quick stats (participant count, organization count) to meeting cards
+- [x] Test all changes before publishing
