@@ -6,7 +6,8 @@ import {
   LayoutDashboard, 
   Sparkles, 
   FileText, 
-  CheckSquare, 
+  CheckSquare,
+  Calendar,
   LogOut,
   Loader2
 } from "lucide-react";
@@ -62,6 +63,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     { path: "/", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/ask", icon: Sparkles, label: "Ask OmniScope" },
     { path: "/meetings", icon: FileText, label: "Meetings" },
+    { path: "/calendar", icon: Calendar, label: "Calendar View" },
     { path: "/tasks", icon: CheckSquare, label: "To-Do" },
   ];
 

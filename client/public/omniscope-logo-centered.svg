@@ -1,0 +1,6 @@
+<svg viewBox="0 0 1000 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>.logo-text{fill:#b8860b;}</style>
+  </defs>
+  <text x="500" y="75" text-anchor="middle" dominant-baseline="middle" class="logo-text" font-family="serif" font-size="85" font-weight="400" letter-spacing="0.15em">OMNISCOPE</text>
+</svg>

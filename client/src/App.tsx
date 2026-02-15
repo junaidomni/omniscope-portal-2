@@ -10,6 +10,7 @@ import MeetingDetail from "./pages/MeetingDetail";
 import Meetings from "./pages/Meetings";
 import ToDo from "./pages/ToDo";
 import AskOmniScope from "./pages/AskOmniScope";
+import CalendarView from "./pages/CalendarView";
 
 function Router() {
   return (
@@ -19,7 +20,8 @@ function Router() {
         <Route path="/meetings" component={Meetings} />
         <Route path="/meeting/:id" component={MeetingDetail} />
         <Route path="/tasks" component={ToDo} />
-        <Route path="/ask" component={AskOmniScope} />
+          <Route path="/ask" component={AskOmniScope} />
+          <Route path="/calendar" component={CalendarView} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

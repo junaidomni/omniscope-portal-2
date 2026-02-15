@@ -137,3 +137,15 @@
 ## Logo Alignment
 - [x] Center align OMNISCOPE logo text in sidebar
 - [x] Ensure INTELLIGENCE PORTAL text is perfectly centered
+
+
+## Logo Centering Fix
+- [x] Fix SVG logo to be truly centered (text is currently left-aligned)
+- [x] Ensure logo displays centered in sidebar
+
+## Calendar View Feature
+- [x] Add Calendar View tab to sidebar navigation
+- [x] Build Calendar View page with calendar interface
+- [x] Implement date filtering for meetings
+- [x] Show meetings for selected date
+- [ ] Add month/week/day view options
