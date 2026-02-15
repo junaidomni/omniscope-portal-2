@@ -7,7 +7,8 @@ import * as db from "./db";
 export const IntelligenceDataSchema = z.object({
   // Metadata
   meetingDate: z.string(),
-  primaryLead: z.string(),
+  primaryLead: z.string().optional(),
+  primarylead: z.string().optional(),
   participants: z.union([z.array(z.string()), z.string()]).transform(val => 
     typeof val === 'string' ? [val] : val
   ),
@@ -60,9 +61,22 @@ export const IntelligenceDataSchema = z.object({
 export type IntelligenceData = z.infer<typeof IntelligenceDataSchema>;
 
 /**
+ * Normalize the data to handle case-insensitive field names from Zapier
+ */
+function normalizeIntelligenceData(data: IntelligenceData) {
+  return {
+    ...data,
+    primaryLead: data.primaryLead || data.primarylead || "Unknown",
+  };
+}
+
+/**
  * Process incoming intelligence data and store it in the database
  */
-export async function processIntelligenceData(data: IntelligenceData, createdBy?: number) {
+export async function processIntelligenceData(rawData: IntelligenceData, createdBy?: number) {
+  // Normalize field names
+  const data = normalizeIntelligenceData(rawData);
+  
   // Check for duplicate by sourceId
   if (data.sourceId) {
     const existing = await db.getMeetingsBySourceId(data.sourceId);
