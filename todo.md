@@ -457,3 +457,20 @@
 - [x] Make dashboard boxes draggable/rearrangeable
 - [x] Persist user's preferred layout
 - [x] Smooth drag-and-drop reordering of dashboard widgets
+
+## Portal Fixes v7
+
+### Weekly Report Meeting Summaries
+- [x] Add full meeting summaries to Weekly Report page (same as Daily Report)
+
+### Dashboard Layout Fix
+- [x] Reduce dead space in dashboard layout
+- [x] Fix drag-and-drop widget reordering (not working)
+- [x] Make layout more compact and information-dense
+
+### Kanban Drag-and-Drop Fix (Critical)
+- [x] Fix drag-and-drop between To Do, In Progress, and Completed columns
+- [x] Ensure tasks can be moved in both directions
+- [x] Visual feedback during drag (yellow border, scale, drop indicator)
+- [x] Proper boundary checking for drag leave events
+- [ ] Visual feedback when dragging

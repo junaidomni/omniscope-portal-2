@@ -208,13 +208,21 @@ function KanbanCard({
   const priorityConf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
   const PriorityIcon = priorityConf.icon;
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
+  const [isDragging, setIsDragging] = useState(false);
 
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onClick={onClick}
-      className={`group p-3 rounded-lg border transition-all cursor-pointer select-none ${
+      draggable={true}
+      onDragStart={(e) => {
+        setIsDragging(true);
+        onDragStart(e);
+      }}
+      onDragEnd={() => setIsDragging(false)}
+      onClick={(e) => {
+        if (!isDragging) onClick();
+      }}
+      className={`group p-3 rounded-lg border transition-all cursor-grab active:cursor-grabbing select-none ${
+        isDragging ? "opacity-40 scale-95 ring-2 ring-yellow-600" :
         isCompleted
           ? "bg-zinc-800/20 border-zinc-800/40 opacity-70"
           : "bg-zinc-800/50 border-zinc-800 hover:border-yellow-600/30 hover:bg-zinc-800/80"
@@ -317,17 +325,33 @@ function KanbanColumn({
 
   return (
     <div
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-      className={`flex flex-col rounded-xl border transition-all ${
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        onDragOver(e);
+      }}
+      onDragLeave={(e) => {
+        // Only trigger leave if we're actually leaving the column, not entering a child
+        const rect = e.currentTarget.getBoundingClientRect();
+        const { clientX, clientY } = e;
+        if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+          onDragLeave();
+        }
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onDrop(e);
+      }}
+      className={`flex flex-col rounded-xl border-2 transition-all duration-200 ${
         isDragOver
-          ? `${column.borderColor} border-2 bg-zinc-900/80 shadow-lg`
+          ? "border-yellow-500 bg-yellow-500/5 shadow-lg shadow-yellow-500/10 scale-[1.01]"
           : "border-zinc-800/60 bg-zinc-900/40"
       }`}
     >
       {/* Column Header */}
-      <div className={`px-4 py-3 rounded-t-xl ${column.headerBg} border-b border-zinc-800/50`}>
+      <div className={`px-4 py-3 rounded-t-xl ${column.headerBg} border-b border-zinc-800/50 pointer-events-none`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={`h-2.5 w-2.5 rounded-full ${column.dotColor}`} />
@@ -337,9 +361,12 @@ function KanbanColumn({
             {tasks.length}
           </Badge>
         </div>
+        {isDragOver && (
+          <p className="text-[10px] text-yellow-500 mt-1 animate-pulse">Drop task here</p>
+        )}
       </div>
 
-      {/* Column Body */}
+      {/* Column Body - entire area is a drop zone */}
       <div className="flex-1 p-3 space-y-4 min-h-[200px] max-h-[calc(100vh-380px)] overflow-y-auto">
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -937,16 +964,9 @@ export default function ToDo() {
     draggedTaskRef.current = task;
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", task.id.toString());
-    // Add a slight delay for visual feedback
-    const target = e.currentTarget as HTMLElement;
-    setTimeout(() => {
-      target.style.opacity = "0.5";
-    }, 0);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, columnId: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+  const handleDragOver = useCallback((_e: React.DragEvent, columnId: string) => {
     setDragOverColumn(columnId);
   }, []);
 
@@ -954,8 +974,7 @@ export default function ToDo() {
     setDragOverColumn(null);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, targetStatus: string) => {
-    e.preventDefault();
+  const handleDrop = useCallback((_e: React.DragEvent, targetStatus: string) => {
     setDragOverColumn(null);
     const task = draggedTaskRef.current;
     if (task && task.status !== targetStatus) {
@@ -963,10 +982,6 @@ export default function ToDo() {
       toast.success(`Moved to ${KANBAN_COLUMNS.find(c => c.id === targetStatus)?.label || targetStatus}`);
     }
     draggedTaskRef.current = null;
-    // Reset opacity for all cards
-    document.querySelectorAll('[draggable="true"]').forEach(el => {
-      (el as HTMLElement).style.opacity = "1";
-    });
   }, [updateTask]);
 
   if (isLoading) {

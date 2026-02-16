@@ -524,6 +524,50 @@ export default function WeeklyReport() {
         </>
       )}
 
+      {/* Overview Mode: Meeting Summaries */}
+      {view === "overview" && summary.meetings && summary.meetings.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Meeting Summaries ({summary.meetings.length})</h2>
+          <div className="space-y-3">
+            {summary.meetings.map(m => (
+              <Link key={m.id} href={`/meeting/${m.id}`}>
+                <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:border-yellow-600/30 cursor-pointer transition-all">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white">{m.title}</p>
+                      <p className="text-xs text-yellow-600/80 mt-1">{m.participants.join(', ')}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                      <span className="text-xs text-zinc-500">
+                        {new Date(m.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </span>
+                      <Badge variant="outline" className="border-zinc-800 text-zinc-500 text-xs">{m.sourceType}</Badge>
+                    </div>
+                  </div>
+                  {m.organizations && m.organizations.length > 0 && (
+                    <p className="text-xs text-zinc-500 mt-1">
+                      <Building2 className="h-3 w-3 inline mr-1" />
+                      {m.organizations.join(', ')}
+                    </p>
+                  )}
+                  <p className="text-xs text-zinc-400 mt-2 line-clamp-2">{m.summary}</p>
+                  {m.keyHighlights && m.keyHighlights.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {m.keyHighlights.slice(0, 2).map((h, i) => (
+                        <p key={i} className="text-xs text-zinc-500 flex items-start gap-1.5">
+                          <span className="text-yellow-600 mt-0.5">•</span>
+                          {h}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Overview Mode: Task Count Summary */}
       {view === "overview" && summary.allTasks && summary.allTasks.length > 0 && (
         <div className="mb-8">
