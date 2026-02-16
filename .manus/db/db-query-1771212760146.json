@@ -1,0 +1,226 @@
+{
+  "query": "SELECT id, primaryLead, LEFT(executiveSummary, 100) as summary, sourceType, sourceId, meetingDate, createdAt FROM meetings ORDER BY id ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, primaryLead, LEFT(executiveSummary, 100) as summary, sourceType, sourceId, meetingDate, createdAt FROM meetings ORDER BY id ASC;",
+  "rows": [
+    {
+      "id": "1",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary",
+      "sourceType": "plaud",
+      "sourceId": "test-1771191280801",
+      "meetingDate": "2026-02-15 21:34:41",
+      "createdAt": "2026-02-15 21:34:40"
+    },
+    {
+      "id": "2",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771191281404",
+      "meetingDate": "2026-02-15 21:34:41",
+      "createdAt": "2026-02-15 21:34:41"
+    },
+    {
+      "id": "3",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary",
+      "sourceType": "plaud",
+      "sourceId": "test-1771191298988",
+      "meetingDate": "2026-02-15 21:34:59",
+      "createdAt": "2026-02-15 21:34:59"
+    },
+    {
+      "id": "4",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771191299380",
+      "meetingDate": "2026-02-15 21:34:59",
+      "createdAt": "2026-02-15 21:34:59"
+    },
+    {
+      "id": "5",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "meetingDate": "2026-02-15 21:52:17",
+      "createdAt": "2026-02-15 21:52:17"
+    },
+    {
+      "id": "6",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "meetingDate": "2026-02-15 21:52:50",
+      "createdAt": "2026-02-15 21:52:50"
+    },
+    {
+      "id": "30001",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "Test webhook integration with Zapier",
+      "sourceType": "plaud",
+      "sourceId": "test-webhook-001",
+      "meetingDate": "2026-02-15 10:00:00",
+      "createdAt": "2026-02-15 22:51:56"
+    },
+    {
+      "id": "30002",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "## Meeting Information - Test meeting for webhook integration",
+      "sourceType": "plaud",
+      "sourceId": "plaud02-15 Meeting: Centralizing Meeting Notes, Transcripts, and Omniscope Portal Plan",
+      "meetingDate": "2026-02-15 16:12:13",
+      "createdAt": "2026-02-15 22:56:59"
+    },
+    {
+      "id": "30003",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "Test meeting for Zapier webhook integration",
+      "sourceType": "plaud",
+      "sourceId": "test-zapier-format-002",
+      "meetingDate": "2026-02-15 16:12:13",
+      "createdAt": "2026-02-15 22:57:04"
+    },
+    {
+      "id": "30004",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771202125936",
+      "meetingDate": "2026-02-16 00:35:26",
+      "createdAt": "2026-02-16 00:35:26"
+    },
+    {
+      "id": "30005",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "meetingDate": "2026-02-16 00:35:31",
+      "createdAt": "2026-02-16 00:35:31"
+    },
+    {
+      "id": "30006",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary",
+      "sourceType": "plaud",
+      "sourceId": "test-1771202183546",
+      "meetingDate": "2026-02-16 00:36:24",
+      "createdAt": "2026-02-16 00:36:23"
+    },
+    {
+      "id": "30007",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771202184372",
+      "meetingDate": "2026-02-16 00:36:24",
+      "createdAt": "2026-02-16 00:36:24"
+    },
+    {
+      "id": "30008",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "meetingDate": "2026-02-16 00:36:29",
+      "createdAt": "2026-02-16 00:36:29"
+    },
+    {
+      "id": "30009",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary",
+      "sourceType": "plaud",
+      "sourceId": "test-1771203466429",
+      "meetingDate": "2026-02-16 00:57:46",
+      "createdAt": "2026-02-16 00:57:46"
+    },
+    {
+      "id": "30010",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771203467245",
+      "meetingDate": "2026-02-16 00:57:47",
+      "createdAt": "2026-02-16 00:57:47"
+    },
+    {
+      "id": "30011",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "meetingDate": "2026-02-16 00:57:52",
+      "createdAt": "2026-02-16 00:57:52"
+    },
+    {
+      "id": "30012",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This meeting explored a potential partnership to develop a $9M-$12M luxury residential property in S",
+      "sourceType": "fathom",
+      "sourceId": "fathom-121305081",
+      "meetingDate": "2026-02-10 19:18:22",
+      "createdAt": "2026-02-16 00:58:40"
+    },
+    {
+      "id": "30013",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "OmniScope and Comet Cash are pursuing a dual-track strategy for market entry into Pakistan, leveragi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-119902499",
+      "meetingDate": "2026-02-05 03:00:18",
+      "createdAt": "2026-02-16 01:02:30"
+    },
+    {
+      "id": "30014",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This introductory meeting explored a potential large-scale OTC Bitcoin transaction from an Asian con",
+      "sourceType": "fathom",
+      "sourceId": "fathom-117782780",
+      "meetingDate": "2026-01-28 14:31:28",
+      "createdAt": "2026-02-16 01:02:39"
+    },
+    {
+      "id": "30015",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "OmniScope is exploring a strategic partnership with a Pakistani apparel manufacturer for custom hood",
+      "sourceType": "fathom",
+      "sourceId": "fathom-114941686",
+      "meetingDate": "2026-01-16 17:00:34",
+      "createdAt": "2026-02-16 01:03:03"
+    },
+    {
+      "id": "30016",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "The meeting focused on defining the design and development plan for the Little Miracles website, aim",
+      "sourceType": "fathom",
+      "sourceId": "fathom-109445645",
+      "meetingDate": "2025-12-17 16:19:07",
+      "createdAt": "2026-02-16 01:03:17"
+    },
+    {
+      "id": "30017",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This meeting focused on critical resource allocation and project timeline adjustments for the 'Littl",
+      "sourceType": "fathom",
+      "sourceId": "fathom-108815712",
+      "meetingDate": "2025-12-15 18:30:57",
+      "createdAt": "2026-02-16 01:03:25"
+    },
+    {
+      "id": "30018",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This meeting facilitated an initial introduction between OmniScope's partner, Steven Schwartz, and A",
+      "sourceType": "fathom",
+      "sourceId": "fathom-103635855",
+      "meetingDate": "2025-11-21 22:30:01",
+      "createdAt": "2026-02-16 01:03:33"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprimaryLead\tsummary\tsourceType\tsourceId\tmeetingDate\tcreatedAt\n1\tKyle\tTest meeting summary\tplaud\ttest-1771191280801\t2026-02-15 21:34:41\t2026-02-15 21:34:40\n2\tKyle\tDuplicate test meeting\tplaud\tduplicate-test-1771191281404\t2026-02-15 21:34:41\t2026-02-15 21:34:41\n3\tKyle\tTest meeting summary\tplaud\ttest-1771191298988\t2026-02-15 21:34:59\t2026-02-15 21:34:59\n4\tKyle\tDuplicate test meeting\tplaud\tduplicate-test-1771191299380\t2026-02-15 21:34:59\t2026-02-15 21:34:59\n5\tKyle\tTest meeting for recap generation\tplaud\ttest-recap-meeting\t2026-02-15 21:52:17\t2026-02-15 21:52:17\n6\tKyle\tTest meeting for recap generation\tplaud\ttest-recap-meeting\t2026-02-15 21:52:50\t2026-02-15 21:52:50\n30001\tJunaid Qureshi\tTest webhook integration with Zapier\tplaud\ttest-webhook-001\t2026-02-15 10:00:00\t2026-02-15 22:51:56\n30002\tJunaid Qureshi\t## Meeting Information - Test meeting for webhook integration\tplaud\tplaud02-15 Meeting: Centralizing Meeting Notes, Transcripts, and Omniscope Portal Plan\t2026-02-15 16:12:13\t2026-02-15 22:56:59\n30003\tJunaid Qureshi\tTest meeting for Zapier webhook integration\tplaud\ttest-zapier-format-002\t2026-02-15 16:12:13\t2026-02-15 22:57:04\n30004\tKyle\tDuplicate test meeting\tplaud\tduplicate-test-1771202125936\t2026-02-16 00:35:26\t2026-02-16 00:35:26\n30005\tKyle\tTest meeting for recap generation\tplaud\ttest-recap-meeting\t2026-02-16 00:35:31\t2026-02-16 00:35:31\n30006\tKyle\tTest meeting summary\tplaud\ttest-1771202183546\t2026-02-16 00:36:24\t2026-02-16 00:36:23\n30007\tKyle\tDuplicate test meeting\tplaud\tduplicate-test-1771202184372\t2026-02-16 00:36:24\t2026-02-16 00:36:24\n30008\tKyle\tTest meeting for recap generation\tplaud\ttest-recap-meeting\t2026-02-16 00:36:29\t2026-02-16 00:36:29\n30009\tKyle\tTest meeting summary\tplaud\ttest-1771203466429\t2026-02-16 00:57:46\t2026-02-16 00:57:46\n30010\tKyle\tDuplicate test meeting\tplaud\tduplicate-test-1771203467245\t2026-02-16 00:57:47\t2026-02-16 00:57:47\n30011\tKyle\tTest meeting for recap generation\tplaud\ttest-recap-meeting\t2026-02-16 00:57:52\t2026-02-16 00:57:52\n30012\tJunaid Qureshi\tThis meeting explored a potential partnership to develop a $9M-$12M luxury residential property in S\tfathom\tfathom-121305081\t2026-02-10 19:18:22\t2026-02-16 00:58:40\n30013\tJunaid Qureshi\tOmniScope and Comet Cash are pursuing a dual-track strategy for market entry into Pakistan, leveragi\tfathom\tfathom-119902499\t2026-02-05 03:00:18\t2026-02-16 01:02:30\n30014\tJunaid Qureshi\tThis introductory meeting explored a potential large-scale OTC Bitcoin transaction from an Asian con\tfathom\tfathom-117782780\t2026-01-28 14:31:28\t2026-02-16 01:02:39\n30015\tJunaid Qureshi\tOmniScope is exploring a strategic partnership with a Pakistani apparel manufacturer for custom hood\tfathom\tfathom-114941686\t2026-01-16 17:00:34\t2026-02-16 01:03:03\n30016\tJunaid Qureshi\tThe meeting focused on defining the design and development plan for the Little Miracles website, aim\tfathom\tfathom-109445645\t2025-12-17 16:19:07\t2026-02-16 01:03:17\n30017\tJunaid Qureshi\tThis meeting focused on critical resource allocation and project timeline adjustments for the 'Littl\tfathom\tfathom-108815712\t2025-12-15 18:30:57\t2026-02-16 01:03:25\n30018\tJunaid Qureshi\tThis meeting facilitated an initial introduction between OmniScope's partner, Steven Schwartz, and A\tfathom\tfathom-103635855\t2025-11-21 22:30:01\t2026-02-16 01:03:33\n",
+  "stderr": "",
+  "execution_time_ms": 346
+}

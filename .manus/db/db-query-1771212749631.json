@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE meetings MODIFY COLUMN fullTranscript LONGTEXT;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute ALTER TABLE meetings MODIFY COLUMN fullTranscript LONGTEXT;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 423
+}

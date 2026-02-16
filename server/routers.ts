@@ -17,7 +17,6 @@ import * as fathomIntegration from "./fathomIntegration";
 // ============================================================================
 
 const meetingsRouter = router({
-  // List all meetings with optional filters
   list: protectedProcedure
     .input(
       z.object({
@@ -36,36 +35,29 @@ const meetingsRouter = router({
         limit: input.limit,
         offset: input.offset,
       } : undefined;
-      
       return await db.getAllMeetings(filters);
     }),
 
-  // Get a single meeting by ID
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const meeting = await db.getMeetingById(input.id);
-      if (!meeting) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
-      }
+      if (!meeting) throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
       return meeting;
     }),
 
-  // Get tags for a meeting
   getTags: protectedProcedure
     .input(z.object({ meetingId: z.number() }))
     .query(async ({ input }) => {
       return await db.getTagsForMeeting(input.meetingId);
     }),
 
-  // Get tasks for a meeting
   getTasks: protectedProcedure
     .input(z.object({ meetingId: z.number() }))
     .query(async ({ input }) => {
       return await db.getTasksForMeeting(input.meetingId);
     }),
 
-  // Search meetings
   search: protectedProcedure
     .input(z.object({
       query: z.string().min(1),
@@ -75,16 +67,12 @@ const meetingsRouter = router({
       return await db.searchMeetings(input.query, input.limit);
     }),
 
-  // Filter meetings by tags
   filterByTags: protectedProcedure
-    .input(z.object({
-      tagIds: z.array(z.number()).min(1),
-    }))
+    .input(z.object({ tagIds: z.array(z.number()).min(1) }))
     .query(async ({ input }) => {
       return await db.getMeetingsByTags(input.tagIds);
     }),
 
-  // Create a new meeting (manual entry)
   create: protectedProcedure
     .input(
       z.object({
@@ -123,20 +111,15 @@ const meetingsRouter = router({
         sourceId: input.sourceId ?? null,
         createdBy: ctx.user.id,
       };
-      
       const meetingId = await db.createMeeting(meetingData);
-
-      // Add tags if provided
       if (input.tagIds && input.tagIds.length > 0) {
         for (const tagId of input.tagIds) {
           await db.addTagToMeeting(meetingId, tagId);
         }
       }
-
       return { id: meetingId };
     }),
 
-  // Update a meeting
   update: protectedProcedure
     .input(
       z.object({
@@ -157,7 +140,6 @@ const meetingsRouter = router({
     )
     .mutation(async ({ input }) => {
       const updates: any = {};
-      
       if (input.meetingDate) updates.meetingDate = new Date(input.meetingDate);
       if (input.primaryLead) updates.primaryLead = input.primaryLead;
       if (input.participants) updates.participants = JSON.stringify(input.participants);
@@ -170,12 +152,10 @@ const meetingsRouter = router({
       if (input.keyQuotes) updates.keyQuotes = JSON.stringify(input.keyQuotes);
       if (input.intelligenceData) updates.intelligenceData = JSON.stringify(input.intelligenceData);
       if (input.fullTranscript) updates.fullTranscript = input.fullTranscript;
-
       await db.updateMeeting(input.id, updates);
       return { success: true };
     }),
 
-  // Delete a meeting
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
@@ -185,35 +165,118 @@ const meetingsRouter = router({
 });
 
 // ============================================================================
+// CONTACTS ROUTER
+// ============================================================================
+
+const contactsRouter = router({
+  list: protectedProcedure.query(async () => {
+    return await db.getAllContacts();
+  }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const contact = await db.getContactById(input.id);
+      if (!contact) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
+      return contact;
+    }),
+
+  getMeetings: protectedProcedure
+    .input(z.object({ contactId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getMeetingsForContact(input.contactId);
+    }),
+
+  search: protectedProcedure
+    .input(z.object({ query: z.string() }))
+    .query(async ({ input }) => {
+      return await db.searchContacts(input.query);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      organization: z.string().optional(),
+      title: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createContact({
+        name: input.name,
+        email: input.email ?? null,
+        phone: input.phone ?? null,
+        organization: input.organization ?? null,
+        title: input.title ?? null,
+        notes: input.notes ?? null,
+      });
+      return { id };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      email: z.string().nullable().optional(),
+      phone: z.string().nullable().optional(),
+      organization: z.string().nullable().optional(),
+      title: z.string().nullable().optional(),
+      notes: z.string().nullable().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...updates } = input;
+      const cleanUpdates: any = {};
+      for (const [key, value] of Object.entries(updates)) {
+        if (value !== undefined) cleanUpdates[key] = value;
+      }
+      await db.updateContact(id, cleanUpdates);
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteContact(input.id);
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // TASKS ROUTER
 // ============================================================================
 
 const tasksRouter = router({
-  // List all tasks with optional filters
   list: protectedProcedure
     .input(
       z.object({
         status: z.enum(["open", "in_progress", "completed"]).optional(),
         assignedTo: z.number().optional(),
+        assignedName: z.string().optional(),
         meetingId: z.number().optional(),
+        category: z.string().optional(),
       }).optional()
     )
     .query(async ({ input }) => {
       return await db.getAllTasks(input);
     }),
 
-  // Get a single task by ID
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const task = await db.getTaskById(input.id);
-      if (!task) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
-      }
+      if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       return task;
     }),
 
-  // Create a new task
+  categories: protectedProcedure.query(async () => {
+    return await db.getTaskCategories();
+  }),
+
+  assignees: protectedProcedure.query(async () => {
+    return await db.getTaskAssignees();
+  }),
+
   create: protectedProcedure
     .input(
       z.object({
@@ -221,8 +284,10 @@ const tasksRouter = router({
         description: z.string().optional(),
         priority: z.enum(["low", "medium", "high"]).default("medium"),
         assignedTo: z.number().optional(),
+        assignedName: z.string().optional(),
         meetingId: z.number().optional(),
         dueDate: z.string().optional(),
+        category: z.string().optional(),
         isAutoGenerated: z.boolean().default(false),
       })
     )
@@ -232,18 +297,17 @@ const tasksRouter = router({
         description: input.description ?? null,
         priority: input.priority,
         assignedTo: input.assignedTo ?? null,
+        assignedName: input.assignedName ?? null,
         meetingId: input.meetingId ?? null,
         dueDate: input.dueDate ? new Date(input.dueDate) : null,
+        category: input.category ?? null,
         isAutoGenerated: input.isAutoGenerated,
         createdBy: ctx.user.id,
       };
-      
       const taskId = await db.createTask(taskData);
-
       return { id: taskId };
     }),
 
-  // Update a task
   update: protectedProcedure
     .input(
       z.object({
@@ -253,26 +317,27 @@ const tasksRouter = router({
         priority: z.enum(["low", "medium", "high"]).optional(),
         status: z.enum(["open", "in_progress", "completed"]).optional(),
         assignedTo: z.number().nullable().optional(),
+        assignedName: z.string().nullable().optional(),
         dueDate: z.string().nullable().optional(),
+        category: z.string().nullable().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const updates: any = {};
-      
       if (input.title) updates.title = input.title;
       if (input.description !== undefined) updates.description = input.description;
       if (input.priority) updates.priority = input.priority;
       if (input.status) updates.status = input.status;
       if (input.assignedTo !== undefined) updates.assignedTo = input.assignedTo;
+      if (input.assignedName !== undefined) updates.assignedName = input.assignedName;
       if (input.dueDate !== undefined) {
         updates.dueDate = input.dueDate ? new Date(input.dueDate) : null;
       }
-
+      if (input.category !== undefined) updates.category = input.category;
       await db.updateTask(input.id, updates);
       return { success: true };
     }),
 
-  // Delete a task
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
@@ -286,31 +351,19 @@ const tasksRouter = router({
 // ============================================================================
 
 const tagsRouter = router({
-  // List all tags
   list: protectedProcedure
-    .input(
-      z.object({
-        type: z.enum(["sector", "jurisdiction"]).optional(),
-      }).optional()
-    )
+    .input(z.object({ type: z.enum(["sector", "jurisdiction"]).optional() }).optional())
     .query(async ({ input }) => {
       return await db.getAllTags(input?.type);
     }),
 
-  // Create a new tag
   create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1).max(255),
-        type: z.enum(["sector", "jurisdiction"]),
-      })
-    )
+    .input(z.object({
+      name: z.string().min(1).max(255),
+      type: z.enum(["sector", "jurisdiction"]),
+    }))
     .mutation(async ({ input }) => {
-      const tagId = await db.createTag({
-        name: input.name,
-        type: input.type,
-      });
-
+      const tagId = await db.createTag({ name: input.name, type: input.type });
       return { id: tagId };
     }),
 });
@@ -320,67 +373,40 @@ const tagsRouter = router({
 // ============================================================================
 
 const usersRouter = router({
-  // List all users
   list: protectedProcedure.query(async () => {
     return await db.getAllUsers();
   }),
 });
 
 // ============================================================================
-// INGESTION ROUTER (Webhook for Plaud/Fathom integration)
+// INGESTION ROUTER
 // ============================================================================
 
 const ingestionRouter = router({
-  // Webhook endpoint for receiving intelligence data
   webhook: publicProcedure
     .input(z.any())
     .mutation(async ({ input }) => {
       const data = validateIntelligenceData(input);
-      
-      if (!data) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid intelligence data format",
-        });
-      }
-
+      if (!data) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid intelligence data format" });
       const result = await processIntelligenceData(data);
       return result;
     }),
 });
 
 // ============================================================================
-// ANALYTICS ROUTER
-// ============================================================================
-
-// ============================================================================
-// ASK OMNISCOPE ROUTER (AI-Powered Search)
-// ============================================================================
-
-// ============================================================================
-// RECAP GENERATOR ROUTER
-// ============================================================================
-
-// ============================================================================
 // EXPORT ROUTER
 // ============================================================================
 
 const exportRouter = router({
-  // Export daily summary
   dailySummary: protectedProcedure
-    .input(z.object({
-      date: z.string().optional(),
-    }))
+    .input(z.object({ date: z.string().optional() }))
     .mutation(async ({ input }) => {
       const date = input.date ? new Date(input.date) : new Date();
       return await reportExporter.exportDailySummaryMarkdown(date);
     }),
   
-  // Export weekly summary
   weeklySummary: protectedProcedure
-    .input(z.object({
-      weekStart: z.string().optional(),
-    }))
+    .input(z.object({ weekStart: z.string().optional() }))
     .mutation(async ({ input }) => {
       let weekStart: Date;
       if (input.weekStart) {
@@ -394,12 +420,8 @@ const exportRouter = router({
       return await reportExporter.exportWeeklySummaryMarkdown(weekStart);
     }),
   
-  // Export custom range
   customRange: protectedProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string(),
-    }))
+    .input(z.object({ startDate: z.string(), endDate: z.string() }))
     .mutation(async ({ input }) => {
       const startDate = new Date(input.startDate);
       const endDate = new Date(input.endDate);
@@ -412,7 +434,6 @@ const exportRouter = router({
 // ============================================================================
 
 const recapRouter = router({
-  // Generate meeting recap
   generate: protectedProcedure
     .input(z.object({
       meetingId: z.number(),
@@ -424,33 +445,24 @@ const recapRouter = router({
 });
 
 // ============================================================================
-// ASK OMNISCOPE ROUTER (AI-Powered Search)
+// ASK OMNISCOPE ROUTER
 // ============================================================================
 
 const askRouter = router({
-  // Ask a natural language question
   ask: protectedProcedure
-    .input(z.object({
-      query: z.string(),
-    }))
+    .input(z.object({ query: z.string() }))
     .mutation(async ({ input }) => {
       return await askOmniScope.askOmniScope(input.query);
     }),
   
-  // Find meetings by participant
   findByParticipant: protectedProcedure
-    .input(z.object({
-      name: z.string(),
-    }))
+    .input(z.object({ name: z.string() }))
     .query(async ({ input }) => {
       return await askOmniScope.findMeetingsByParticipant(input.name);
     }),
   
-  // Find meetings by organization
   findByOrganization: protectedProcedure
-    .input(z.object({
-      name: z.string(),
-    }))
+    .input(z.object({ name: z.string() }))
     .query(async ({ input }) => {
       return await askOmniScope.findMeetingsByOrganization(input.name);
     }),
@@ -468,56 +480,42 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 const adminRouter = router({
-  // Get all users
   getAllUsers: adminProcedure.query(async () => {
     return await db.getAllUsers();
   }),
 
-  // Invite a new user
   inviteUser: adminProcedure
     .input(z.object({
       email: z.string().email(),
       role: z.enum(["user", "admin"]).default("user"),
     }))
     .mutation(async ({ input }) => {
-      // Check if user already exists
       const existingUsers = await db.getAllUsers();
       if (existingUsers.some(u => u.email === input.email)) {
         throw new TRPCError({ code: 'CONFLICT', message: 'User already exists' });
       }
-      
-      // Create placeholder user (they'll complete signup on first login)
       await db.upsertUser({
         openId: `pending-${input.email}`,
         email: input.email,
         role: input.role,
       });
-      
       return { success: true };
     }),
 
-  // Update user role
   updateUserRole: adminProcedure
-    .input(z.object({
-      userId: z.number(),
-      role: z.enum(["user", "admin"]),
-    }))
+    .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
     .mutation(async ({ input }) => {
       await db.updateUser(input.userId, { role: input.role });
       return { success: true };
     }),
 
-  // Delete user
   deleteUser: adminProcedure
-    .input(z.object({
-      userId: z.number(),
-    }))
+    .input(z.object({ userId: z.number() }))
     .mutation(async ({ input }) => {
       await db.deleteUser(input.userId);
       return { success: true };
     }),
 
-  // Import meetings from Fathom API
   importFathomMeetings: adminProcedure
     .input(z.object({
       limit: z.number().min(1).max(50).default(10),
@@ -530,25 +528,18 @@ const adminRouter = router({
       });
     }),
 
-  // Register Fathom webhook
   registerFathomWebhook: adminProcedure
-    .input(z.object({
-      webhookUrl: z.string().url(),
-    }))
+    .input(z.object({ webhookUrl: z.string().url() }))
     .mutation(async ({ input }) => {
       return await fathomIntegration.registerFathomWebhook(input.webhookUrl);
     }),
 
-  // List Fathom webhooks
   listFathomWebhooks: adminProcedure.query(async () => {
     return await fathomIntegration.listFathomWebhooks();
   }),
 
-  // Delete Fathom webhook
   deleteFathomWebhook: adminProcedure
-    .input(z.object({
-      webhookId: z.string(),
-    }))
+    .input(z.object({ webhookId: z.string() }))
     .mutation(async ({ input }) => {
       await fathomIntegration.deleteFathomWebhook(input.webhookId);
       return { success: true };
@@ -560,26 +551,19 @@ const adminRouter = router({
 // ============================================================================
 
 const analyticsRouter = router({
-  // Get dashboard metrics
   dashboard: protectedProcedure.query(async () => {
     return await analytics.getDashboardMetrics();
   }),
   
-  // Get daily summary
   dailySummary: protectedProcedure
-    .input(z.object({
-      date: z.string().optional(),
-    }))
+    .input(z.object({ date: z.string().optional() }))
     .query(async ({ input }) => {
       const date = input.date ? new Date(input.date) : new Date();
       return await analytics.getDailySummary(date);
     }),
   
-  // Get weekly summary
   weeklySummary: protectedProcedure
-    .input(z.object({
-      weekStart: z.string().optional(),
-    }))
+    .input(z.object({ weekStart: z.string().optional() }))
     .query(async ({ input }) => {
       let weekStart: Date;
       if (input.weekStart) {
@@ -605,12 +589,11 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
   meetings: meetingsRouter,
+  contacts: contactsRouter,
   tasks: tasksRouter,
   tags: tagsRouter,
   users: usersRouter,

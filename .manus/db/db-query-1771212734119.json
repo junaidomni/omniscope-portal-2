@@ -1,0 +1,18 @@
+{
+  "query": "SHOW COLUMNS FROM meetings WHERE Field = 'fullTranscript';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SHOW COLUMNS FROM meetings WHERE Field = 'fullTranscript';",
+  "rows": [
+    {
+      "Field": "fullTranscript",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nfullTranscript\ttext\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 440
+}

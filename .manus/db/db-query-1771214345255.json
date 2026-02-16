@@ -1,0 +1,26 @@
+{
+  "query": "SELECT 'meetings' as tbl, COUNT(*) as cnt FROM meetings UNION ALL SELECT 'tasks', COUNT(*) FROM tasks UNION ALL SELECT 'contacts', COUNT(*) FROM contacts UNION ALL SELECT 'calendar_events', COUNT(*) FROM calendar_events;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT 'meetings' as tbl, COUNT(*) as cnt FROM meetings UNION ALL SELECT 'tasks', COUNT(*) FROM tasks UNION ALL SELECT 'contacts', COUNT(*) FROM contacts UNION ALL SELECT 'calendar_events', COUNT(*) FROM calendar_events;",
+  "rows": [
+    {
+      "tbl": "contacts",
+      "cnt": "4"
+    },
+    {
+      "tbl": "calendar_events",
+      "cnt": "71"
+    },
+    {
+      "tbl": "meetings",
+      "cnt": "7"
+    },
+    {
+      "tbl": "tasks",
+      "cnt": "34"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\ncontacts\t4\ncalendar_events\t71\nmeetings\t7\ntasks\t34\n",
+  "stderr": "",
+  "execution_time_ms": 360
+}

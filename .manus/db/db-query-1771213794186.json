@@ -1,0 +1,15 @@
+{
+  "query": "SELECT COUNT(*) as total, MIN(startTime) as earliest, MAX(startTime) as latest FROM calendar_events",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT COUNT(*) as total, MIN(startTime) as earliest, MAX(startTime) as latest FROM calendar_events",
+  "rows": [
+    {
+      "total": "71",
+      "earliest": "2025-11-01 19:00:00",
+      "latest": "2026-05-22 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tearliest\tlatest\n71\t2025-11-01 19:00:00\t2026-05-22 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

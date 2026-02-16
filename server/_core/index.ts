@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { webhookRouter } from "../webhookRoute";
+import { calendarRouter } from "../calendarRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,6 +39,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Webhook endpoint for Plaud/Fathom integration
   app.use("/api", webhookRouter);
+  // Google Calendar API proxy
+  app.use("/api", calendarRouter);
   // tRPC API
   app.use(
     "/api/trpc",

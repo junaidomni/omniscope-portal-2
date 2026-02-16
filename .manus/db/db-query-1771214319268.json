@@ -1,0 +1,100 @@
+{
+  "query": "SELECT id, primaryLead, LEFT(executiveSummary, 60) as summary, sourceType FROM meetings ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, primaryLead, LEFT(executiveSummary, 60) as summary, sourceType FROM meetings ORDER BY id",
+  "rows": [
+    {
+      "id": "30012",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This meeting explored a potential partnership to develop a $",
+      "sourceType": "fathom"
+    },
+    {
+      "id": "30013",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "OmniScope and Comet Cash are pursuing a dual-track strategy ",
+      "sourceType": "fathom"
+    },
+    {
+      "id": "30014",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This introductory meeting explored a potential large-scale O",
+      "sourceType": "fathom"
+    },
+    {
+      "id": "30015",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "OmniScope is exploring a strategic partnership with a Pakist",
+      "sourceType": "fathom"
+    },
+    {
+      "id": "30016",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "The meeting focused on defining the design and development p",
+      "sourceType": "fathom"
+    },
+    {
+      "id": "30017",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This meeting focused on critical resource allocation and pro",
+      "sourceType": "fathom"
+    },
+    {
+      "id": "30018",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "This meeting facilitated an initial introduction between Omn",
+      "sourceType": "fathom"
+    },
+    {
+      "id": "60004",
+      "primaryLead": "Test Lead",
+      "summary": "Deletable meeting",
+      "sourceType": "manual"
+    },
+    {
+      "id": "60005",
+      "primaryLead": "Test Lead",
+      "summary": "Deletable meeting",
+      "sourceType": "manual"
+    },
+    {
+      "id": "60007",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary",
+      "sourceType": "plaud"
+    },
+    {
+      "id": "60008",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting",
+      "sourceType": "plaud"
+    },
+    {
+      "id": "60010",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation",
+      "sourceType": "plaud"
+    },
+    {
+      "id": "60011",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary",
+      "sourceType": "plaud"
+    },
+    {
+      "id": "60013",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting",
+      "sourceType": "plaud"
+    },
+    {
+      "id": "60014",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation",
+      "sourceType": "plaud"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprimaryLead\tsummary\tsourceType\n30012\tJunaid Qureshi\tThis meeting explored a potential partnership to develop a $\tfathom\n30013\tJunaid Qureshi\tOmniScope and Comet Cash are pursuing a dual-track strategy \tfathom\n30014\tJunaid Qureshi\tThis introductory meeting explored a potential large-scale O\tfathom\n30015\tJunaid Qureshi\tOmniScope is exploring a strategic partnership with a Pakist\tfathom\n30016\tJunaid Qureshi\tThe meeting focused on defining the design and development p\tfathom\n30017\tJunaid Qureshi\tThis meeting focused on critical resource allocation and pro\tfathom\n30018\tJunaid Qureshi\tThis meeting facilitated an initial introduction between Omn\tfathom\n60004\tTest Lead\tDeletable meeting\tmanual\n60005\tTest Lead\tDeletable meeting\tmanual\n60007\tKyle\tTest meeting summary\tplaud\n60008\tKyle\tDuplicate test meeting\tplaud\n60010\tKyle\tTest meeting for recap generation\tplaud\n60011\tKyle\tTest meeting summary\tplaud\n60013\tKyle\tDuplicate test meeting\tplaud\n60014\tKyle\tTest meeting for recap generation\tplaud\n",
+  "stderr": "",
+  "execution_time_ms": 346
+}

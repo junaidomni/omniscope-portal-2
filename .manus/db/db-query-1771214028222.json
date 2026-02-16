@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, primaryLead, LEFT(executiveSummary, 80) as summary FROM meetings WHERE executiveSummary LIKE '%test%' OR primaryLead LIKE '%Test%' OR executiveSummary LIKE '%Test%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, primaryLead, LEFT(executiveSummary, 80) as summary FROM meetings WHERE executiveSummary LIKE '%test%' OR primaryLead LIKE '%Test%' OR executiveSummary LIKE '%Test%'",
+  "rows": [
+    {
+      "id": "2",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "3",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary"
+    },
+    {
+      "id": "4",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "5",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation"
+    },
+    {
+      "id": "6",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation"
+    },
+    {
+      "id": "30015",
+      "primaryLead": "Junaid Qureshi",
+      "summary": "OmniScope is exploring a strategic partnership with a Pakistani apparel manufact"
+    },
+    {
+      "id": "60001",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting summary"
+    },
+    {
+      "id": "60002",
+      "primaryLead": "Kyle",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "60003",
+      "primaryLead": "Kyle",
+      "summary": "Test meeting for recap generation"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprimaryLead\tsummary\n2\tKyle\tDuplicate test meeting\n3\tKyle\tTest meeting summary\n4\tKyle\tDuplicate test meeting\n5\tKyle\tTest meeting for recap generation\n6\tKyle\tTest meeting for recap generation\n30015\tJunaid Qureshi\tOmniScope is exploring a strategic partnership with a Pakistani apparel manufact\n60001\tKyle\tTest meeting summary\n60002\tKyle\tDuplicate test meeting\n60003\tKyle\tTest meeting for recap generation\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

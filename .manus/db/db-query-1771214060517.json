@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM tasks WHERE meetingId IN (2, 3, 4, 5, 6, 60001, 60002, 60003); DELETE FROM meeting_tags WHERE meetingId IN (2, 3, 4, 5, 6, 60001, 60002, 60003); DELETE FROM meeting_contacts WHERE meetingId IN (2, 3, 4, 5, 6, 60001, 60002, 60003); DELETE FROM meetings WHERE id IN (2, 3, 4, 5, 6, 60001, 60002, 60003);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute DELETE FROM tasks WHERE meetingId IN (2, 3, 4, 5, 6, 60001, 60002, 60003); DELETE FROM meeting_tags WHERE meetingId IN (2, 3, 4, 5, 6, 60001, 60002, 60003); DELETE FROM meeting_contacts WHERE meetingId IN (2, 3, 4, 5, 6, 60001, 60002, 60003); DELETE FROM meetings WHERE id IN (2, 3, 4, 5, 6, 60001, 60002, 60003);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 529
+}

@@ -5,14 +5,27 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Calendar, User, Building2, MapPin, ArrowLeft, AlertTriangle, TrendingUp, Target, Mail, Download, FileText, Quote, CheckSquare, Clock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { SendRecapDialog } from "@/components/SendRecapDialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 export default function MeetingDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
   const [sendRecapOpen, setSendRecapOpen] = useState(false);
   
   const { data: meeting, isLoading } = trpc.meetings.getById.useQuery(
@@ -27,6 +40,15 @@ export default function MeetingDetail() {
 
   // Generate recap for download
   const generateRecapMutation = trpc.recap.generate.useMutation();
+
+  // Delete meeting
+  const deleteMutation = trpc.meetings.delete.useMutation({
+    onSuccess: () => {
+      toast.success('Meeting deleted');
+      setLocation('/meetings');
+    },
+    onError: () => toast.error('Failed to delete meeting'),
+  });
 
   const handleDownloadReport = async () => {
     if (!meeting) return;
@@ -166,6 +188,33 @@ export default function MeetingDetail() {
             <Mail className="h-4 w-4 mr-2" />
             Send via Email
           </Button>
+          <div className="flex-1" />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="border-red-900/50 text-red-400 hover:bg-red-900/20 hover:text-red-300">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">Delete Meeting</AlertDialogTitle>
+                <AlertDialogDescription className="text-zinc-400">
+                  This will permanently delete this meeting and all associated tasks. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteMutation.mutate({ id: meeting.id })}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete Meeting'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 

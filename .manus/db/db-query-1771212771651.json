@@ -1,0 +1,178 @@
+{
+  "query": "SELECT id, primaryLead, sourceType, sourceId, LEFT(executiveSummary, 60) as summary FROM meetings ORDER BY id ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, primaryLead, sourceType, sourceId, LEFT(executiveSummary, 60) as summary FROM meetings ORDER BY id ASC;",
+  "rows": [
+    {
+      "id": "1",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-1771191280801",
+      "summary": "Test meeting summary"
+    },
+    {
+      "id": "2",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771191281404",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "3",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-1771191298988",
+      "summary": "Test meeting summary"
+    },
+    {
+      "id": "4",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771191299380",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "5",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "summary": "Test meeting for recap generation"
+    },
+    {
+      "id": "6",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "summary": "Test meeting for recap generation"
+    },
+    {
+      "id": "30001",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "plaud",
+      "sourceId": "test-webhook-001",
+      "summary": "Test webhook integration with Zapier"
+    },
+    {
+      "id": "30002",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "plaud",
+      "sourceId": "plaud02-15 Meeting: Centralizing Meeting Notes, Transcripts, and Omniscope Portal Plan",
+      "summary": "## Meeting Information - Test meeting for webhook integratio"
+    },
+    {
+      "id": "30003",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "plaud",
+      "sourceId": "test-zapier-format-002",
+      "summary": "Test meeting for Zapier webhook integration"
+    },
+    {
+      "id": "30004",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771202125936",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "30005",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "summary": "Test meeting for recap generation"
+    },
+    {
+      "id": "30006",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-1771202183546",
+      "summary": "Test meeting summary"
+    },
+    {
+      "id": "30007",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771202184372",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "30008",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "summary": "Test meeting for recap generation"
+    },
+    {
+      "id": "30009",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-1771203466429",
+      "summary": "Test meeting summary"
+    },
+    {
+      "id": "30010",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "duplicate-test-1771203467245",
+      "summary": "Duplicate test meeting"
+    },
+    {
+      "id": "30011",
+      "primaryLead": "Kyle",
+      "sourceType": "plaud",
+      "sourceId": "test-recap-meeting",
+      "summary": "Test meeting for recap generation"
+    },
+    {
+      "id": "30012",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-121305081",
+      "summary": "This meeting explored a potential partnership to develop a $"
+    },
+    {
+      "id": "30013",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-119902499",
+      "summary": "OmniScope and Comet Cash are pursuing a dual-track strategy "
+    },
+    {
+      "id": "30014",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-117782780",
+      "summary": "This introductory meeting explored a potential large-scale O"
+    },
+    {
+      "id": "30015",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-114941686",
+      "summary": "OmniScope is exploring a strategic partnership with a Pakist"
+    },
+    {
+      "id": "30016",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-109445645",
+      "summary": "The meeting focused on defining the design and development p"
+    },
+    {
+      "id": "30017",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-108815712",
+      "summary": "This meeting focused on critical resource allocation and pro"
+    },
+    {
+      "id": "30018",
+      "primaryLead": "Junaid Qureshi",
+      "sourceType": "fathom",
+      "sourceId": "fathom-103635855",
+      "summary": "This meeting facilitated an initial introduction between Omn"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprimaryLead\tsourceType\tsourceId\tsummary\n1\tKyle\tplaud\ttest-1771191280801\tTest meeting summary\n2\tKyle\tplaud\tduplicate-test-1771191281404\tDuplicate test meeting\n3\tKyle\tplaud\ttest-1771191298988\tTest meeting summary\n4\tKyle\tplaud\tduplicate-test-1771191299380\tDuplicate test meeting\n5\tKyle\tplaud\ttest-recap-meeting\tTest meeting for recap generation\n6\tKyle\tplaud\ttest-recap-meeting\tTest meeting for recap generation\n30001\tJunaid Qureshi\tplaud\ttest-webhook-001\tTest webhook integration with Zapier\n30002\tJunaid Qureshi\tplaud\tplaud02-15 Meeting: Centralizing Meeting Notes, Transcripts, and Omniscope Portal Plan\t## Meeting Information - Test meeting for webhook integratio\n30003\tJunaid Qureshi\tplaud\ttest-zapier-format-002\tTest meeting for Zapier webhook integration\n30004\tKyle\tplaud\tduplicate-test-1771202125936\tDuplicate test meeting\n30005\tKyle\tplaud\ttest-recap-meeting\tTest meeting for recap generation\n30006\tKyle\tplaud\ttest-1771202183546\tTest meeting summary\n30007\tKyle\tplaud\tduplicate-test-1771202184372\tDuplicate test meeting\n30008\tKyle\tplaud\ttest-recap-meeting\tTest meeting for recap generation\n30009\tKyle\tplaud\ttest-1771203466429\tTest meeting summary\n30010\tKyle\tplaud\tduplicate-test-1771203467245\tDuplicate test meeting\n30011\tKyle\tplaud\ttest-recap-meeting\tTest meeting for recap generation\n30012\tJunaid Qureshi\tfathom\tfathom-121305081\tThis meeting explored a potential partnership to develop a $\n30013\tJunaid Qureshi\tfathom\tfathom-119902499\tOmniScope and Comet Cash are pursuing a dual-track strategy \n30014\tJunaid Qureshi\tfathom\tfathom-117782780\tThis introductory meeting explored a potential large-scale O\n30015\tJunaid Qureshi\tfathom\tfathom-114941686\tOmniScope is exploring a strategic partnership with a Pakist\n30016\tJunaid Qureshi\tfathom\tfathom-109445645\tThe meeting focused on defining the design and development p\n30017\tJunaid Qureshi\tfathom\tfathom-108815712\tThis meeting focused on critical resource allocation and pro\n30018\tJunaid Qureshi\tfathom\tfathom-103635855\tThis meeting facilitated an initial introduction between Omn\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

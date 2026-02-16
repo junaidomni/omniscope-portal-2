@@ -254,3 +254,47 @@
 - [x] Validate Fathom API key connectivity
 - [ ] Register Fathom webhook in Fathom Settings UI (manual step - webhook API returns 404)
 - [ ] Import all existing Fathom meetings via Admin Panel
+
+
+## Major Portal Overhaul v2
+### Meetings Tab Redesign
+- [x] Redesign Meetings page with sub-navigation: Recent | Calendar | People
+- [x] Recent view: show meetings for current week, newest first, compact cards
+- [x] Calendar sub-view: click date to see meetings on that date
+- [x] People sub-view: directory of all contacts with meeting history
+- [x] People detail: click name shows all meetings + person summary + contact info
+- [x] Add meeting deletion capability (with confirmation dialog)
+- [x] Clean up all test meetings from database
+
+### To-Do Overhaul (Airtable-style)
+- [x] Auto-populate tasks from meetings (verified)
+- [x] Add manual task creation with form
+- [x] Add task assignment to team members (Junaid, Kyle, Jake, Sania)
+- [x] Categorize tasks by subject/tag (Little Miracles, Gold, BTC, Private Placement, etc.)
+- [x] Add category field to tasks schema
+- [x] Team member filter bar at top (Junaid, Kyle, Jake, Sania)
+- [x] Click team member to filter their tasks
+- [x] Compact, organized layout inspired by Airtable
+
+### Google Calendar Integration
+- [x] Add Calendar tab to sidebar
+- [x] Connect Google Calendar via MCP and sync to database (71 events imported)
+- [x] Show calendar events with month navigation
+- [x] Timezone clock display (EST, Pacific, London, Dubai, Pakistan, Tokyo)
+- [ ] Pull team calendars to check availability (requires additional Google Calendar access)
+- [ ] Add ability to create meetings from portal (requires Google Calendar write API)
+- [ ] Per-user calendar view on login
+
+### Dashboard Redesign
+- [x] Update dashboard as Command Center with timezone strip
+- [x] Show overview of meetings, tasks, calendar, and people
+- [x] Compact, information-dense layout with metric cards
+- [x] Upcoming Schedule widget with Google Calendar events
+- [x] Recent Intelligence widget
+- [x] Active Verticals and Jurisdictions breakdown
+
+### Cleanup
+- [x] Delete all test/dummy meetings from database (only 7 real Fathom meetings remain)
+- [x] Delete orphaned test tasks
+- [x] Write comprehensive overhaul tests (12 new tests)
+- [x] All 73 tests passing
