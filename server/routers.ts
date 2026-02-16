@@ -184,7 +184,7 @@ const meetingsRouter = router({
 
 const contactsRouter = router({
   list: protectedProcedure.query(async () => {
-    const allContacts = await db.getAllContacts();
+    const allContacts = await db.getContactsWithCompany();
     const enriched = await Promise.all(allContacts.map(async (c: any) => {
       const contactMeetings = await db.getMeetingsForContact(c.id);
       const lastMeetingDate = contactMeetings.length > 0 ? contactMeetings[0].meeting.meetingDate : null;
@@ -239,6 +239,9 @@ const contactsRouter = router({
       notes: z.string().optional(),
       category: z.enum(["client", "prospect", "partner", "vendor", "other"]).optional(),
       starred: z.boolean().optional(),
+      companyId: z.number().nullable().optional(),
+      source: z.string().optional(),
+      tags: z.string().optional(), // JSON array string
     }))
     .mutation(async ({ input }) => {
       const id = await db.createContact({
@@ -250,6 +253,9 @@ const contactsRouter = router({
         notes: input.notes ?? null,
         category: input.category ?? "other",
         starred: input.starred ?? false,
+        companyId: input.companyId ?? null,
+        source: input.source ?? "manual",
+        tags: input.tags ?? null,
       });
       return { id };
     }),
@@ -1659,6 +1665,179 @@ const analyticsRouter = router({
 });
 
 // ============================================================================
+// COMPANIES ROUTER
+// ============================================================================
+
+const companiesRouter = router({
+  list: protectedProcedure
+    .input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      return await db.getAllCompanies(input ?? undefined);
+    }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const company = await db.getCompanyById(input.id);
+      if (!company) throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
+      return company;
+    }),
+
+  getProfile: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const company = await db.getCompanyById(input.id);
+      if (!company) throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
+      const people = await db.getPeopleForCompany(input.id);
+      const companyInteractions = await db.getInteractionsForCompany(input.id, 100);
+      const companyTasks = await db.getTasksForCompany(input.id);
+      return { ...company, people, interactions: companyInteractions, tasks: companyTasks };
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      domain: z.string().optional(),
+      industry: z.string().optional(),
+      notes: z.string().optional(),
+      status: z.enum(["active", "inactive", "prospect", "partner"]).optional(),
+      owner: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createCompany({
+        name: input.name,
+        domain: input.domain ?? null,
+        industry: input.industry ?? null,
+        notes: input.notes ?? null,
+        status: input.status ?? "active",
+        owner: input.owner ?? null,
+      });
+      return { id };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      domain: z.string().optional(),
+      industry: z.string().optional(),
+      notes: z.string().optional(),
+      status: z.enum(["active", "inactive", "prospect", "partner"]).optional(),
+      owner: z.string().optional(),
+      aiMemory: z.string().optional(),
+      logoUrl: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...updates } = input;
+      await db.updateCompany(id, updates);
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteCompany(input.id);
+      return { success: true };
+    }),
+
+  refreshAiMemory: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const company = await db.getCompanyById(input.id);
+      if (!company) throw new TRPCError({ code: "NOT_FOUND" });
+      const people = await db.getPeopleForCompany(input.id);
+      const companyInteractions = await db.getInteractionsForCompany(input.id, 50);
+      
+      const { invokeLLM } = await import("./_core/llm");
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are an institutional relationship intelligence analyst for OmniScope, a sovereign-grade financial infrastructure platform. Generate a concise, executive-level company brief." },
+          { role: "user", content: `Generate a rolling AI memory brief for this company:\n\nCompany: ${company.name}\nDomain: ${company.domain || "N/A"}\nIndustry: ${company.industry || "N/A"}\nStatus: ${company.status}\n\nAssociated People (${people.length}):\n${people.map(p => `- ${p.name} (${p.title || "No title"}, ${p.email || "No email"})`).join("\n")}\n\nRecent Interactions (${companyInteractions.length}):\n${companyInteractions.slice(0, 20).map(i => `- [${i.type}] ${new Date(i.timestamp).toLocaleDateString()}: ${i.summary || "No summary"}`).join("\n")}\n\nProvide a structured brief with:\n1. Company Overview (who they are, what they do)\n2. Relationship Status (how engaged we are)\n3. Key People & Contacts\n4. Current Workstreams / Active Discussions\n5. Open Loops & Next Steps\n6. Risk Flags (if any)` },
+        ],
+      });
+      const aiMemory = String(response.choices?.[0]?.message?.content || "");
+      await db.updateCompany(input.id, { aiMemory });
+      return { aiMemory };
+    }),
+});
+
+// ============================================================================
+// INTERACTIONS ROUTER
+// ============================================================================
+
+const interactionsRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      contactId: z.number().optional(),
+      companyId: z.number().optional(),
+      type: z.string().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return await db.getAllInteractions(input ?? undefined);
+    }),
+
+  forContact: protectedProcedure
+    .input(z.object({ contactId: z.number(), limit: z.number().optional() }))
+    .query(async ({ input }) => {
+      return await db.getInteractionsForContact(input.contactId, input.limit ?? 50);
+    }),
+
+  forCompany: protectedProcedure
+    .input(z.object({ companyId: z.number(), limit: z.number().optional() }))
+    .query(async ({ input }) => {
+      return await db.getInteractionsForCompany(input.companyId, input.limit ?? 50);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      type: z.enum(["meeting", "note", "doc_shared", "task_update", "email", "intro", "call"]),
+      timestamp: z.string(),
+      contactId: z.number().optional(),
+      companyId: z.number().optional(),
+      sourceRecordId: z.number().optional(),
+      sourceType: z.string().optional(),
+      summary: z.string().optional(),
+      details: z.string().optional(),
+      tags: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const id = await db.createInteraction({
+        type: input.type,
+        timestamp: new Date(input.timestamp),
+        contactId: input.contactId ?? null,
+        companyId: input.companyId ?? null,
+        sourceRecordId: input.sourceRecordId ?? null,
+        sourceType: input.sourceType ?? null,
+        summary: input.summary ?? null,
+        details: input.details ?? null,
+        tags: input.tags ?? null,
+        createdBy: ctx.user?.id ?? null,
+      });
+      return { id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteInteraction(input.id);
+      return { success: true };
+    }),
+});
+
+// ============================================================================
+// GLOBAL SEARCH ROUTER
+// ============================================================================
+
+const searchRouter = router({
+  global: protectedProcedure
+    .input(z.object({ query: z.string().min(1) }))
+    .query(async ({ input }) => {
+      return await db.globalSearch(input.query);
+    }),
+});
+
+// ============================================================================
 // MAIN APP ROUTER
 // ============================================================================
 
@@ -1688,6 +1867,9 @@ export const appRouter = router({
   payroll: payrollRouter,
   hrDocuments: hrDocumentsRouter,
   aiInsights: aiInsightsRouter,
+  companies: companiesRouter,
+  interactions: interactionsRouter,
+  search: searchRouter,
 });
 
 export type AppRouter = typeof appRouter;

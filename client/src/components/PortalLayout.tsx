@@ -13,7 +13,9 @@ import {
   Shield,
   Settings,
   Users,
-  Building2
+  Building2,
+  Briefcase,
+  Search
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -83,7 +85,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     { path: "/meetings", icon: FileText, label: "Meetings" },
     { path: "/calendar", icon: Calendar, label: "Calendar" },
     { path: "/tasks", icon: CheckSquare, label: "To-Do" },
-    { path: "/contacts", icon: Users, label: "Contacts" },
+    { path: "/contacts", icon: Users, label: "Relationship Hub" },
+    { path: "/companies", icon: Briefcase, label: "Companies" },
     { path: "/hr", icon: Building2, label: "HR Hub" },
   ];
 

@@ -22,6 +22,8 @@ import Onboarding from "./pages/Onboarding";
 import HRHub from "./pages/HRHub";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import PayrollHub from "./pages/PayrollHub";
+import Companies from "./pages/Companies";
+import CompanyProfile from "./pages/CompanyProfile";
 
 function Router() {
   return (
@@ -32,6 +34,8 @@ function Router() {
         <Route path="/meeting/:id" component={MeetingDetail} />
         <Route path="/contacts" component={Contacts} />
         <Route path="/contact/:id" component={ContactProfile} />
+        <Route path="/companies" component={Companies} />
+        <Route path="/company/:id" component={CompanyProfile} />
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/tasks" component={ToDo} />
         <Route path="/hr" component={HRHub} />

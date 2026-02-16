@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -907,4 +907,205 @@ export async function getEmployeeByName(firstName: string, lastName: string) {
     ))
     .limit(1);
   return result.length > 0 ? result[0] : null;
+}
+
+
+// ============================================================================
+// COMPANIES OPERATIONS
+// ============================================================================
+
+export async function createCompany(company: Omit<InsertCompany, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(companies).values(company);
+  return result[0].insertId;
+}
+
+export async function getCompanyById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getAllCompanies(filters?: { status?: string; search?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (filters?.status) conditions.push(eq(companies.status, filters.status as any));
+  if (filters?.search) conditions.push(or(
+    like(companies.name, `%${filters.search}%`),
+    like(companies.domain, `%${filters.search}%`)
+  ));
+  const query = conditions.length > 0
+    ? db.select().from(companies).where(and(...conditions)).orderBy(desc(companies.updatedAt))
+    : db.select().from(companies).orderBy(desc(companies.updatedAt));
+  return await query;
+}
+
+export async function updateCompany(id: number, updates: Partial<InsertCompany>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(companies).set(updates).where(eq(companies.id, id));
+}
+
+export async function deleteCompany(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Unlink contacts from this company first
+  await db.update(contacts).set({ companyId: null }).where(eq(contacts.companyId, id));
+  await db.delete(companies).where(eq(companies.id, id));
+}
+
+export async function getCompanyByDomain(domain: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(companies).where(eq(companies.domain, domain)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getCompanyByName(name: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(companies).where(eq(companies.name, name)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getPeopleForCompany(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(contacts).where(eq(contacts.companyId, companyId)).orderBy(contacts.name);
+}
+
+export async function getTasksForCompany(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(tasks).where(eq(tasks.companyId, companyId)).orderBy(desc(tasks.createdAt));
+}
+
+// ============================================================================
+// INTERACTIONS OPERATIONS
+// ============================================================================
+
+export async function createInteraction(interaction: Omit<InsertInteraction, "id" | "createdAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(interactions).values(interaction);
+  return result[0].insertId;
+}
+
+export async function getInteractionsForContact(contactId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(interactions)
+    .where(eq(interactions.contactId, contactId))
+    .orderBy(desc(interactions.timestamp))
+    .limit(limit);
+}
+
+export async function getInteractionsForCompany(companyId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(interactions)
+    .where(eq(interactions.companyId, companyId))
+    .orderBy(desc(interactions.timestamp))
+    .limit(limit);
+}
+
+export async function getAllInteractions(filters?: { type?: string; contactId?: number; companyId?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (filters?.type) conditions.push(eq(interactions.type, filters.type as any));
+  if (filters?.contactId) conditions.push(eq(interactions.contactId, filters.contactId));
+  if (filters?.companyId) conditions.push(eq(interactions.companyId, filters.companyId));
+  const limit = filters?.limit ?? 100;
+  const query = conditions.length > 0
+    ? db.select().from(interactions).where(and(...conditions)).orderBy(desc(interactions.timestamp)).limit(limit)
+    : db.select().from(interactions).orderBy(desc(interactions.timestamp)).limit(limit);
+  return await query;
+}
+
+export async function deleteInteraction(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(interactions).where(eq(interactions.id, id));
+}
+
+// Check if interaction already exists for a source record
+export async function getInteractionBySource(sourceType: string, sourceRecordId: number, contactId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(interactions)
+    .where(and(
+      eq(interactions.sourceType, sourceType),
+      eq(interactions.sourceRecordId, sourceRecordId),
+      eq(interactions.contactId, contactId)
+    ))
+    .limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+// ============================================================================
+// ENHANCED CONTACT OPERATIONS
+// ============================================================================
+
+export async function getContactsWithCompany() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({
+    contact: contacts,
+    companyName: companies.name,
+  }).from(contacts)
+    .leftJoin(companies, eq(contacts.companyId, companies.id))
+    .orderBy(desc(contacts.updatedAt));
+  return result.map(r => ({
+    ...r.contact,
+    companyName: r.companyName,
+  }));
+}
+
+export async function updateContactScores(contactId: number, relationshipScore: number, engagementScore: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(contacts).set({ relationshipScore, engagementScore }).where(eq(contacts.id, contactId));
+}
+
+export async function getContactsByCompany(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(contacts).where(eq(contacts.companyId, companyId)).orderBy(contacts.name);
+}
+
+// Global search across people, companies, meetings, tasks
+export async function globalSearch(query: string) {
+  const db = await getDb();
+  if (!db) return { people: [], companies: [], meetings: [], tasks: [] };
+  const q = `%${query}%`;
+  
+  const [people, companiesResult, meetingsResult, tasksResult] = await Promise.all([
+    db.select().from(contacts).where(or(
+      like(contacts.name, q),
+      like(contacts.email, q),
+      like(contacts.organization, q),
+      like(contacts.title, q)
+    )).limit(20),
+    db.select().from(companies).where(or(
+      like(companies.name, q),
+      like(companies.domain, q),
+      like(companies.industry, q)
+    )).limit(20),
+    db.select().from(meetings).where(or(
+      like(meetings.meetingTitle, q),
+      like(meetings.executiveSummary, q),
+      like(meetings.participants, q)
+    )).orderBy(desc(meetings.meetingDate)).limit(20),
+    db.select().from(tasks).where(or(
+      like(tasks.title, q),
+      like(tasks.description, q),
+      like(tasks.assignedName, q)
+    )).orderBy(desc(tasks.createdAt)).limit(20),
+  ]);
+  
+  return { people, companies: companiesResult, meetings: meetingsResult, tasks: tasksResult };
 }

@@ -194,6 +194,87 @@ export async function processIntelligenceData(rawData: IntelligenceData, created
     console.error(`[Ingestion] Failed to generate branded report:`, error);
   }
 
+  // ========================================================================
+  // CRM AUTOMATION: Create contacts, interactions, link companies, refresh AI
+  // ========================================================================
+  try {
+    const participants = data.participants || [];
+    const participantEmails = (data as any).participantEmails || [];
+    
+    for (let i = 0; i < participants.length; i++) {
+      const participantName = participants[i]?.trim();
+      if (!participantName) continue;
+      
+      // Skip internal team members for contact creation
+      const internalNames = ["junaid", "kyle", "jake", "sania"];
+      const isInternal = internalNames.some(n => participantName.toLowerCase().includes(n));
+      
+      // Get or create contact with dedup
+      const contactId = await db.getOrCreateContact(
+        participantName,
+        participantEmails[i] || null
+      );
+      
+      if (contactId) {
+        // Link contact to meeting (dedup check inside)
+        await db.linkContactToMeeting(meetingId, contactId);
+        
+        // Update source if not set
+        const contact = await db.getContactById(contactId);
+        if (contact && !contact.source) {
+          await db.updateContact(contactId, { source: data.sourceType || "fathom" });
+        }
+        
+        // Update lastInteractionAt
+        await db.updateContact(contactId, { 
+          lastInteractionAt: new Date(data.meetingDate),
+          lastContactedAt: new Date(data.meetingDate),
+        });
+        
+        // Create interaction timeline entry (dedup check)
+        const existingInteraction = await db.getInteractionBySource("meeting", meetingId, contactId);
+        if (!existingInteraction) {
+          await db.createInteraction({
+            type: "meeting",
+            timestamp: new Date(data.meetingDate),
+            contactId,
+            companyId: contact?.companyId ?? null,
+            sourceRecordId: meetingId,
+            sourceType: "meeting",
+            summary: data.executiveSummary?.substring(0, 500) || `Meeting: ${data.meetingTitle || "Untitled"}`,
+            details: JSON.stringify({
+              meetingTitle: data.meetingTitle,
+              participants: data.participants,
+              actionItemCount: data.actionItems?.length || 0,
+            }),
+            tags: null,
+            createdBy: createdBy ?? null,
+          });
+        }
+        
+        // Try to auto-link company from organization
+        if (!isInternal && contact && !contact.companyId && data.organizations && data.organizations.length > 0) {
+          for (const orgName of data.organizations) {
+            if (!orgName) continue;
+            let company = await db.getCompanyByName(orgName);
+            if (!company) {
+              const companyId = await db.createCompany({ name: orgName, status: "active" });
+              company = await db.getCompanyById(companyId);
+            }
+            if (company) {
+              await db.updateContact(contactId, { companyId: company.id, organization: orgName });
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    console.log(`[Ingestion] CRM automation complete for meeting ${meetingId}`);
+  } catch (crmError) {
+    console.error(`[Ingestion] CRM automation error (non-fatal):`, crmError);
+  }
+
   console.log(`[Ingestion] Successfully processed meeting ${meetingId} from ${data.sourceType}`);
   
   return { success: true, meetingId, brandedReportUrl };

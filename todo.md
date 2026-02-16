@@ -741,3 +741,66 @@
 - [x] Remove all test meetings
 - [x] Remove all test contacts
 - [x] Verify final data counts are accurate
+
+## v19 — Relationship Intelligence Hub (Full CRM Transformation)
+
+### Data Model & Schema
+- [x] Create companies table (name, domain, industry, notes, status, owner)
+- [x] Create interactions table (type, timestamp, peopleIds, companyId, sourceRecordId, summary, tags)
+- [x] Enhance contacts/people: add companyId, tags, status, source, lastInteractionAt, relationshipScore, engagementScore
+- [x] Enhance tasks: add linkedPeopleIds, companyId, originatingMeetingId, priority, owner
+- [x] Enhance documents: add sharedWithPeopleIds, companyId, relatedMeetingId, tags
+- [x] Push all schema migrations
+
+### Backend Procedures
+- [x] Companies CRUD (list, create, update, get profile, delete)
+- [x] Interactions CRUD (list by person/company, create, timeline query)
+- [x] Enhanced people list with company join, scores, last interaction
+- [x] Company profile with all associated people, timeline, docs, tasks
+- [x] Person profile with unified timeline (meetings + notes + docs + tasks)
+
+### AI Automation
+- [x] On new meeting: auto-create Interaction items for all attendees
+- [x] On new meeting: attach to relevant company
+- [x] On new meeting: generate/refresh Person AI Memory (client brief)
+- [x] On new meeting: generate/refresh Company AI Memory
+- [x] On new meeting: extract decisions, action items → Tasks, entities → tags
+- [x] Continuous AI Memory update (who they are, what we're working on, preferences, open loops, risks)
+
+### Client Profile Page (Heart of the system)
+- [x] Header: name, company, title, quick actions, relationship status + tags
+- [x] Timeline tab: chronological feed of ALL interactions (meetings, notes, docs, tasks)
+- [x] Meetings tab: list with date, title, attendees, AI summary, action items, search
+- [x] AI Memory tab: rolling client brief (auto-updates after each meeting)
+- [x] Documents tab: shared/received docs, searchable, linked to meetings
+- [x] Tasks tab: open + completed tasks with filters and due dates
+
+### Company Profile Page
+- [x] Company overview with all associated people
+- [x] Company-level AI Memory (rolling summary)
+- [x] Company timeline (all interactions across all people)
+- [x] Company documents + tasks
+
+### Identity Resolution / Deduping
+- [x] Merge people if email or phone matches
+- [x] Flag "Possible Duplicate" for similar names with different emails
+- [x] Company matching: domain match + fuzzy name match
+
+### Search
+- [x] Global search (people, companies, meetings, docs, tasks)
+- [x] Within-profile search (search all content for a specific client/company)
+
+### Navigation & UX
+- [x] Rename Contacts to "Relationship Hub" in sidebar
+- [x] List view + detail view pattern (fast, minimal clicks)
+- [x] Email integration placeholders (Coming Soon badges)
+
+### Admin Settings
+- [x] Settings page: naming preference, scoring weights, dedupe thresholds
+- [x] Activity logging (who added notes/docs)
+
+### Testing & Cleanup
+- [x] Write vitest tests for companies CRUD
+- [x] Write vitest tests for interactions timeline
+- [x] Write vitest tests for AI automation triggers
+- [x] Clean up all test data
