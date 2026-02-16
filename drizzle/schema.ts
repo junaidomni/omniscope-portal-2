@@ -47,6 +47,7 @@ export const meetings = mysqlTable("meetings", {
   id: int("id").autoincrement().primaryKey(),
   
   // Metadata
+  meetingTitle: varchar("meetingTitle", { length: 500 }),
   meetingDate: timestamp("meetingDate").notNull(),
   primaryLead: varchar("primaryLead", { length: 255 }).notNull(),
   participants: text("participants").notNull(), // JSON array of participant names

@@ -1,0 +1,1 @@
+ALTER TABLE `meetings` ADD `meetingTitle` varchar(500);

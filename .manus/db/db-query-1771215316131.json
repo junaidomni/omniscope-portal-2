@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, meetingTitle, LEFT(executiveSummary, 60) as summary FROM meetings ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, meetingTitle, LEFT(executiveSummary, 60) as summary FROM meetings ORDER BY id",
+  "rows": [
+    {
+      "id": "30012",
+      "meetingTitle": "JD x Noah",
+      "summary": "This meeting explored a potential partnership to develop a $"
+    },
+    {
+      "id": "30013",
+      "meetingTitle": "Pakistan x Comet Cash x OmniScope",
+      "summary": "OmniScope and Comet Cash are pursuing a dual-track strategy "
+    },
+    {
+      "id": "30014",
+      "meetingTitle": "Intro Meeting",
+      "summary": "This introductory meeting explored a potential large-scale O"
+    },
+    {
+      "id": "30015",
+      "meetingTitle": "Apparel Discussion : : Hoodies",
+      "summary": "OmniScope is exploring a strategic partnership with a Pakist"
+    },
+    {
+      "id": "30016",
+      "meetingTitle": "Little Miracles Website Meeting ",
+      "summary": "The meeting focused on defining the design and development p"
+    },
+    {
+      "id": "30017",
+      "meetingTitle": "Little Miracles - Web Design",
+      "summary": "This meeting focused on critical resource allocation and pro"
+    },
+    {
+      "id": "30018",
+      "meetingTitle": "Steven X Raj ",
+      "summary": "This meeting facilitated an initial introduction between Omn"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tmeetingTitle\tsummary\n30012\tJD x Noah\tThis meeting explored a potential partnership to develop a $\n30013\tPakistan x Comet Cash x OmniScope\tOmniScope and Comet Cash are pursuing a dual-track strategy \n30014\tIntro Meeting\tThis introductory meeting explored a potential large-scale O\n30015\tApparel Discussion : : Hoodies\tOmniScope is exploring a strategic partnership with a Pakist\n30016\tLittle Miracles Website Meeting \tThe meeting focused on defining the design and development p\n30017\tLittle Miracles - Web Design\tThis meeting focused on critical resource allocation and pro\n30018\tSteven X Raj \tThis meeting facilitated an initial introduction between Omn\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

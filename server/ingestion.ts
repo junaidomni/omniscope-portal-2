@@ -7,6 +7,7 @@ import { generateAndUploadBrandedReport } from "./brandedReportGenerator";
  */
 export const IntelligenceDataSchema = z.object({
   // Metadata
+  meetingTitle: z.string().optional(),
   meetingDate: z.string(),
   primaryLead: z.string().optional(),
   primarylead: z.string().optional(),
@@ -89,6 +90,7 @@ export async function processIntelligenceData(rawData: IntelligenceData, created
 
   // Create the meeting
   const meetingId = await db.createMeeting({
+    meetingTitle: (rawData as any).meetingTitle || null,
     meetingDate: new Date(data.meetingDate),
     primaryLead: data.primaryLead,
     participants: JSON.stringify(data.participants),

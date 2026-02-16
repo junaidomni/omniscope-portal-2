@@ -38,9 +38,6 @@ export default function MeetingDetail() {
     { enabled: isAuthenticated && !!id }
   );
 
-  // Generate recap for download
-  const generateRecapMutation = trpc.recap.generate.useMutation();
-
   // Delete meeting
   const deleteMutation = trpc.meetings.delete.useMutation({
     onSuccess: () => {
@@ -50,30 +47,29 @@ export default function MeetingDetail() {
     onError: () => toast.error('Failed to delete meeting'),
   });
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const handleDownloadReport = async () => {
     if (!meeting) return;
-
-    // If branded report URL exists, open it directly
-    if (meeting.brandedReportUrl) {
-      window.open(meeting.brandedReportUrl, '_blank');
-      return;
-    }
-
-    // Otherwise generate and download HTML recap
+    setIsDownloading(true);
     try {
-      const recap = await generateRecapMutation.mutateAsync({ meetingId: meeting.id });
-      const blob = new Blob([recap.htmlBody], { type: 'text/html' });
+      // Download branded PDF from server
+      const response = await fetch(`/api/meeting/${meeting.id}/pdf`);
+      if (!response.ok) throw new Error('Failed to generate PDF');
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `omniscope-report-${meeting.id}.html`;
+      a.download = `omniscope-report-${meeting.id}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success('Report downloaded');
+      toast.success('PDF report downloaded');
     } catch {
-      toast.error('Failed to generate report');
+      toast.error('Failed to generate PDF report');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -119,7 +115,7 @@ export default function MeetingDetail() {
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
-  const reportTitle = organizations.length > 0 ? organizations.join(', ') : 'Meeting Report';
+  const displayTitle = meeting.meetingTitle || (organizations.length > 0 ? organizations.join(', ') : 'Meeting Report');
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -146,7 +142,10 @@ export default function MeetingDetail() {
 
         {/* Report Title & Meta */}
         <div className="px-8 py-8">
-          <h1 className="text-3xl font-bold text-white mb-4">{reportTitle}</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">{displayTitle}</h1>
+          {participants.length > 0 && (
+            <p className="text-sm text-yellow-600/80 mb-4">{participants.join(', ')}</p>
+          )}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-zinc-400">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-yellow-600" />
@@ -170,15 +169,15 @@ export default function MeetingDetail() {
         <div className="px-8 pb-6 flex items-center gap-3">
           <Button
             onClick={handleDownloadReport}
-            disabled={generateRecapMutation.isPending}
+            disabled={isDownloading}
             className="bg-yellow-600 hover:bg-yellow-500 text-black font-medium"
           >
-            {generateRecapMutation.isPending ? (
+            {isDownloading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            Download Report
+            Download PDF
           </Button>
           <Button
             onClick={() => setSendRecapOpen(true)}
@@ -447,7 +446,7 @@ export default function MeetingDetail() {
         open={sendRecapOpen}
         onOpenChange={setSendRecapOpen}
         meetingId={meeting.id}
-        meetingTitle={reportTitle}
+        meetingTitle={displayTitle}
       />
     </div>
   );

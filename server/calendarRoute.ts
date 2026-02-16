@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getDb } from "./db";
+import { getDb } from "./db";  // getDb is exported from db.ts
 import { calendarEvents } from "../drizzle/schema";
 import { and, gte, lte, asc, like, sql } from "drizzle-orm";
 

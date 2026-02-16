@@ -1,8 +1,35 @@
 import { Router } from "express";
 import { validateIntelligenceData, processIntelligenceData } from "./ingestion";
 import { isFathomWebhookPayload, processFathomWebhook } from "./fathomIntegration";
+import { generateMeetingPDF } from "./pdfGenerator";
 
 export const webhookRouter = Router();
+
+/**
+ * PDF download endpoint for meeting reports
+ * GET /api/meeting/:id/pdf
+ */
+webhookRouter.get("/meeting/:id/pdf", async (req, res) => {
+  try {
+    const meetingId = parseInt(req.params.id);
+    if (isNaN(meetingId)) {
+      return res.status(400).json({ error: "Invalid meeting ID" });
+    }
+
+    const pdfBuffer = await generateMeetingPDF(meetingId);
+    
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="omniscope-report-${meetingId}.pdf"`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    return res.send(pdfBuffer);
+  } catch (error) {
+    console.error("[PDF] Error generating PDF:", error);
+    if (error instanceof Error && error.message === "Meeting not found") {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+    return res.status(500).json({ error: "Failed to generate PDF" });
+  }
+});
 
 /**
  * Webhook endpoint for Plaud integration (legacy)

@@ -327,6 +327,7 @@ export async function processFathomWebhook(payload: FathomWebhookPayload): Promi
 
   // Build the intelligence data object
   const intelligenceData: IntelligenceData = {
+    meetingTitle: title !== "Untitled Meeting" ? title : undefined,
     meetingDate,
     primaryLead,
     participants,

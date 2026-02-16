@@ -82,11 +82,13 @@ function RecentMeetings() {
     if (!searchTerm) return meetings;
     const lower = searchTerm.toLowerCase();
     return meetings.filter(m => {
-      const participants = JSON.parse(m.participants || '[]').join(' ').toLowerCase();
-      const orgs = JSON.parse(m.organizations || '[]').join(' ').toLowerCase();
+      const participants = (() => { try { return JSON.parse(m.participants || '[]'); } catch { return []; } })();
+      const orgs = (() => { try { return JSON.parse(m.organizations || '[]'); } catch { return []; } })();
+      const title = m.meetingTitle || '';
       return (
-        participants.includes(lower) ||
-        orgs.includes(lower) ||
+        title.toLowerCase().includes(lower) ||
+        participants.join(' ').toLowerCase().includes(lower) ||
+        orgs.join(' ').toLowerCase().includes(lower) ||
         m.executiveSummary?.toLowerCase().includes(lower) ||
         m.primaryLead?.toLowerCase().includes(lower)
       );
@@ -140,7 +142,7 @@ function RecentMeetings() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
         <Input
-          placeholder="Search meetings by name, org, or keyword..."
+          placeholder="Search meetings by title, name, org, or keyword..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600"
@@ -179,9 +181,12 @@ function RecentMeetings() {
 }
 
 function MeetingRow({ meeting, onDelete }: { meeting: any; onDelete: () => void }) {
-  const participants = JSON.parse(meeting.participants || '[]');
-  const organizations = JSON.parse(meeting.organizations || '[]');
+  const participants = (() => { try { return JSON.parse(meeting.participants || '[]'); } catch { return []; } })();
+  const organizations = (() => { try { return JSON.parse(meeting.organizations || '[]'); } catch { return []; } })();
   const tags = trpc.meetings.getTags.useQuery({ meetingId: meeting.id });
+
+  // Meeting title: use meetingTitle field, fallback to generating from participants
+  const displayTitle = meeting.meetingTitle || participants.join(', ') || 'Untitled Meeting';
 
   return (
     <div className="group flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/60 hover:border-yellow-600/30 transition-all">
@@ -204,9 +209,15 @@ function MeetingRow({ meeting, onDelete }: { meeting: any; onDelete: () => void 
       <Link href={`/meeting/${meeting.id}`} className="flex-1 min-w-0 cursor-pointer">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-white truncate">
-              {participants.join(', ') || 'Unknown Participants'}
+            {/* Meeting Title as primary heading */}
+            <p className="text-sm font-semibold text-white truncate">
+              {displayTitle}
             </p>
+            {/* Participants below the title */}
+            <p className="text-xs text-yellow-600/80 mt-0.5 truncate">
+              {participants.join(', ')}
+            </p>
+            {/* Summary */}
             <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">
               {meeting.executiveSummary}
             </p>
@@ -268,82 +279,81 @@ function MeetingsCalendar() {
     return map;
   }, [meetings]);
 
-  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-  const firstDayOfWeek = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-
-  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-
   const selectedMeetings = selectedDate ? (meetingsByDate[selectedDate] || []) : [];
+
+  // Calendar grid
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+
+  const calendarDays = [];
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    calendarDays.push(dateStr);
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Calendar Grid */}
       <div className="lg:col-span-2">
-        <Card className="bg-zinc-900/50 border-zinc-800">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={prevMonth} className="text-zinc-400 hover:text-white">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <CardTitle className="text-lg text-white">
-                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={nextMonth} className="text-zinc-400 hover:text-white">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Day headers */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <div key={d} className="text-center text-xs font-medium text-zinc-500 py-2">{d}</div>
-              ))}
-            </div>
-            {/* Calendar cells */}
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square" />
-              ))}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const day = i + 1;
-                const dateKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const dayMeetings = meetingsByDate[dateKey] || [];
-                const isSelected = selectedDate === dateKey;
-                const isToday = dateKey === new Date().toISOString().split('T')[0];
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="text-zinc-400 hover:text-white">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h3 className="text-lg font-semibold text-white">
+            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </h3>
+          <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="text-zinc-400 hover:text-white">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
 
-                return (
-                  <button
-                    key={day}
-                    onClick={() => setSelectedDate(isSelected ? null : dateKey)}
-                    className={`aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all text-sm
-                      ${isSelected ? 'bg-yellow-600/20 border border-yellow-600/50 text-yellow-500' :
-                        isToday ? 'bg-zinc-800 text-white border border-zinc-700' :
-                        dayMeetings.length > 0 ? 'bg-zinc-800/50 text-white hover:bg-zinc-800' :
-                        'text-zinc-500 hover:bg-zinc-800/30'}
-                    `}
-                  >
-                    <span className="font-medium">{day}</span>
-                    {dayMeetings.length > 0 && (
-                      <div className="flex gap-0.5 mt-0.5">
-                        {dayMeetings.slice(0, 3).map((_, idx) => (
-                          <div key={idx} className="h-1 w-1 rounded-full bg-yellow-500" />
-                        ))}
-                        {dayMeetings.length > 3 && (
-                          <span className="text-[8px] text-yellow-500 ml-0.5">+{dayMeetings.length - 3}</span>
-                        )}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Day headers */}
+        <div className="grid grid-cols-7 gap-1 mb-1">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+            <div key={d} className="text-center text-xs text-zinc-600 font-medium py-2">{d}</div>
+          ))}
+        </div>
+
+        {/* Calendar cells */}
+        <div className="grid grid-cols-7 gap-1">
+          {calendarDays.map((dateStr, i) => {
+            if (!dateStr) return <div key={`empty-${i}`} className="h-14" />;
+            const dayNum = parseInt(dateStr.split('-')[2]);
+            const hasMeetings = meetingsByDate[dateStr]?.length > 0;
+            const isToday = dateStr === today;
+            const isSelected = dateStr === selectedDate;
+
+            return (
+              <button
+                key={dateStr}
+                onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+                className={`h-14 rounded-lg flex flex-col items-center justify-center transition-all relative
+                  ${isSelected ? 'bg-yellow-600/20 border border-yellow-600/40' :
+                    isToday ? 'bg-zinc-800 border border-zinc-700' :
+                    'hover:bg-zinc-800/50 border border-transparent'}
+                `}
+              >
+                <span className={`text-sm ${isToday ? 'text-yellow-500 font-bold' : isSelected ? 'text-white font-medium' : 'text-zinc-400'}`}>
+                  {dayNum}
+                </span>
+                {hasMeetings && (
+                  <div className="flex gap-0.5 mt-1">
+                    {meetingsByDate[dateStr].slice(0, 3).map((_, idx) => (
+                      <span key={idx} className="h-1 w-1 rounded-full bg-yellow-600" />
+                    ))}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Selected Date Meetings */}
+      {/* Selected Date Detail */}
       <div>
         <Card className="bg-zinc-900/50 border-zinc-800 sticky top-6">
           <CardHeader className="pb-3">
@@ -361,11 +371,13 @@ function MeetingsCalendar() {
             ) : (
               <div className="space-y-3">
                 {selectedMeetings.map((m: any) => {
-                  const participants = JSON.parse(m.participants || '[]');
+                  const participants = (() => { try { return JSON.parse(m.participants || '[]'); } catch { return []; } })();
+                  const displayTitle = m.meetingTitle || participants.join(', ') || 'Untitled Meeting';
                   return (
                     <Link key={m.id} href={`/meeting/${m.id}`}>
                       <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-800 hover:border-yellow-600/30 cursor-pointer transition-all">
-                        <p className="text-sm font-medium text-white">{participants.join(', ')}</p>
+                        <p className="text-sm font-medium text-white">{displayTitle}</p>
+                        <p className="text-xs text-yellow-600/70 mt-0.5">{participants.join(', ')}</p>
                         <p className="text-xs text-zinc-500 mt-1">
                           {new Date(m.meetingDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                           {' · '}{m.sourceType}
@@ -392,61 +404,65 @@ function PeopleDirectory() {
   const { data: contacts, isLoading: contactsLoading } = trpc.contacts.list.useQuery();
   const { data: meetings, isLoading: meetingsLoading } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedContact, setSelectedContact] = useState<number | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
 
   const isLoading = contactsLoading || meetingsLoading;
 
-  // Build a people list from meetings (since contacts table may be empty initially)
+  // Build a unified people list from meeting participants
   const people = useMemo(() => {
-    if (contacts && contacts.length > 0) {
-      // Enrich contacts with meeting counts
-      return contacts.map(c => {
-        const meetingCount = meetings?.filter(m => {
-          const participants = JSON.parse(m.participants || '[]') as string[];
-          return participants.some(p => p.toLowerCase() === c.name.toLowerCase());
-        }).length || 0;
-        return { ...c, meetingCount };
-      }).sort((a, b) => b.meetingCount - a.meetingCount);
-    }
-    // Fallback: extract from meeting participants
     if (!meetings) return [];
-    const nameMap = new Map<string, { name: string; orgs: Set<string>; meetingCount: number; lastMeeting: string }>();
+    const nameMap = new Map<string, {
+      name: string;
+      orgs: Set<string>;
+      emails: Set<string>;
+      meetingCount: number;
+      lastMeeting: string;
+      meetingIds: number[];
+    }>();
+
     for (const m of meetings) {
-      const participants = JSON.parse(m.participants || '[]') as string[];
-      const orgs = JSON.parse(m.organizations || '[]') as string[];
+      const participants = (() => { try { return JSON.parse(m.participants || '[]') as string[]; } catch { return []; } })();
+      const orgs = (() => { try { return JSON.parse(m.organizations || '[]') as string[]; } catch { return []; } })();
+
       for (const p of participants) {
         const trimmed = p.trim();
         if (!trimmed) continue;
-        const existing = nameMap.get(trimmed);
+        const key = trimmed.toLowerCase();
+        const existing = nameMap.get(key);
         if (existing) {
           existing.meetingCount++;
           orgs.forEach(o => existing.orgs.add(o));
+          existing.meetingIds.push(m.id);
           if (new Date(m.meetingDate) > new Date(existing.lastMeeting)) {
             existing.lastMeeting = m.meetingDate as any;
           }
         } else {
-          nameMap.set(trimmed, {
+          nameMap.set(key, {
             name: trimmed,
             orgs: new Set(orgs),
+            emails: new Set(),
             meetingCount: 1,
             lastMeeting: m.meetingDate as any,
+            meetingIds: [m.id],
           });
         }
       }
     }
+
+    // Enrich with contact data if available
+    if (contacts) {
+      for (const c of contacts) {
+        const key = c.name.toLowerCase();
+        const existing = nameMap.get(key);
+        if (existing) {
+          if (c.email) existing.emails.add(c.email);
+          if (c.organization) existing.orgs.add(c.organization);
+        }
+      }
+    }
+
     return Array.from(nameMap.values())
-      .sort((a, b) => b.meetingCount - a.meetingCount)
-      .map((p, idx) => ({
-        id: idx + 1,
-        name: p.name,
-        organization: Array.from(p.orgs).join(', ') || null,
-        email: null as string | null,
-        phone: null as string | null,
-        title: null as string | null,
-        notes: null as string | null,
-        meetingCount: p.meetingCount,
-        lastMeeting: p.lastMeeting,
-      }));
+      .sort((a, b) => b.meetingCount - a.meetingCount);
   }, [contacts, meetings]);
 
   const filteredPeople = useMemo(() => {
@@ -454,23 +470,21 @@ function PeopleDirectory() {
     const lower = searchTerm.toLowerCase();
     return people.filter(p =>
       p.name.toLowerCase().includes(lower) ||
-      (p.organization && p.organization.toLowerCase().includes(lower)) ||
-      (p.email && p.email.toLowerCase().includes(lower))
+      Array.from(p.orgs).join(' ').toLowerCase().includes(lower) ||
+      Array.from(p.emails).join(' ').toLowerCase().includes(lower)
     );
   }, [people, searchTerm]);
 
-  // Get meetings for selected contact
-  const contactMeetings = useMemo(() => {
-    if (selectedContact === null || !meetings || !people) return [];
-    const person = people.find(p => p.id === selectedContact);
-    if (!person) return [];
+  // Get meetings for selected person
+  const personMeetings = useMemo(() => {
+    if (!selectedPerson || !meetings) return [];
     return meetings.filter(m => {
-      const participants = JSON.parse(m.participants || '[]') as string[];
-      return participants.some(p => p.toLowerCase() === person.name.toLowerCase());
-    });
-  }, [selectedContact, meetings, people]);
+      const participants = (() => { try { return JSON.parse(m.participants || '[]') as string[]; } catch { return []; } })();
+      return participants.some(p => p.toLowerCase() === selectedPerson.toLowerCase());
+    }).sort((a, b) => new Date(b.meetingDate).getTime() - new Date(a.meetingDate).getTime());
+  }, [selectedPerson, meetings]);
 
-  const selectedPerson = people.find(p => p.id === selectedContact);
+  const selectedPersonData = people.find(p => p.name.toLowerCase() === selectedPerson?.toLowerCase());
 
   if (isLoading) {
     return (
@@ -507,10 +521,12 @@ function PeopleDirectory() {
           <div className="space-y-1">
             {filteredPeople.map(person => (
               <button
-                key={person.id}
-                onClick={() => setSelectedContact(selectedContact === person.id ? null : person.id)}
+                key={person.name}
+                onClick={() => setSelectedPerson(
+                  selectedPerson?.toLowerCase() === person.name.toLowerCase() ? null : person.name
+                )}
                 className={`w-full flex items-center gap-4 p-3 rounded-lg transition-all text-left
-                  ${selectedContact === person.id
+                  ${selectedPerson?.toLowerCase() === person.name.toLowerCase()
                     ? 'bg-yellow-600/10 border border-yellow-600/30'
                     : 'bg-zinc-900/30 border border-transparent hover:bg-zinc-800/50 hover:border-zinc-800'}
                 `}
@@ -525,8 +541,8 @@ function PeopleDirectory() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{person.name}</p>
-                  {person.organization && (
-                    <p className="text-xs text-zinc-500 truncate">{person.organization}</p>
+                  {person.orgs.size > 0 && (
+                    <p className="text-xs text-zinc-500 truncate">{Array.from(person.orgs).join(', ')}</p>
                   )}
                 </div>
 
@@ -535,8 +551,8 @@ function PeopleDirectory() {
                   <p className="text-xs text-zinc-500">
                     {person.meetingCount} meeting{person.meetingCount !== 1 ? 's' : ''}
                   </p>
-                  {person.email && (
-                    <p className="text-xs text-zinc-600 truncate max-w-32">{person.email}</p>
+                  {person.emails.size > 0 && (
+                    <p className="text-xs text-zinc-600 truncate max-w-32">{Array.from(person.emails)[0]}</p>
                   )}
                 </div>
               </button>
@@ -550,75 +566,64 @@ function PeopleDirectory() {
         <Card className="bg-zinc-900/50 border-zinc-800 sticky top-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-base text-white">
-              {selectedPerson ? selectedPerson.name : 'Select a person'}
+              {selectedPersonData ? selectedPersonData.name : 'Select a person'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {!selectedPerson ? (
+            {!selectedPersonData ? (
               <p className="text-sm text-zinc-500">Click a name to see their profile and meeting history</p>
             ) : (
               <div className="space-y-4">
                 {/* Contact Info */}
                 <div className="space-y-2">
-                  {selectedPerson.organization && (
+                  {selectedPersonData.orgs.size > 0 && (
                     <div className="flex items-center gap-2 text-sm text-zinc-400">
                       <Building2 className="h-4 w-4 text-zinc-600" />
-                      <span>{selectedPerson.organization}</span>
+                      <span>{Array.from(selectedPersonData.orgs).join(', ')}</span>
                     </div>
                   )}
-                  {selectedPerson.title && (
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
-                      <Briefcase className="h-4 w-4 text-zinc-600" />
-                      <span>{selectedPerson.title}</span>
-                    </div>
-                  )}
-                  {selectedPerson.email && (
+                  {selectedPersonData.emails.size > 0 && (
                     <div className="flex items-center gap-2 text-sm text-zinc-400">
                       <Mail className="h-4 w-4 text-zinc-600" />
-                      <a href={`mailto:${selectedPerson.email}`} className="hover:text-yellow-500 transition-colors">
-                        {selectedPerson.email}
-                      </a>
+                      {Array.from(selectedPersonData.emails).map(email => (
+                        <a key={email} href={`mailto:${email}`} className="hover:text-yellow-500 transition-colors">
+                          {email}
+                        </a>
+                      ))}
                     </div>
                   )}
-                  {selectedPerson.phone && (
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
-                      <Phone className="h-4 w-4 text-zinc-600" />
-                      <span>{selectedPerson.phone}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Calendar className="h-4 w-4 text-zinc-600" />
+                    <span>Last seen: {new Date(selectedPersonData.lastMeeting).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
                 </div>
-
-                {selectedPerson.notes && (
-                  <>
-                    <Separator className="bg-zinc-800" />
-                    <div>
-                      <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Summary</h4>
-                      <p className="text-sm text-zinc-400 leading-relaxed">{selectedPerson.notes}</p>
-                    </div>
-                  </>
-                )}
 
                 <Separator className="bg-zinc-800" />
 
                 {/* Meetings with this person */}
                 <div>
                   <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-                    Meetings ({contactMeetings.length})
+                    Meetings ({personMeetings.length})
                   </h4>
-                  {contactMeetings.length === 0 ? (
+                  {personMeetings.length === 0 ? (
                     <p className="text-sm text-zinc-600">No meetings found</p>
                   ) : (
-                    <div className="space-y-2 max-h-80 overflow-y-auto">
-                      {contactMeetings.map(m => (
-                        <Link key={m.id} href={`/meeting/${m.id}`}>
-                          <div className="p-2.5 rounded-lg bg-zinc-800/50 border border-zinc-800 hover:border-yellow-600/30 cursor-pointer transition-all">
-                            <p className="text-xs text-zinc-500">
-                              {new Date(m.meetingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                            <p className="text-sm text-zinc-300 line-clamp-2 mt-0.5">{m.executiveSummary}</p>
-                          </div>
-                        </Link>
-                      ))}
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {personMeetings.map(m => {
+                        const participants = (() => { try { return JSON.parse(m.participants || '[]'); } catch { return []; } })();
+                        const displayTitle = m.meetingTitle || participants.join(', ') || 'Untitled Meeting';
+                        return (
+                          <Link key={m.id} href={`/meeting/${m.id}`}>
+                            <div className="p-2.5 rounded-lg bg-zinc-800/50 border border-zinc-800 hover:border-yellow-600/30 cursor-pointer transition-all">
+                              <p className="text-sm font-medium text-white truncate">{displayTitle}</p>
+                              <p className="text-xs text-zinc-500 mt-0.5">
+                                {new Date(m.meetingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                              <p className="text-xs text-zinc-400 line-clamp-2 mt-0.5">{m.executiveSummary}</p>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

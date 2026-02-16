@@ -289,6 +289,7 @@ export async function searchMeetings(searchTerm: string, limit = 50) {
     .from(meetings)
     .where(
       or(
+        like(meetings.meetingTitle, searchPattern),
         like(meetings.executiveSummary, searchPattern),
         like(meetings.fullTranscript, searchPattern),
         like(meetings.strategicHighlights, searchPattern),

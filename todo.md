@@ -298,3 +298,15 @@
 - [x] Delete orphaned test tasks
 - [x] Write comprehensive overhaul tests (12 new tests)
 - [x] All 73 tests passing
+
+
+## Meeting Title & UX Fixes
+- [x] Add meetingTitle field to schema and push migration
+- [x] Show meeting name as main title instead of participant names
+- [x] Update Fathom ingestion to set meetingTitle from Fathom meeting title
+- [x] Show format: Meeting Name → People on call → Summary
+- [x] Fix People filter in Meetings tab (clicking name filters meetings by participant)
+- [x] Add search engine to Meetings tab (searches title, participants, summary)
+- [x] Build proper PDF export with OmniScope branding (jsPDF server-side)
+- [x] PDF includes: branded header, executive summary, highlights, opportunities, risks, key quotes, action items, jurisdictions
+- [x] PDF endpoint at /api/meeting/:id/pdf
