@@ -301,6 +301,9 @@ const contactsRouter = router({
       starred: z.boolean().optional(),
       rating: z.number().min(1).max(5).nullable().optional(),
       photoUrl: z.string().nullable().optional(),
+      companyId: z.number().nullable().optional(),
+      tags: z.string().nullable().optional(),
+      source: z.string().nullable().optional(),
     }))
     .mutation(async ({ input }) => {
       const { id, ...updates } = input;

@@ -210,18 +210,18 @@ export async function processIntelligenceData(rawData: IntelligenceData, created
       const isInternal = internalNames.some(n => participantName.toLowerCase().includes(n));
       
       // Get or create contact with dedup
-      const contactId = await db.getOrCreateContact(
+      const contactRecord = await db.getOrCreateContact(
         participantName,
         participantEmails[i] || null
       );
       
-      if (contactId) {
+      if (contactRecord) {
+        const contactId = contactRecord.id;
         // Link contact to meeting (dedup check inside)
         await db.linkContactToMeeting(meetingId, contactId);
         
         // Update source if not set
-        const contact = await db.getContactById(contactId);
-        if (contact && !contact.source) {
+        if (!contactRecord.source) {
           await db.updateContact(contactId, { source: data.sourceType || "fathom" });
         }
         
@@ -238,7 +238,7 @@ export async function processIntelligenceData(rawData: IntelligenceData, created
             type: "meeting",
             timestamp: new Date(data.meetingDate),
             contactId,
-            companyId: contact?.companyId ?? null,
+            companyId: contactRecord.companyId ?? null,
             sourceRecordId: meetingId,
             sourceType: "meeting",
             summary: data.executiveSummary?.substring(0, 500) || `Meeting: ${data.meetingTitle || "Untitled"}`,
@@ -253,13 +253,13 @@ export async function processIntelligenceData(rawData: IntelligenceData, created
         }
         
         // Try to auto-link company from organization
-        if (!isInternal && contact && !contact.companyId && data.organizations && data.organizations.length > 0) {
+        if (!isInternal && !contactRecord.companyId && data.organizations && data.organizations.length > 0) {
           for (const orgName of data.organizations) {
             if (!orgName) continue;
             let company = await db.getCompanyByName(orgName);
             if (!company) {
-              const companyId = await db.createCompany({ name: orgName, status: "active" });
-              company = await db.getCompanyById(companyId);
+              const newCompanyId = await db.createCompany({ name: orgName, status: "active" });
+              company = await db.getCompanyById(newCompanyId);
             }
             if (company) {
               await db.updateContact(contactId, { companyId: company.id, organization: orgName });

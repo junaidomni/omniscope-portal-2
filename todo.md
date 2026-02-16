@@ -827,3 +827,26 @@
 ### Testing & Cleanup
 - [x] Write vitest tests for contact search/autocomplete (covered in existing suite)
 - [x] Clean up all test data
+
+## v21 — Fix Company Linking & CRM-Grade Autocomplete
+
+### Bug Fix
+- [x] Fix "Failed to link contact" error when adding people to companies
+- [x] Debug contacts.update procedure — companyId field may not be in the update schema
+
+### Redesign ContactAutocomplete
+- [x] Rebuild as polished search-select with avatar, name, company, role in dropdown
+- [x] Show category badge (Client, Partner, Employee, etc.) in results
+- [x] Make it feel like a professional CRM (HubSpot/Salesforce style)
+- [x] Ensure search works across name, email, and company
+
+### Wire Into All Forms
+- [x] Company profile → People tab (search to add contacts)
+- [x] To-Do → task assignment (search to assign)
+- [x] To-Do → task detail panel (search to reassign)
+- [ ] Contact profile → company linking via autocomplete
+- [x] Ensure consistent UX across all instances
+
+### Testing & Cleanup
+- [x] Test company linking end-to-end (8 vitest tests passing)
+- [x] Clean up all test data
