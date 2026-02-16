@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   Users, Search, Building2, Mail, Phone, ChevronRight,
-  RefreshCw, Plus, UserPlus, MessageSquare, Star, StarOff,
-  Filter, Loader2
+  RefreshCw, Plus, UserPlus, MessageSquare, Star,
+  Loader2, TrendingUp, Calendar, Crown, ArrowUpRight
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useMemo } from "react";
@@ -27,6 +27,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   other: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  client: "Client",
+  prospect: "Prospect",
+  partner: "Partner",
+  vendor: "Vendor",
+  other: "Other",
+};
+
 function formatRelative(d: string | Date | null) {
   if (!d) return "";
   const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
@@ -35,6 +43,20 @@ function formatRelative(d: string | Date | null) {
   if (days < 7) return `${days}d ago`;
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
   return `${Math.floor(days / 30)}mo ago`;
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.charAt(0).toUpperCase();
+}
+
+// Engagement health color based on days since last meeting
+function getEngagementColor(days: number | null) {
+  if (days === null) return { bg: "bg-zinc-500/10", text: "text-zinc-500", dot: "bg-zinc-500" };
+  if (days <= 7) return { bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-500" };
+  if (days <= 14) return { bg: "bg-yellow-500/10", text: "text-yellow-400", dot: "bg-yellow-500" };
+  return { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-500" };
 }
 
 export default function Contacts() {
@@ -82,21 +104,46 @@ export default function Contacts() {
     try { await syncMutation.mutateAsync(); } finally { setSyncing(false); }
   };
 
+  // Stats
+  const stats = useMemo(() => {
+    if (!contacts) return { total: 0, starred: 0, clients: 0, prospects: 0, partners: 0, vendors: 0, totalMeetings: 0 };
+    return {
+      total: contacts.length,
+      starred: contacts.filter((c: any) => c.starred).length,
+      clients: contacts.filter((c: any) => c.category === "client").length,
+      prospects: contacts.filter((c: any) => c.category === "prospect").length,
+      partners: contacts.filter((c: any) => c.category === "partner").length,
+      vendors: contacts.filter((c: any) => c.category === "vendor").length,
+      totalMeetings: contacts.reduce((sum: number, c: any) => sum + (c.meetingCount || 0), 0),
+    };
+  }, [contacts]);
+
+  // Top 10 most engaged contacts (by meeting count, then most recent)
+  const top10 = useMemo(() => {
+    if (!contacts) return [];
+    return [...contacts]
+      .filter((c: any) => c.meetingCount > 0)
+      .sort((a: any, b: any) => {
+        if (b.meetingCount !== a.meetingCount) return b.meetingCount - a.meetingCount;
+        const aDate = a.lastMeetingDate ? new Date(a.lastMeetingDate).getTime() : 0;
+        const bDate = b.lastMeetingDate ? new Date(b.lastMeetingDate).getTime() : 0;
+        return bDate - aDate;
+      })
+      .slice(0, 10);
+  }, [contacts]);
+
+  // Starred contacts
+  const starredContacts = useMemo(() => {
+    if (!contacts) return [];
+    return contacts.filter((c: any) => c.starred);
+  }, [contacts]);
+
+  // Filtered list for the full directory
   const filtered = useMemo(() => {
     if (!contacts) return [];
     let list = [...contacts];
-    
-    // Category filter
-    if (categoryFilter !== "all") {
-      list = list.filter((c: any) => c.category === categoryFilter);
-    }
-    
-    // Starred filter
-    if (showStarredOnly) {
-      list = list.filter((c: any) => c.starred);
-    }
-    
-    // Search
+    if (categoryFilter !== "all") list = list.filter((c: any) => c.category === categoryFilter);
+    if (showStarredOnly) list = list.filter((c: any) => c.starred);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((c: any) =>
@@ -106,55 +153,41 @@ export default function Contacts() {
         c.title?.toLowerCase().includes(q)
       );
     }
-    
-    // Sort: starred first, then by name
     list.sort((a: any, b: any) => {
       if (a.starred && !b.starred) return -1;
       if (!a.starred && b.starred) return 1;
-      return (a.name || "").localeCompare(b.name || "");
+      return (b.meetingCount || 0) - (a.meetingCount || 0);
     });
-    
     return list;
   }, [contacts, searchQuery, categoryFilter, showStarredOnly]);
 
-  const stats = useMemo(() => {
-    if (!contacts) return { total: 0, starred: 0, clients: 0, prospects: 0 };
-    return {
-      total: contacts.length,
-      starred: contacts.filter((c: any) => c.starred).length,
-      clients: contacts.filter((c: any) => c.category === "client").length,
-      prospects: contacts.filter((c: any) => c.category === "prospect").length,
-    };
-  }, [contacts]);
-
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between mb-6">
-          <Skeleton className="h-8 w-48 bg-zinc-800/50" />
-          <Skeleton className="h-10 w-64 bg-zinc-800/50 rounded-lg" />
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="bg-zinc-900/50 border-zinc-800">
+              <CardContent className="pt-5 pb-4">
+                <Skeleton className="h-4 w-20 bg-zinc-800 mb-3" />
+                <Skeleton className="h-8 w-16 bg-zinc-800" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        {[1, 2, 3, 4, 5].map(i => (
-          <Skeleton key={i} className="h-20 bg-zinc-800/50 rounded-xl" />
-        ))}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-40 bg-zinc-800/50 rounded-xl" />)}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black p-6">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="h-10 w-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-              <Users className="h-5 w-5 text-yellow-500" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">Client Contacts</h1>
-          </div>
-          <p className="text-zinc-400 text-sm">
-            {stats.total} contacts — {stats.starred} starred — {stats.clients} clients — {stats.prospects} prospects
-          </p>
+          <h1 className="text-2xl font-bold text-white">Client Contacts</h1>
+          <p className="text-sm text-zinc-500 mt-1">Relationship intelligence across all verticals</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -184,59 +217,37 @@ export default function Contacts() {
               <div className="space-y-3 py-2">
                 <div>
                   <Label className="text-zinc-400 text-xs">Name *</Label>
-                  <Input
-                    value={newContact.name}
-                    onChange={(e) => setNewContact(p => ({ ...p, name: e.target.value }))}
-                    className="bg-zinc-800 border-zinc-700 text-white mt-1"
-                    placeholder="Full name"
-                  />
+                  <Input value={newContact.name} onChange={(e) => setNewContact(p => ({ ...p, name: e.target.value }))}
+                    className="bg-zinc-800 border-zinc-700 text-white mt-1" placeholder="Full name" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-zinc-400 text-xs">Email</Label>
-                    <Input
-                      value={newContact.email}
-                      onChange={(e) => setNewContact(p => ({ ...p, email: e.target.value }))}
-                      className="bg-zinc-800 border-zinc-700 text-white mt-1"
-                      placeholder="email@example.com"
-                    />
+                    <Input value={newContact.email} onChange={(e) => setNewContact(p => ({ ...p, email: e.target.value }))}
+                      className="bg-zinc-800 border-zinc-700 text-white mt-1" placeholder="email@example.com" />
                   </div>
                   <div>
                     <Label className="text-zinc-400 text-xs">Phone</Label>
-                    <Input
-                      value={newContact.phone}
-                      onChange={(e) => setNewContact(p => ({ ...p, phone: e.target.value }))}
-                      className="bg-zinc-800 border-zinc-700 text-white mt-1"
-                      placeholder="+1 (555) 000-0000"
-                    />
+                    <Input value={newContact.phone} onChange={(e) => setNewContact(p => ({ ...p, phone: e.target.value }))}
+                      className="bg-zinc-800 border-zinc-700 text-white mt-1" placeholder="+1 (555) 000-0000" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-zinc-400 text-xs">Organization</Label>
-                    <Input
-                      value={newContact.organization}
-                      onChange={(e) => setNewContact(p => ({ ...p, organization: e.target.value }))}
-                      className="bg-zinc-800 border-zinc-700 text-white mt-1"
-                      placeholder="Company name"
-                    />
+                    <Input value={newContact.organization} onChange={(e) => setNewContact(p => ({ ...p, organization: e.target.value }))}
+                      className="bg-zinc-800 border-zinc-700 text-white mt-1" placeholder="Company name" />
                   </div>
                   <div>
                     <Label className="text-zinc-400 text-xs">Title</Label>
-                    <Input
-                      value={newContact.title}
-                      onChange={(e) => setNewContact(p => ({ ...p, title: e.target.value }))}
-                      className="bg-zinc-800 border-zinc-700 text-white mt-1"
-                      placeholder="Job title"
-                    />
+                    <Input value={newContact.title} onChange={(e) => setNewContact(p => ({ ...p, title: e.target.value }))}
+                      className="bg-zinc-800 border-zinc-700 text-white mt-1" placeholder="Job title" />
                   </div>
                 </div>
                 <div>
                   <Label className="text-zinc-400 text-xs">Category</Label>
                   <Select value={newContact.category} onValueChange={(v) => setNewContact(p => ({ ...p, category: v }))}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-zinc-900 border-zinc-700">
                       <SelectItem value="client">Client</SelectItem>
                       <SelectItem value="prospect">Prospect</SelectItem>
@@ -263,7 +274,7 @@ export default function Contacts() {
                   disabled={!newContact.name.trim() || createMutation.isPending}
                   className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium"
                 >
-                  {createMutation.isPending ? "Creating..." : "Create Contact"}
+                  {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Contact"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -271,45 +282,222 @@ export default function Contacts() {
         </div>
       </div>
 
-      {/* Filters Row */}
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-          <Input
-            placeholder="Search contacts by name, email, organization..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-zinc-900 border-zinc-800 text-white"
-          />
-        </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40 bg-zinc-900 border-zinc-700 text-white">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-700">
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="client">Clients</SelectItem>
-            <SelectItem value="prospect">Prospects</SelectItem>
-            <SelectItem value="partner">Partners</SelectItem>
-            <SelectItem value="vendor">Vendors</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant={showStarredOnly ? "default" : "outline"}
-          onClick={() => setShowStarredOnly(!showStarredOnly)}
-          className={showStarredOnly
-            ? "bg-yellow-600 hover:bg-yellow-700 text-black"
-            : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-          }
-        >
-          <Star className={`h-4 w-4 mr-2 ${showStarredOnly ? "fill-current" : ""}`} />
-          Starred ({stats.starred})
-        </Button>
+      {/* Stat Cards Row — matching dashboard MetricCard style */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/20 transition-colors">
+          <CardContent className="pt-4 pb-3.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Total Contacts</span>
+              <Users className="h-4 w-4 text-yellow-600" />
+            </div>
+            <p className="text-2xl font-bold text-white">{stats.total}</p>
+            <p className="text-xs text-zinc-600 mt-0.5">{stats.clients} clients · {stats.prospects} prospects</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/20 transition-colors">
+          <CardContent className="pt-4 pb-3.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Starred</span>
+              <Star className="h-4 w-4 text-yellow-600" />
+            </div>
+            <p className="text-2xl font-bold text-white">{stats.starred}</p>
+            <p className="text-xs text-zinc-600 mt-0.5">Trusted contacts</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/20 transition-colors">
+          <CardContent className="pt-4 pb-3.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Total Meetings</span>
+              <Calendar className="h-4 w-4 text-yellow-600" />
+            </div>
+            <p className="text-2xl font-bold text-white">{stats.totalMeetings}</p>
+            <p className="text-xs text-zinc-600 mt-0.5">Across all contacts</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/20 transition-colors">
+          <CardContent className="pt-4 pb-3.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Categories</span>
+              <Building2 className="h-4 w-4 text-yellow-600" />
+            </div>
+            <p className="text-2xl font-bold text-white">{stats.partners + stats.vendors}</p>
+            <p className="text-xs text-zinc-600 mt-0.5">{stats.partners} partners · {stats.vendors} vendors</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Contact List */}
-      <div className="space-y-2">
+      {/* Top 10 Most Engaged — Premium Cards */}
+      {top10.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Crown className="h-5 w-5 text-yellow-500" />
+            <h2 className="text-lg font-semibold text-white">Top Engaged Contacts</h2>
+            <Badge variant="outline" className="border-yellow-600/30 text-yellow-500 ml-2">{top10.length}</Badge>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {top10.map((contact: any, idx: number) => {
+              const engagement = getEngagementColor(contact.daysSinceLastMeeting);
+              return (
+                <Link key={contact.id} href={`/contact/${contact.id}`}>
+                  <Card className={`bg-zinc-900/60 border-zinc-800 hover:border-yellow-600/40 transition-all cursor-pointer group relative overflow-hidden ${idx < 3 ? "ring-1 ring-yellow-600/10" : ""}`}>
+                    {/* Rank indicator for top 3 */}
+                    {idx < 3 && (
+                      <div className="absolute top-0 right-0 w-8 h-8">
+                        <div className="absolute top-0 right-0 w-0 h-0 border-t-[32px] border-l-[32px] border-t-yellow-600/30 border-l-transparent" />
+                        <span className="absolute top-0.5 right-1.5 text-[10px] font-bold text-yellow-500">#{idx + 1}</span>
+                      </div>
+                    )}
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="h-10 w-10 rounded-lg bg-yellow-600/15 flex items-center justify-center flex-shrink-0 group-hover:bg-yellow-600/25 transition-colors">
+                          <span className="text-sm font-bold text-yellow-500">{getInitials(contact.name)}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-white group-hover:text-yellow-500 transition-colors truncate">
+                            {contact.name}
+                          </p>
+                          {contact.organization && (
+                            <p className="text-xs text-zinc-500 truncate">{contact.organization}</p>
+                          )}
+                        </div>
+                        {contact.starred && (
+                          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <MessageSquare className="h-3 w-3 text-zinc-500" />
+                          <span className="text-xs font-semibold text-zinc-300">{contact.meetingCount}</span>
+                          <span className="text-xs text-zinc-600">meetings</span>
+                        </div>
+                        <div className={`flex items-center gap-1 ${engagement.text}`}>
+                          <div className={`h-1.5 w-1.5 rounded-full ${engagement.dot}`} />
+                          <span className="text-[10px] font-medium">
+                            {contact.daysSinceLastMeeting === null ? "—" :
+                             contact.daysSinceLastMeeting === 0 ? "Today" :
+                             `${contact.daysSinceLastMeeting}d`}
+                          </span>
+                        </div>
+                      </div>
+                      {contact.category && contact.category !== "other" && (
+                        <Badge variant="outline" className={`text-[10px] mt-2 ${CATEGORY_COLORS[contact.category] || ""}`}>
+                          {CATEGORY_LABELS[contact.category] || contact.category}
+                        </Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Starred Contacts Section */}
+      {starredContacts.length > 0 && !showStarredOnly && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+            <h2 className="text-lg font-semibold text-white">Trusted Contacts</h2>
+            <Badge variant="outline" className="border-yellow-600/30 text-yellow-500 ml-2">{starredContacts.length}</Badge>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {starredContacts.slice(0, 6).map((contact: any) => {
+              const engagement = getEngagementColor(contact.daysSinceLastMeeting);
+              return (
+                <Link key={contact.id} href={`/contact/${contact.id}`}>
+                  <Card className="bg-zinc-900/60 border-zinc-800 hover:border-yellow-600/40 transition-all cursor-pointer group ring-1 ring-yellow-600/10">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-11 w-11 rounded-lg bg-yellow-600/15 flex items-center justify-center flex-shrink-0 group-hover:bg-yellow-600/25 transition-colors">
+                          <span className="text-lg font-bold text-yellow-500">{getInitials(contact.name)}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-white group-hover:text-yellow-500 transition-colors truncate">
+                              {contact.name}
+                            </p>
+                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {contact.organization && (
+                              <span className="text-xs text-zinc-500 truncate">{contact.organization}</span>
+                            )}
+                            {contact.category && contact.category !== "other" && (
+                              <Badge variant="outline" className={`text-[10px] ${CATEGORY_COLORS[contact.category] || ""}`}>
+                                {CATEGORY_LABELS[contact.category]}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="flex items-center gap-1 text-xs text-zinc-400">
+                            <MessageSquare className="h-3 w-3" />
+                            <span className="font-medium">{contact.meetingCount || 0}</span>
+                          </div>
+                          <div className={`flex items-center gap-1 mt-0.5 ${engagement.text}`}>
+                            <div className={`h-1.5 w-1.5 rounded-full ${engagement.dot}`} />
+                            <span className="text-[10px]">
+                              {contact.lastMeetingDate ? formatRelative(contact.lastMeetingDate) : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Full Directory */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="h-5 w-5 text-zinc-400" />
+          <h2 className="text-lg font-semibold text-white">All Contacts</h2>
+        </div>
+
+        {/* Filters Row */}
+        <div className="flex flex-wrap gap-3 mb-4">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+            <Input
+              placeholder="Search by name, email, organization..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-zinc-900 border-zinc-800 text-white"
+            />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-40 bg-zinc-900 border-zinc-700 text-white">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-700">
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="client">Clients</SelectItem>
+              <SelectItem value="prospect">Prospects</SelectItem>
+              <SelectItem value="partner">Partners</SelectItem>
+              <SelectItem value="vendor">Vendors</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant={showStarredOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowStarredOnly(!showStarredOnly)}
+            className={showStarredOnly
+              ? "bg-yellow-600 hover:bg-yellow-700 text-black"
+              : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            }
+          >
+            <Star className={`h-4 w-4 mr-1.5 ${showStarredOnly ? "fill-current" : ""}`} />
+            Starred
+          </Button>
+        </div>
+
+        {/* Contact Grid */}
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Users className="h-12 w-12 text-zinc-700 mb-3" />
@@ -323,95 +511,89 @@ export default function Contacts() {
             )}
           </div>
         ) : (
-          filtered.map((contact: any) => (
-            <div key={contact.id} className="flex items-center gap-2">
-              {/* Star button */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleStarMutation.mutate({ id: contact.id });
-                }}
-                className="flex-shrink-0 p-1 rounded hover:bg-zinc-800 transition-colors"
-              >
-                <Star className={`h-4 w-4 ${contact.starred ? "text-yellow-500 fill-yellow-500" : "text-zinc-600 hover:text-zinc-400"}`} />
-              </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filtered.map((contact: any) => {
+              const engagement = getEngagementColor(contact.daysSinceLastMeeting);
+              return (
+                <div key={contact.id} className="relative group">
+                  {/* Star toggle button */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleStarMutation.mutate({ id: contact.id });
+                    }}
+                    className="absolute top-3 right-3 z-10 p-1 rounded hover:bg-zinc-700/50 transition-colors"
+                  >
+                    <Star className={`h-3.5 w-3.5 ${contact.starred ? "text-yellow-500 fill-yellow-500" : "text-zinc-600 hover:text-zinc-400"}`} />
+                  </button>
 
-              <Link href={`/contact/${contact.id}`} className="flex-1">
-                <Card className="bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/30 transition-all cursor-pointer group">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      {/* Avatar */}
-                      <div className="h-11 w-11 rounded-lg bg-yellow-600/15 flex items-center justify-center flex-shrink-0 group-hover:bg-yellow-600/25 transition-colors">
-                        <span className="text-lg font-bold text-yellow-500">
-                          {contact.name?.charAt(0)?.toUpperCase() || "?"}
-                        </span>
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-white group-hover:text-yellow-500 transition-colors truncate">
-                            {contact.name}
-                          </p>
-                          {contact.category && contact.category !== "other" && (
-                            <Badge variant="outline" className={`text-xs ${CATEGORY_COLORS[contact.category] || ""}`}>
-                              {contact.category}
-                            </Badge>
-                          )}
-                          {contact.organization && (
-                            <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-xs hidden sm:inline-flex">
-                              <Building2 className="h-3 w-3 mr-1" />
-                              {contact.organization}
-                            </Badge>
-                          )}
+                  <Link href={`/contact/${contact.id}`}>
+                    <Card className="bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/30 transition-all cursor-pointer h-full">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="h-10 w-10 rounded-lg bg-yellow-600/15 flex items-center justify-center flex-shrink-0 group-hover:bg-yellow-600/25 transition-colors">
+                            <span className="text-sm font-bold text-yellow-500">{getInitials(contact.name)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0 pr-6">
+                            <p className="text-sm font-semibold text-white group-hover:text-yellow-500 transition-colors truncate">
+                              {contact.name}
+                            </p>
+                            {contact.title && (
+                              <p className="text-xs text-zinc-500 truncate">{contact.title}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+
+                        {/* Details */}
+                        <div className="space-y-1.5 mb-3">
+                          {contact.organization && (
+                            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                              <Building2 className="h-3 w-3 text-zinc-600 flex-shrink-0" />
+                              <span className="truncate">{contact.organization}</span>
+                            </div>
+                          )}
                           {contact.email && (
-                            <span className="flex items-center gap-1 truncate">
-                              <Mail className="h-3 w-3 flex-shrink-0" />
-                              {contact.email}
-                            </span>
+                            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                              <Mail className="h-3 w-3 text-zinc-600 flex-shrink-0" />
+                              <span className="truncate">{contact.email}</span>
+                            </div>
                           )}
                           {contact.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 flex-shrink-0" />
-                              {contact.phone}
-                            </span>
-                          )}
-                          {contact.title && (
-                            <span className="hidden md:inline text-zinc-600">{contact.title}</span>
+                            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                              <Phone className="h-3 w-3 text-zinc-600 flex-shrink-0" />
+                              <span>{contact.phone}</span>
+                            </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Right side */}
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className="text-right hidden sm:block">
-                          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                            <MessageSquare className="h-3 w-3" />
-                            <span className="font-medium">{contact.meetingCount || 0}</span>
-                            <span className="text-zinc-600">meetings</span>
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/50">
+                          <div className="flex items-center gap-3">
+                            {contact.category && contact.category !== "other" && (
+                              <Badge variant="outline" className={`text-[10px] ${CATEGORY_COLORS[contact.category] || ""}`}>
+                                {CATEGORY_LABELS[contact.category]}
+                              </Badge>
+                            )}
+                            <div className="flex items-center gap-1 text-xs text-zinc-500">
+                              <MessageSquare className="h-3 w-3" />
+                              <span className="font-medium">{contact.meetingCount || 0}</span>
+                            </div>
                           </div>
-                          {contact.lastMeetingDate && (
-                            <p className="text-xs text-zinc-600 mt-0.5">
-                              Last: {formatRelative(contact.lastMeetingDate)}
-                            </p>
-                          )}
-                          {contact.daysSinceLastMeeting && contact.daysSinceLastMeeting > 14 && (
-                            <p className="text-xs text-amber-500 mt-0.5">
-                              Follow up needed
-                            </p>
-                          )}
+                          <div className={`flex items-center gap-1 ${engagement.text}`}>
+                            <div className={`h-1.5 w-1.5 rounded-full ${engagement.dot}`} />
+                            <span className="text-[10px] font-medium">
+                              {contact.lastMeetingDate ? formatRelative(contact.lastMeetingDate) : "No meetings"}
+                            </span>
+                          </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-yellow-600 transition-colors" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          ))
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

@@ -190,6 +190,12 @@ export async function getOrCreateContact(name: string, org?: string, email?: str
 export async function linkContactToMeeting(meetingId: number, contactId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  // Check if link already exists to prevent duplicates
+  const existing = await db.select({ id: meetingContacts.id })
+    .from(meetingContacts)
+    .where(and(eq(meetingContacts.meetingId, meetingId), eq(meetingContacts.contactId, contactId)))
+    .limit(1);
+  if (existing.length > 0) return; // Already linked
   try {
     await db.insert(meetingContacts).values({ meetingId, contactId });
   } catch (e: any) {
@@ -201,22 +207,36 @@ export async function linkContactToMeeting(meetingId: number, contactId: number)
 export async function getContactsForMeeting(meetingId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db
+  const results = await db
     .select({ contact: contacts })
     .from(meetingContacts)
     .innerJoin(contacts, eq(meetingContacts.contactId, contacts.id))
     .where(eq(meetingContacts.meetingId, meetingId));
+  // Deduplicate by contact ID
+  const seen = new Set<number>();
+  return results.filter((r: any) => {
+    if (seen.has(r.contact.id)) return false;
+    seen.add(r.contact.id);
+    return true;
+  });
 }
 
 export async function getMeetingsForContact(contactId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db
+  const results = await db
     .select({ meeting: meetings })
     .from(meetingContacts)
     .innerJoin(meetings, eq(meetingContacts.meetingId, meetings.id))
     .where(eq(meetingContacts.contactId, contactId))
     .orderBy(desc(meetings.meetingDate));
+  // Deduplicate by meeting ID
+  const seen = new Set<number>();
+  return results.filter((r: any) => {
+    if (seen.has(r.meeting.id)) return false;
+    seen.add(r.meeting.id);
+    return true;
+  });
 }
 
 export async function getTasksForContact(contactName: string) {

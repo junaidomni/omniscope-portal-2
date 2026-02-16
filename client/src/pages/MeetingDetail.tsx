@@ -149,7 +149,8 @@ export default function MeetingDetail() {
     );
   }
 
-  const participants = JSON.parse(meeting.participants || '[]');
+  const rawParticipants = JSON.parse(meeting.participants || '[]');
+  const participants = Array.from(new Set(rawParticipants as string[]));
   const organizations = JSON.parse(meeting.organizations || '[]');
   const jurisdictions = JSON.parse(meeting.jurisdictions || '[]');
   const strategicHighlights = JSON.parse(meeting.strategicHighlights || '[]');
@@ -354,7 +355,16 @@ export default function MeetingDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {(meetingContacts && meetingContacts.length > 0) ? meetingContacts.map((mc: any) => {
+                {(meetingContacts && meetingContacts.length > 0) ? (() => {
+              // Deduplicate by contact ID
+              const seen = new Set<number>();
+              const uniqueContacts = meetingContacts.filter((mc: any) => {
+                if (seen.has(mc.contact.id)) return false;
+                seen.add(mc.contact.id);
+                return true;
+              });
+              return uniqueContacts;
+            })().map((mc: any) => {
                   const c = mc.contact;
                   const lastMeetingDate = mc.lastMeetingDate;
                   const daysSince = lastMeetingDate ? Math.floor((Date.now() - new Date(lastMeetingDate).getTime()) / 86400000) : null;

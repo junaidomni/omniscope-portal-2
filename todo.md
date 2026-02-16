@@ -697,3 +697,23 @@
 - [x] Write vitest tests for AI duplicate detection
 - [x] Write vitest tests for enhanced contacts
 - [x] Clean up test data
+
+## v17 — Contact Deduplication & Layout Redesign
+
+### Bug Fixes
+- [x] Fix duplicate meetings showing on contact profile (same meeting repeated 7+ times)
+- [x] Fix duplicate participant names in recap sheet (Junaid Qureshi x7, Kyle Jackson x7)
+- [x] Deduplicate contacts in database (multiple entries for same person)
+- [x] Fix meeting_contacts junction table to prevent duplicate links
+
+### Contacts Page Redesign
+- [x] Redesign Contacts page with premium dashboard-style card layout
+- [x] Add "Top 10 Engaged Contacts" section with rich cards (like dashboard widgets)
+- [x] Show meeting count, last meeting date, category badge on contact cards
+- [x] Starred contacts section with gold accent styling
+- [x] Clean grid layout matching dashboard aesthetic
+
+### Data Cleanup
+- [x] Remove duplicate meeting_contacts rows
+- [x] Merge duplicate contacts in database
+- [x] Verify no test data remains
