@@ -9,7 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import {
   Calendar, ChevronLeft, ChevronRight, Clock, Plus,
-  Users, MapPin, Video, ExternalLink, Globe, Trash2, X
+  Users, MapPin, Video, ExternalLink, Globe, Trash2, X,
+  RefreshCw, CheckCircle2, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -70,11 +71,31 @@ export default function CalendarView() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(() => {
-    return new Date().toISOString().split('T')[0];
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   });
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [showNewEvent, setShowNewEvent] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncFromGoogle = async () => {
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/calendar/sync', { method: 'POST' });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Synced ${data.synced} new, ${data.updated} updated events from Google Calendar`);
+        fetchEvents();
+      } else {
+        toast.error("Failed to sync from Google Calendar");
+      }
+    } catch {
+      toast.error("Failed to sync from Google Calendar");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const fetchEvents = async () => {
     setIsLoadingEvents(true);
@@ -101,10 +122,16 @@ export default function CalendarView() {
 
   useEffect(() => { fetchEvents(); }, [currentMonth]);
 
+  // Group events by LOCAL date (not UTC) so they appear on the correct calendar day
+  const getLocalDateKey = (isoString: string): string => {
+    const d = new Date(isoString);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
     for (const e of events) {
-      const dateKey = e.start.split('T')[0];
+      const dateKey = getLocalDateKey(e.start);
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(e);
     }
@@ -119,7 +146,7 @@ export default function CalendarView() {
   const goToToday = () => {
     const now = new Date();
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-    setSelectedDate(now.toISOString().split('T')[0]);
+    setSelectedDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
@@ -147,26 +174,38 @@ export default function CalendarView() {
             <h1 className="text-2xl font-bold text-white">Calendar</h1>
             <p className="text-sm text-zinc-500 mt-1">Schedule and manage meetings across time zones</p>
           </div>
-          <Dialog open={showNewEvent} onOpenChange={setShowNewEvent}>
-            <DialogTrigger asChild>
-              <Button className="bg-yellow-600 hover:bg-yellow-500 text-black font-medium">
-                <Plus className="h-4 w-4 mr-2" />
-                New Event
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-white">Create Event</DialogTitle>
-              </DialogHeader>
-              <NewEventForm
-                defaultDate={selectedDate || undefined}
-                onSuccess={() => {
-                  setShowNewEvent(false);
-                  fetchEvents();
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={syncFromGoogle}
+              disabled={isSyncing}
+              className="border-zinc-700 text-zinc-400 hover:text-white"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing...' : 'Sync'}
+            </Button>
+            <Dialog open={showNewEvent} onOpenChange={setShowNewEvent}>
+              <DialogTrigger asChild>
+                <Button className="bg-yellow-600 hover:bg-yellow-500 text-black font-medium">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Event
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Create Event</DialogTitle>
+                </DialogHeader>
+                <NewEventForm
+                  defaultDate={selectedDate || undefined}
+                  onSuccess={() => {
+                    setShowNewEvent(false);
+                    fetchEvents();
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Timezone Strip */}
@@ -436,11 +475,20 @@ function NewEventForm({
           location: location.trim() || undefined,
           attendees: attendeesList,
           addGoogleMeet,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 
       if (response.ok) {
-        toast.success("Event created successfully");
+        const data = await response.json();
+        if (data.syncedToGoogle) {
+          const parts = [];
+          parts.push("Event created in Google Calendar");
+          if (attendeesList.length > 0) parts.push(`Invitations sent to ${attendeesList.length} guest${attendeesList.length > 1 ? 's' : ''}`);
+          toast.success(parts.join(" · "), { duration: 5000 });
+        } else {
+          toast.success("Event saved locally (Google Calendar sync unavailable)");
+        }
         onSuccess();
       } else {
         const err = await response.json();
@@ -562,6 +610,16 @@ function NewEventForm({
           className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 min-h-20"
         />
       </div>
+
+      {/* Info notice */}
+      {attendeesList.length > 0 && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-600/10 border border-yellow-600/20">
+          <CheckCircle2 className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-yellow-600/80">
+            This event will be created in Google Calendar and email invitations will be sent to all guests automatically.
+          </p>
+        </div>
+      )}
 
       {/* Submit */}
       <DialogFooter>

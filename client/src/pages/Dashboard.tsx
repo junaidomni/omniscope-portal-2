@@ -10,7 +10,7 @@ import {
   Building2, Download, Clock, ArrowRight, Sparkles,
   AlertCircle, Globe, ChevronRight, Video, ExternalLink
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -72,7 +72,8 @@ export default function Dashboard() {
   const handleExportDailyBrief = async () => {
     setIsExporting(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const n = new Date();
+      const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
       const response = await fetch(`/api/daily-brief/pdf?date=${today}`);
       if (!response.ok) throw new Error("Failed to generate PDF");
       const blob = await response.blob();
@@ -188,10 +189,10 @@ export default function Dashboard() {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <MetricCard title="Today" value={metrics?.meetingsToday || 0} sub={`${metrics?.meetingsThisWeek || 0} this week`} icon={<Calendar className="h-4 w-4" />} />
-        <MetricCard title="Contacts" value={metrics?.uniqueParticipants || 0} sub={`${metrics?.uniqueOrganizations || 0} orgs`} icon={<Users className="h-4 w-4" />} />
-        <MetricCard title="Open Tasks" value={metrics?.openTasks || 0} sub={`${metrics?.completedTasksToday || 0} done today`} icon={<CheckSquare className="h-4 w-4" />} accent={metrics?.openTasks && metrics.openTasks > 10 ? "red" : undefined} />
-        <MetricCard title="Total Intel" value={metrics?.totalMeetings || 0} sub={`${metrics?.meetingsThisMonth || 0} this month`} icon={<TrendingUp className="h-4 w-4" />} />
+        <MetricCard title="Today" value={metrics?.meetingsToday || 0} sub={`${metrics?.meetingsThisWeek || 0} this week`} icon={<Calendar className="h-4 w-4" />} href="/calendar" />
+        <MetricCard title="Contacts" value={metrics?.uniqueParticipants || 0} sub={`${metrics?.uniqueOrganizations || 0} orgs`} icon={<Users className="h-4 w-4" />} href="/meetings?tab=people" />
+        <MetricCard title="Open Tasks" value={metrics?.openTasks || 0} sub={`${metrics?.completedTasksToday || 0} done today`} icon={<CheckSquare className="h-4 w-4" />} accent={metrics?.openTasks && metrics.openTasks > 10 ? "red" : undefined} href="/tasks" />
+        <MetricCard title="Total Intel" value={metrics?.totalMeetings || 0} sub={`${metrics?.meetingsThisMonth || 0} this month`} icon={<TrendingUp className="h-4 w-4" />} href="/meetings" />
       </div>
 
       {/* Main Grid: 3 columns */}
@@ -440,11 +441,15 @@ export default function Dashboard() {
 // METRIC CARD
 // ============================================================================
 
-function MetricCard({ title, value, sub, icon, accent }: {
-  title: string; value: number; sub: string; icon: React.ReactNode; accent?: string;
+function MetricCard({ title, value, sub, icon, accent, href }: {
+  title: string; value: number; sub: string; icon: React.ReactNode; accent?: string; href?: string;
 }) {
-  return (
-    <Card className="bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/20 transition-colors">
+  const [, setLocation] = useLocation();
+
+  const content = (
+    <Card className={`bg-zinc-900/50 border-zinc-800 hover:border-yellow-600/20 transition-colors ${href ? 'cursor-pointer' : ''}`}
+      onClick={href ? () => setLocation(href) : undefined}
+    >
       <CardContent className="pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{title}</span>
@@ -455,4 +460,6 @@ function MetricCard({ title, value, sub, icon, accent }: {
       </CardContent>
     </Card>
   );
+
+  return content;
 }

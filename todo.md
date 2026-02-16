@@ -365,3 +365,47 @@
 - [ ] Add notification bell for new meetings and task assignments
 - [ ] Add keyboard shortcuts for power users
 - [ ] Improve mobile responsiveness
+
+
+## Portal Improvements v4
+
+### Google Calendar Two-Way Sync (CRITICAL)
+- [ ] Create real Google Calendar events when user creates event in portal
+- [ ] Send email invitations to attendees/guests added to events
+- [ ] Use Google Calendar MCP for real event creation
+- [ ] Events created in portal must show up in actual Google Calendar
+- [ ] Attendees receive proper calendar invitations via email
+- [ ] Seamless experience - no manual setup needed by users
+
+### To-Do List Redesign
+- [x] Redesign To-Do layout for better organization
+- [x] Improve visual hierarchy and grouping
+- [x] Make task management more intuitive and user-friendly
+- [x] Better status tracking and filtering
+- [x] Clickable tasks that open expanded detail view (Airtable-style)
+- [x] Full inline editing of all task fields in expanded view
+- [x] Add notes/comments field to tasks
+- [x] Fully customizable task records
+- [x] Gamified dashboard header with completion progress bar (0-100% XP-style)
+- [x] Per-user stats when filtered by team member
+- [x] Animated progress bar that fills as tasks complete
+- [x] Personal productivity metrics (tasks done today, streak, etc.)
+
+### Meetings Page Reports
+- [x] Daily Report box - aggregates all meetings from today into organized summary
+- [x] Weekly Report box - aggregates all meetings from the week into organized summary
+- [ ] LLM-powered report generation for both daily and weekly
+
+### Dashboard Metric Cards
+- [x] Make metric cards clickable to navigate to corresponding sections
+
+### Timezone Fix
+- [x] Auto-detect user's timezone from browser
+- [x] Display all meeting times in user's local timezone
+- [x] Fix dashboard upcoming schedule showing wrong times
+- [x] Fix calendar event times to show local timezone
+- [x] Fix meetings list times to show local timezone
+
+### Seamless User Experience
+- [x] Everything works from one place - calendar, email, tasks
+- [x] No manual configuration needed after sign-up
