@@ -209,3 +209,14 @@
 ## Logo Cleanup
 - [x] Use logo with only "OMNISCOPE" text (remove "INTELLIGENCE PORTAL" subtitle from logo image)
 - [x] Keep "Intelligence Portal" as separate text element below the logo
+
+
+## Meeting Report Template Design
+- [x] Design professional OmniScope-branded meeting report structure
+- [x] Create meeting detail page in portal with branded template
+- [x] Update branded report generator to match new template design
+- [x] Ensure consistent branding between portal view and downloadable reports
+- [x] Added OmniScope header with logo and tagline
+- [x] Added "INTELLIGENCE REPORT" label
+- [x] Structured sections: Meeting Info, Executive Summary, Highlights, Action Items, etc.
+- [x] Added OmniScope footer with website and confidentiality notice

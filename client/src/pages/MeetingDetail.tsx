@@ -69,20 +69,28 @@ export default function MeetingDetail() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
+        {/* OmniScope Branded Header */}
+        <div className="bg-gradient-to-r from-zinc-900/50 to-transparent border-b border-zinc-800 -mx-6 px-6 py-6 mb-6">
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
           </Link>
+          
+          {/* OmniScope Branding */}
+          <div className="flex items-center gap-3 mb-6">
+            <img src="/omniscope-only.png" alt="OmniScope" className="h-6" />
+            <span className="text-zinc-500 text-xs tracking-widest">ALL MARKETS. ONE SCOPE.</span>
+          </div>
+
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-sm font-semibold text-yellow-600 mb-2 tracking-wide">INTELLIGENCE REPORT</h1>
+              <h2 className="text-3xl font-bold text-foreground mb-3">
                 {organizations.length > 0 ? organizations.join(', ') : 'Meeting Report'}
-              </h1>
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+              </h2>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   <span>{formatDate(meeting.meetingDate)}</span>
@@ -91,7 +99,9 @@ export default function MeetingDetail() {
                   <User className="h-4 w-4" />
                   <span>{meeting.primaryLead}</span>
                 </div>
-                <Badge variant="outline">{meeting.sourceType}</Badge>
+                <Badge variant="outline" className="bg-yellow-600/10 text-yellow-600 border-yellow-600/30">
+                  {meeting.sourceType}
+                </Badge>
               </div>
             </div>
             <Button 
@@ -273,6 +283,12 @@ export default function MeetingDetail() {
             </CardContent>
           </Card>
         )}
+
+        {/* OmniScope Footer */}
+        <div className="text-center py-8 border-t border-zinc-800 mt-12">
+          <p className="text-zinc-500 text-sm mb-1">omniscopex.ae</p>
+          <p className="text-zinc-600 text-xs">Confidential & Proprietary</p>
+        </div>
       </div>
     </DashboardLayout>
   );

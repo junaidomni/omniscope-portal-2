@@ -31,38 +31,52 @@ export async function generateBrandedReport(meetingId: number): Promise<string> 
   // Generate branded Markdown report
   const markdown = `
 # OMNISCOPE
-## INTELLIGENCE REPORT
-
 **ALL MARKETS. ONE SCOPE.**
 
 ---
 
-### Meeting Information
+## INTELLIGENCE REPORT
 
-**Date:** ${meetingDate}  
-**Lead:** ${meeting.primaryLead}  
-**Participants:** ${participants.join(', ')}  
-${organizations.length > 0 ? `**Organizations:** ${organizations.join(', ')}` : ''}  
-${jurisdictions.length > 0 ? `**Jurisdictions:** ${jurisdictions.join(', ')}` : ''}
+# ${organizations.length > 0 ? organizations.join(', ') : 'Meeting Report'}
 
 ---
 
-### Executive Summary
+## Meeting Information
+
+- **Date:** ${meetingDate}
+- **Location:** [Insert Location]
+- **Participants:** ${participants.join(', ')}
+- **Primary Lead:** ${meeting.primaryLead}
+${organizations.length > 0 ? `- **Organizations:** ${organizations.join(', ')}` : ''}
+${jurisdictions.length > 0 ? `- **Jurisdictions:** ${jurisdictions.join(', ')}` : ''}
+- **Source:** ${meeting.sourceType}
+
+---
+
+## Executive Summary
 
 ${meeting.executiveSummary}
 
 ---
 
 ${highlights.length > 0 ? `
-### Strategic Highlights
+## Meeting Highlights
 
 ${highlights.map((h: string) => `- ${h}`).join('\n')}
 
 ---
 ` : ''}
 
+${tasks.length > 0 ? `
+## Next Arrangements / Action Items
+
+${tasks.map((t) => `- [ ] **${t.title}**${t.assignedTo ? ` (Assigned to: ${t.assignedTo})` : ''}${t.description ? `\n  - ${t.description}` : ''}`).join('\n')}
+
+---
+` : ''}
+
 ${opportunities.length > 0 ? `
-### Opportunities
+## Opportunities Identified
 
 ${opportunities.map((o: string) => `- ${o}`).join('\n')}
 
@@ -70,23 +84,15 @@ ${opportunities.map((o: string) => `- ${o}`).join('\n')}
 ` : ''}
 
 ${risks.length > 0 ? `
-### Risks & Considerations
+## Risks & Considerations
 
 ${risks.map((r: string) => `- ${r}`).join('\n')}
 
 ---
 ` : ''}
 
-${tasks.length > 0 ? `
-### Action Items
-
-${tasks.map((t) => `- **${t.title}** ${t.assignedTo ? `(Assigned to: ${t.assignedTo})` : ''} - ${t.status}`).join('\n')}
-
----
-` : ''}
-
 ${keyQuotes.length > 0 ? `
-### Key Quotes
+## Key Quotes
 
 ${keyQuotes.map((q: string) => `> "${q}"`).join('\n\n')}
 
@@ -94,7 +100,7 @@ ${keyQuotes.map((q: string) => `> "${q}"`).join('\n\n')}
 ` : ''}
 
 ${meeting.fullTranscript ? `
-### Full Transcript
+## Full Transcript
 
 ${meeting.fullTranscript}
 
@@ -112,8 +118,7 @@ ${meeting.fullTranscript}
     minute: '2-digit'
   })}
 
-**OmniScope Group** | All Markets. One Scope.  
-[omniscopex.ae](https://omniscopex.ae)
+**omniscopex.ae** | Confidential & Proprietary
 `;
 
   return markdown.trim();
