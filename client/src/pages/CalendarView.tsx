@@ -35,7 +35,8 @@ export default function CalendarView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-black">
+      <div className="container max-w-7xl py-8 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">Calendar View</h1>
@@ -102,14 +103,18 @@ export default function CalendarView() {
             <div className="p-4 bg-zinc-800 rounded-lg">
               <p className="text-sm text-zinc-400">Unique Participants</p>
               <p className="text-2xl font-bold text-white">
-                {new Set(meetingsForSelectedDate.flatMap(m => m.participants?.split(',').map(p => p.trim()) || [])).size}
+                {new Set(meetingsForSelectedDate.flatMap(m => {
+                  try { return JSON.parse(m.participants || '[]'); } catch { return []; }
+                })).size}
               </p>
             </div>
 
             <div className="p-4 bg-zinc-800 rounded-lg">
               <p className="text-sm text-zinc-400">Organizations</p>
               <p className="text-2xl font-bold text-white">
-                {new Set(meetingsForSelectedDate.flatMap(m => m.organizations?.split(',').map(o => o.trim()) || [])).size}
+                {new Set(meetingsForSelectedDate.flatMap(m => {
+                  try { return JSON.parse(m.organizations || '[]'); } catch { return []; }
+                })).size}
               </p>
             </div>
           </div>
@@ -136,7 +141,7 @@ export default function CalendarView() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold text-white">
-                          {meeting.participants || 'Unnamed Meeting'}
+                          {(() => { try { const p = JSON.parse(meeting.participants || '[]'); return p.join(', '); } catch { return meeting.participants || 'Unnamed Meeting'; } })()}
                         </h4>
                         {meeting.sourceId && (
                           <span className="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-xs rounded">
@@ -153,13 +158,13 @@ export default function CalendarView() {
                         {meeting.participants && (
                           <div className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
-                            <span>{meeting.participants.split(',').length} participants</span>
+                            <span>{(() => { try { return JSON.parse(meeting.participants || '[]').length; } catch { return 0; } })()} participants</span>
                           </div>
                         )}
                         {meeting.organizations && (
                           <div className="flex items-center gap-1">
                             <Building2 className="h-3 w-3" />
-                            <span>{meeting.organizations}</span>
+                            <span>{(() => { try { return JSON.parse(meeting.organizations || '[]').join(', '); } catch { return meeting.organizations; } })()}</span>
                           </div>
                         )}
                         <span>{format(new Date(meeting.meetingDate), 'h:mm a')}</span>
@@ -172,6 +177,7 @@ export default function CalendarView() {
           </div>
         )}
       </Card>
+      </div>
     </div>
   );
 }

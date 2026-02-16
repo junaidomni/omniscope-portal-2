@@ -129,7 +129,7 @@ export default function AskOmniScope() {
               <CardContent>
                 <div className="space-y-3">
                   {results.meetings.map((meeting: any) => (
-                    <Link key={meeting.id} href={`/meetings/${meeting.id}`}>
+                    <Link key={meeting.id} href={`/meeting/${meeting.id}`}>
                       <div className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-800 hover:border-yellow-600/30 hover:bg-zinc-800/50 transition-all cursor-pointer">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">

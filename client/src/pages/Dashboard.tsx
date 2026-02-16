@@ -263,7 +263,7 @@ export default function Dashboard() {
                   
                   return (
                   <div key={meeting.id} className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-800 hover:border-yellow-600/30 transition-all">
-                    <Link href={`/meetings/${meeting.id}`}>
+                    <Link href={`/meeting/${meeting.id}`}>
                       <div className="cursor-pointer">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">

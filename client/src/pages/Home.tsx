@@ -122,7 +122,7 @@ export default function Home() {
               const organizations = JSON.parse(meeting.organizations || '[]');
               
               return (
-                <Link key={meeting.id} href={`/meetings/${meeting.id}`}>
+                <Link key={meeting.id} href={`/meeting/${meeting.id}`}>
                   <Card className="hover:border-primary transition-colors cursor-pointer">
                     <CardHeader>
                       <div className="flex items-start justify-between">

@@ -115,11 +115,7 @@ describe("Intelligence Portal - Data Ingestion", () => {
       sectors: ["OTC Liquidity"],
       jurisdictionTags: ["UAE"],
       actionItems: [
-        {
-          title: "Follow up with client",
-          description: "Send proposal by Friday",
-          priority: "high" as const,
-        },
+        "Follow up with client - Send proposal by Friday",
       ],
     };
 

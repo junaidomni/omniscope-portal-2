@@ -82,10 +82,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     { path: "/tasks", icon: CheckSquare, label: "To-Do" },
   ];
 
-  // Add Admin Panel for admin users
-  if (user?.role === 'admin') {
-    navItems.push({ path: "/admin", icon: Shield, label: "Admin Panel" });
-  }
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-black flex">
@@ -123,6 +120,24 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
             );
           })}
         </nav>
+
+        {/* Admin Panel - Bottom of sidebar above user */}
+        {isAdmin && (
+          <div className="px-4 pb-2">
+            <Link href="/admin">
+              <button
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  location === '/admin'
+                    ? "bg-yellow-600 text-black font-medium"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                }`}
+              >
+                <Shield className="h-5 w-5" />
+                <span>Admin Panel</span>
+              </button>
+            </Link>
+          </div>
+        )}
 
         {/* User Section */}
         <div className="p-4 border-t border-zinc-800">
