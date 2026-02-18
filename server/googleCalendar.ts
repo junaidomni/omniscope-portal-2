@@ -32,6 +32,8 @@ export function getGoogleAuthUrl(origin: string, userId: number): string {
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/calendar.events",
     "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.modify",
     "https://www.googleapis.com/auth/userinfo.email",
   ];
 

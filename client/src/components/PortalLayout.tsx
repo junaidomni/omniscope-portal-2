@@ -16,7 +16,8 @@ import {
   Building2,
   Briefcase,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -107,7 +108,9 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     { path: "/tasks", icon: CheckSquare, label: "To-Do" },
     { path: "/contacts", icon: Users, label: "Relationship Hub" },
     { path: "/companies", icon: Briefcase, label: "Companies" },
+    { path: "/mail", icon: Mail, label: "Mail" },
     { path: "/hr", icon: Building2, label: "HR Hub" },
+    { path: "/integrations", icon: Settings, label: "Integrations" },
   ];
 
   const isAdmin = user?.role === 'admin';

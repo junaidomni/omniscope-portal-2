@@ -24,6 +24,8 @@ import EmployeeProfile from "./pages/EmployeeProfile";
 import PayrollHub from "./pages/PayrollHub";
 import Companies from "./pages/Companies";
 import CompanyProfile from "./pages/CompanyProfile";
+import MailModule from "./pages/MailModule";
+import Integrations from "./pages/Integrations";
 
 function Router() {
   return (
@@ -36,6 +38,8 @@ function Router() {
         <Route path="/contact/:id" component={ContactProfile} />
         <Route path="/companies" component={Companies} />
         <Route path="/company/:id" component={CompanyProfile} />
+        <Route path="/mail" component={MailModule} />
+        <Route path="/integrations" component={Integrations} />
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/tasks" component={ToDo} />
         <Route path="/hr" component={HRHub} />

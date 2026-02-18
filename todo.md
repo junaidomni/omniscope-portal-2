@@ -959,3 +959,70 @@
 - [x] When a company name is updated, it propagates to contacts (organization), meetings (organizations JSON)
 - [ ] Tag-style display for names/companies in meetings, tasks, and other views
 - [ ] Clicking a name/company tag anywhere navigates to their profile
+
+## v26 — Gmail Integration (Full Email Module)
+
+### Schema & Data Model
+- [x] Create `email_messages` table (gmail_message_id, thread_id, user_id, from, to, cc, subject, snippet, date, is_unread, is_starred, labels)
+- [x] Create `email_entity_links` table (email_id → contact_id / company_id)
+- [x] Push schema migrations
+
+### Gmail Service Layer
+- [x] Update Google OAuth scopes to include gmail.readonly + gmail.modify
+- [x] Build listThreads (inbox, sent, drafts, starred, search)
+- [x] Build getThread (fetch full thread with messages on demand)
+- [x] Build sendEmail (compose new, reply, reply-all, forward)
+- [x] Build syncHeaders (lightweight metadata sync for fast UI)
+- [x] Auto-refresh tokens on expiry (existing infrastructure)
+- [x] Toggle star, toggle read/unread, trash message
+- [x] Get attachment, get unread count
+- [x] Get emails by contact (contextual)
+
+### tRPC Mail Router
+- [x] mail.listThreads (with folder, search, pagination)
+- [x] mail.getThread (fetch full thread on click)
+- [x] mail.send (compose/reply/forward)
+- [x] mail.syncHeaders (on-demand sync)
+- [x] mail.getUnreadCount (for sidebar badge)
+- [x] mail.toggleStar, mail.toggleRead, mail.trash
+- [x] mail.getByContact (contextual emails for a person)
+- [x] mail.connectionStatus, mail.getAuthUrl
+
+### Mail Module UI (Sidebar Module)
+- [x] Add "Mail" to sidebar navigation
+- [x] Left sub-nav: Inbox, Sent, Drafts, Starred, All Mail tabs
+- [x] Thread list: sender avatar, name, subject, snippet, date, unread indicator, star, attachment icon
+- [x] Thread view: expandable messages, HTML body rendering, attachments, star/trash dropdown
+- [x] Compose drawer: To/Cc, Subject, Body, Send button (with reply/forward prefill)
+- [x] Search bar with Gmail query support
+- [x] "Connect Gmail" prompt if not connected
+- [x] Loading states, empty states, pagination
+
+### Relationship Hub Email Tab
+- [x] Add "Email" tab to dossier panel in Contacts.tsx
+- [x] Show only emails matching contact's email address
+- [x] "Compose to {Person}" button prefilling To field
+- [x] "Add email address" CTA if no email on file
+- [x] Expandable thread view with reply inline
+- [x] Connect Gmail prompt if not connected
+- [ ] Log sent emails as interaction timeline items
+
+### Integrations Settings Page
+- [x] New /integrations route with sidebar nav item
+- [x] Google connection status (Connected / Not Connected) with service grid
+- [x] Re-authenticate button for token refresh
+- [x] Fathom, Webhook status cards
+- [x] Permissions & security display
+- [x] Coming Soon section (Slack, WhatsApp, HubSpot)
+
+### Entity Auto-Linking
+- [x] On sync, match from/to/cc emails to contacts in Relationship Hub
+- [x] Create email_entity_links for matched contacts
+- [x] Manual "Link to person" action on unmatched threads (via contextual Email tab)
+- [ ] No auto-link to company unless confirmed (avoid false positives)
+
+### Testing
+- [x] Test mail router procedures (22 tests passing)
+- [x] Test entity auto-linking
+- [x] Test Gmail service layer functions
+- [x] Run full test suite — 232 tests passing across 18 files

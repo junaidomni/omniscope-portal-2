@@ -933,6 +933,9 @@ export default function Contacts() {
                 <TabsTrigger value="meetings" className="data-[state=active]:bg-yellow-600/20 data-[state=active]:text-yellow-500">Meetings ({profile.meetingCount})</TabsTrigger>
                 <TabsTrigger value="documents" className="data-[state=active]:bg-yellow-600/20 data-[state=active]:text-yellow-500">Documents ({documents.length})</TabsTrigger>
                 <TabsTrigger value="notes" className="data-[state=active]:bg-yellow-600/20 data-[state=active]:text-yellow-500">Notes ({selectedNotes.length})</TabsTrigger>
+                <TabsTrigger value="email" className="data-[state=active]:bg-yellow-600/20 data-[state=active]:text-yellow-500">
+                  <Mail className="h-3.5 w-3.5 mr-1" />Email
+                </TabsTrigger>
               </TabsList>
 
               {/* ═══ OVERVIEW TAB ═══ */}
@@ -1250,10 +1253,274 @@ export default function Contacts() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {/* ═══ EMAIL TAB ═══ */}
+              <TabsContent value="email">
+                <ContactEmailTab contact={selectedProfile} contactId={selectedId!} />
+              </TabsContent>
             </Tabs>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ═══ CONTACT EMAIL TAB COMPONENT ═══ */
+function ContactEmailTab({ contact, contactId }: { contact: any; contactId: number }) {
+  const [composing, setComposing] = useState(false);
+  const [composeData, setComposeData] = useState({ to: "", subject: "", body: "", cc: "" });
+  const [expandedThread, setExpandedThread] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+
+  const contactEmail = contact?.email;
+
+  // Check Gmail connection
+  const { data: connectionStatus } = trpc.mail.connectionStatus.useQuery();
+  const authUrlMutation = trpc.mail.getAuthUrl.useMutation();
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (connectionStatus?.connected === false && !authUrl) {
+      authUrlMutation.mutateAsync({ origin: window.location.origin }).then(r => setAuthUrl(r.url)).catch(() => {});
+    }
+  }, [connectionStatus?.connected]);
+
+  // Fetch emails for this contact
+  const { data: emailThreads, isLoading: emailsLoading, refetch: refetchEmails } = trpc.mail.getByContact.useQuery(
+    { contactEmail: contactEmail! },
+    { enabled: !!contactEmail && connectionStatus?.connected === true }
+  );
+
+  // Get thread detail
+  const { data: threadDetail, isLoading: threadLoading } = trpc.mail.getThread.useQuery(
+    { threadId: expandedThread! },
+    { enabled: !!expandedThread && connectionStatus?.connected === true }
+  );
+
+  // Send email mutation
+  const sendMutation = trpc.mail.send.useMutation({
+    onSuccess: () => {
+      toast.success("Email sent");
+      setComposing(false);
+      setComposeData({ to: "", subject: "", body: "", cc: "" });
+      refetchEmails();
+    },
+    onError: () => toast.error("Failed to send email"),
+  });
+
+  const handleCompose = () => {
+    setComposeData({ to: contactEmail || "", subject: "", body: "", cc: "" });
+    setComposing(true);
+  };
+
+  const handleSend = () => {
+    if (!composeData.to || !composeData.subject) {
+      toast.error("To and Subject are required");
+      return;
+    }
+    sendMutation.mutate({
+      to: composeData.to.split(',').map(e => e.trim()).filter(Boolean),
+      subject: composeData.subject,
+      body: composeData.body,
+      cc: composeData.cc ? composeData.cc.split(',').map(e => e.trim()).filter(Boolean) : undefined,
+    });
+  };
+
+  const formatEmailDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 86400000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (diff < 604800000) return d.toLocaleDateString([], { weekday: 'short' });
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  // Not connected state
+  if (!connectionStatus?.connected) {
+    return (
+      <Card className="bg-zinc-900/50 border-zinc-800">
+        <CardContent className="py-12 text-center">
+          <Mail className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">Connect Gmail</h3>
+          <p className="text-sm text-zinc-400 mb-6 max-w-sm mx-auto">
+            Connect your Google account to view email history with this contact and send emails directly.
+          </p>
+          {authUrl ? (
+            <a href={authUrl}>
+              <Button className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium">
+                <Mail className="h-4 w-4 mr-2" />Connect Google Account
+              </Button>
+            </a>
+          ) : (
+            <Button disabled className="bg-zinc-700 text-zinc-400">Loading...</Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // No email on file
+  if (!contactEmail) {
+    return (
+      <Card className="bg-zinc-900/50 border-zinc-800">
+        <CardContent className="py-12 text-center">
+          <Mail className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">No Email Address</h3>
+          <p className="text-sm text-zinc-400 mb-4">
+            Add an email address to this contact to view email history and send messages.
+          </p>
+          <p className="text-xs text-zinc-500">Click "Edit" above to add an email address.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Compose Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-yellow-600" />
+          <span className="text-sm font-medium text-white">Email with {contact?.name?.split(' ')[0]}</span>
+          <Badge variant="outline" className="border-zinc-700 text-zinc-400 text-xs">{contactEmail}</Badge>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => refetchEmails()} className="border-zinc-700 text-zinc-400 hover:text-white h-8">
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" onClick={handleCompose} className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium h-8">
+            <Send className="h-3.5 w-3.5 mr-1.5" />Compose
+          </Button>
+        </div>
+      </div>
+
+      {/* Compose Drawer */}
+      {composing && (
+        <Card className="bg-zinc-900 border-yellow-600/30">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-yellow-500">New Email</span>
+              <Button variant="ghost" size="sm" onClick={() => setComposing(false)} className="text-zinc-400 hover:text-white h-6 w-6 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <Input value={composeData.to} onChange={e => setComposeData(d => ({ ...d, to: e.target.value }))} placeholder="To" className="bg-zinc-800 border-zinc-700 text-white text-sm h-9" />
+              <Input value={composeData.cc} onChange={e => setComposeData(d => ({ ...d, cc: e.target.value }))} placeholder="Cc (optional)" className="bg-zinc-800 border-zinc-700 text-white text-sm h-9" />
+              <Input value={composeData.subject} onChange={e => setComposeData(d => ({ ...d, subject: e.target.value }))} placeholder="Subject" className="bg-zinc-800 border-zinc-700 text-white text-sm h-9" />
+              <Textarea value={composeData.body} onChange={e => setComposeData(d => ({ ...d, body: e.target.value }))} placeholder="Write your message..." className="bg-zinc-800 border-zinc-700 text-white text-sm min-h-[120px]" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setComposing(false)} className="border-zinc-700 text-zinc-400">Cancel</Button>
+              <Button size="sm" onClick={handleSend} disabled={sendMutation.isPending} className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium">
+                {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                Send
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Thread List */}
+      {emailsLoading ? (
+        <div className="space-y-3">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-20 bg-zinc-800" />)}
+        </div>
+      ) : !emailThreads?.threads?.length ? (
+        <Card className="bg-zinc-900/50 border-zinc-800">
+          <CardContent className="py-8 text-center">
+            <Mail className="h-8 w-8 text-zinc-600 mx-auto mb-3" />
+            <p className="text-sm text-zinc-400">No email history with {contact?.name?.split(' ')[0]}.</p>
+            <Button size="sm" onClick={handleCompose} className="mt-3 bg-yellow-600 hover:bg-yellow-700 text-black font-medium">
+              <Send className="h-3.5 w-3.5 mr-1.5" />Send First Email
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {emailThreads.threads.map((thread: any) => (
+            <div key={thread.threadId}>
+              <button
+                onClick={() => setExpandedThread(expandedThread === thread.threadId ? null : thread.threadId)}
+                className={`w-full text-left p-3 rounded-lg border transition-all ${
+                  expandedThread === thread.threadId
+                    ? 'bg-zinc-800 border-yellow-600/30'
+                    : thread.isUnread
+                      ? 'bg-zinc-900/80 border-zinc-700 hover:border-zinc-600'
+                      : 'bg-zinc-900/30 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm truncate ${thread.isUnread ? 'font-semibold text-white' : 'text-zinc-300'}`}>
+                        {thread.subject || '(no subject)'}
+                      </span>
+                      {thread.messageCount > 1 && (
+                        <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px] px-1.5 py-0 shrink-0">{thread.messageCount}</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-500 truncate mt-1">{thread.snippet}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-zinc-500">{formatEmailDate(thread.date)}</span>
+                    {expandedThread === thread.threadId ? <ChevronUp className="h-3.5 w-3.5 text-zinc-500" /> : <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />}
+                  </div>
+                </div>
+              </button>
+
+              {/* Expanded Thread Detail */}
+              {expandedThread === thread.threadId && (
+                <div className="mt-2 ml-3 pl-3 border-l-2 border-yellow-600/20 space-y-3">
+                  {threadLoading ? (
+                    <div className="py-4 flex items-center gap-2 text-zinc-400">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Loading messages...</span>
+                    </div>
+                  ) : threadDetail?.messages?.map((msg: any, idx: number) => (
+                    <div key={idx} className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-yellow-600 to-amber-700 flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-black">{(msg.from || '?')[0].toUpperCase()}</span>
+                          </div>
+                          <span className="text-xs font-medium text-white">{msg.from}</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500">{new Date(msg.date).toLocaleString()}</span>
+                      </div>
+                      <div className="text-sm text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
+                        {msg.bodyText || msg.snippet || '(empty message)'}
+                      </div>
+                      {msg.to && (
+                        <div className="mt-2 pt-2 border-t border-zinc-800">
+                          <span className="text-[10px] text-zinc-600">To: {msg.to}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Quick Reply */}
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => {
+                      const lastMsg = threadDetail?.messages?.[threadDetail.messages.length - 1];
+                      setComposeData({
+                        to: lastMsg?.from || contactEmail,
+                        subject: `Re: ${thread.subject || ''}`,
+                        body: '',
+                        cc: '',
+                      });
+                      setComposing(true);
+                    }} className="border-zinc-700 text-zinc-400 hover:text-white h-7 text-xs">
+                      <ArrowLeft className="h-3 w-3 mr-1" />Reply
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,8 @@ import * as recapGenerator from "./recapGenerator";
 import * as reportExporter from "./reportExporter";
 import * as fathomIntegration from "./fathomIntegration";
 import { storagePut } from "./storage";
+import * as gmailService from "./gmailService";
+import { getGoogleAuthUrl, isGoogleConnected, syncGoogleCalendarEvents } from "./googleCalendar";
 
 // ============================================================================
 // MEETINGS ROUTER
@@ -1943,6 +1945,109 @@ const searchRouter = router({
 });
 
 // ============================================================================
+// MAIL ROUTER
+// ============================================================================
+
+const mailRouter = router({
+  listThreads: protectedProcedure
+    .input(
+      z.object({
+        folder: z.enum(["inbox", "sent", "drafts", "starred", "all"]).default("inbox"),
+        search: z.string().optional(),
+        maxResults: z.number().min(1).max(50).default(25),
+        pageToken: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return await gmailService.listGmailThreads(ctx.user.id, {
+        folder: input.folder,
+        search: input.search,
+        maxResults: input.maxResults,
+        pageToken: input.pageToken,
+      });
+    }),
+
+  getThread: protectedProcedure
+    .input(z.object({ threadId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return await gmailService.getGmailThread(ctx.user.id, input.threadId);
+    }),
+
+  send: protectedProcedure
+    .input(
+      z.object({
+        to: z.array(z.string().email()),
+        cc: z.array(z.string().email()).optional(),
+        bcc: z.array(z.string().email()).optional(),
+        subject: z.string(),
+        body: z.string(),
+        isHtml: z.boolean().default(false),
+        threadId: z.string().optional(),
+        inReplyTo: z.string().optional(),
+        references: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await gmailService.sendGmailEmailFull(ctx.user.id, input);
+      if (!result.success) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to send email" });
+      }
+      return result;
+    }),
+
+  getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
+    return { count: await gmailService.getUnreadCount(ctx.user.id) };
+  }),
+
+  toggleStar: protectedProcedure
+    .input(z.object({ messageId: z.string(), starred: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const ok = await gmailService.toggleStar(ctx.user.id, input.messageId, input.starred);
+      if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to toggle star" });
+      return { success: true };
+    }),
+
+  toggleRead: protectedProcedure
+    .input(z.object({ messageId: z.string(), read: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const ok = await gmailService.toggleRead(ctx.user.id, input.messageId, input.read);
+      if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to toggle read" });
+      return { success: true };
+    }),
+
+  trash: protectedProcedure
+    .input(z.object({ messageId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const ok = await gmailService.trashMessage(ctx.user.id, input.messageId);
+      if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to trash message" });
+      return { success: true };
+    }),
+
+  syncHeaders: protectedProcedure
+    .input(z.object({ maxResults: z.number().min(10).max(500).default(100) }).optional())
+    .mutation(async ({ ctx, input }) => {
+      return await gmailService.syncEmailHeaders(ctx.user.id, { maxResults: input?.maxResults });
+    }),
+
+  getByContact: protectedProcedure
+    .input(z.object({ contactEmail: z.string(), maxResults: z.number().default(15) }))
+    .query(async ({ ctx, input }) => {
+      return await gmailService.getEmailsByContact(ctx.user.id, input.contactEmail, input.maxResults);
+    }),
+
+  connectionStatus: protectedProcedure.query(async ({ ctx }) => {
+    return await isGoogleConnected(ctx.user.id);
+  }),
+
+  getAuthUrl: protectedProcedure
+    .input(z.object({ origin: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const url = getGoogleAuthUrl(input.origin, ctx.user.id);
+      return { url };
+    }),
+});
+
+// ============================================================================
 // MAIN APP ROUTER
 // ============================================================================
 
@@ -1975,6 +2080,7 @@ export const appRouter = router({
   companies: companiesRouter,
   interactions: interactionsRouter,
   search: searchRouter,
+  mail: mailRouter,
 });
 
 export type AppRouter = typeof appRouter;

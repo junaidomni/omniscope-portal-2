@@ -628,3 +628,82 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   people: many(contacts),
   interactions: many(interactions),
 }));
+
+
+/**
+ * Email messages — lightweight metadata cache for Gmail threads/messages.
+ * Full body is fetched on-demand from Gmail API; we only store headers for fast UI.
+ */
+export const emailMessages = mysqlTable("email_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  gmailMessageId: varchar("gmailMessageId", { length: 255 }).notNull(),
+  gmailThreadId: varchar("gmailThreadId", { length: 255 }).notNull(),
+  fromEmail: varchar("fromEmail", { length: 320 }),
+  fromName: varchar("fromName", { length: 255 }),
+  toEmails: text("toEmails"), // JSON array of email strings
+  ccEmails: text("ccEmails"), // JSON array of email strings
+  subject: varchar("subject", { length: 1000 }),
+  snippet: text("snippet"),
+  internalDate: bigint("internalDate", { mode: "number" }), // Gmail epoch ms
+  isUnread: boolean("isUnread").default(true).notNull(),
+  isStarred: boolean("isStarred").default(false).notNull(),
+  labelIds: text("labelIds"), // JSON array of Gmail label IDs
+  hasAttachments: boolean("hasAttachments").default(false).notNull(),
+  syncedAt: timestamp("syncedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("em_user_idx").on(table.userId),
+  threadIdx: index("em_thread_idx").on(table.gmailThreadId),
+  messageIdx: index("em_message_idx").on(table.gmailMessageId),
+  dateIdx: index("em_date_idx").on(table.internalDate),
+  userThreadIdx: index("em_user_thread_idx").on(table.userId, table.gmailThreadId),
+}));
+
+export type EmailMessage = typeof emailMessages.$inferSelect;
+export type InsertEmailMessage = typeof emailMessages.$inferInsert;
+
+/**
+ * Email entity links — maps emails to contacts and companies for contextual views.
+ */
+export const emailEntityLinks = mysqlTable("email_entity_links", {
+  id: int("id").autoincrement().primaryKey(),
+  emailMessageId: int("emailMessageId").notNull().references(() => emailMessages.id, { onDelete: "cascade" }),
+  contactId: int("contactId").references(() => contacts.id, { onDelete: "cascade" }),
+  companyId: int("companyId").references(() => companies.id, { onDelete: "set null" }),
+  linkType: mysqlEnum("linkType", ["from", "to", "cc", "manual"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("eel_email_idx").on(table.emailMessageId),
+  contactIdx: index("eel_contact_idx").on(table.contactId),
+  companyIdx: index("eel_company_idx").on(table.companyId),
+}));
+
+export type EmailEntityLink = typeof emailEntityLinks.$inferSelect;
+export type InsertEmailEntityLink = typeof emailEntityLinks.$inferInsert;
+
+/**
+ * Email relations
+ */
+export const emailMessagesRelations = relations(emailMessages, ({ one, many }) => ({
+  user: one(users, {
+    fields: [emailMessages.userId],
+    references: [users.id],
+  }),
+  entityLinks: many(emailEntityLinks),
+}));
+
+export const emailEntityLinksRelations = relations(emailEntityLinks, ({ one }) => ({
+  email: one(emailMessages, {
+    fields: [emailEntityLinks.emailMessageId],
+    references: [emailMessages.id],
+  }),
+  contact: one(contacts, {
+    fields: [emailEntityLinks.contactId],
+    references: [contacts.id],
+  }),
+  company: one(companies, {
+    fields: [emailEntityLinks.companyId],
+    references: [companies.id],
+  }),
+}));
