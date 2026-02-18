@@ -708,3 +708,32 @@ export const emailEntityLinksRelations = relations(emailEntityLinks, ({ one }) =
     references: [companies.id],
   }),
 }));
+
+/**
+ * User profiles — extended profile data for signature system and personalization.
+ */
+export const userProfiles = mysqlTable("user_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  title: varchar("title", { length: 255 }), // e.g. "Managing Director"
+  division: varchar("division", { length: 255 }), // e.g. "Private Markets"
+  phone: varchar("phone", { length: 50 }),
+  location: varchar("location", { length: 255 }), // e.g. "Dubai, UAE"
+  website: varchar("website", { length: 500 }).default("omniscopex.ae"),
+  tagline: varchar("tagline", { length: 500 }), // Optional tagline
+  signatureEnabled: boolean("signatureEnabled").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdx: index("up_user_idx").on(table.userId),
+}));
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = typeof userProfiles.$inferInsert;
+
+export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [userProfiles.userId],
+    references: [users.id],
+  }),
+}));

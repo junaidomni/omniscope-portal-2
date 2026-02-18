@@ -1143,3 +1143,46 @@
 ### Testing
 - [x] Visual verification: Important (3 real person emails), Newsletters (13 marketing emails), Notifications (33 automated)
 - [x] All 268 tests passing across 20 files
+
+## v31 — OmniScope Mail Intelligence System
+
+### Layout Fix
+- [x] Move category tabs to top header bar (currently getting cut off)
+- [x] Categories visible in full-width top bar, not cramped in thread list area
+
+### Mail Category Redesign
+- [x] Replace current categories (Important/Team/Newsletters/Notifications) with new system:
+  - ACTION: Emails requiring reply, decision, or delegation (default inbox)
+  - CAPITAL: Financial, banking, deal, institutional comms (Stripe, JP Morgan, sFOX, wire, invoices, OTC, legal)
+  - TEAM: Internal @omniscopex.ae, @kinetixgroup, @kairoai.io, Slack, Notion, internal tools
+  - RECURRING: SaaS subscriptions, renewals, receipts, billing (auto mark read, skip inbox)
+  - SIGNAL: High-quality industry newsletters (manual "Promote to Signal" feature)
+  - LOW PRIORITY: Cold outreach, marketing, promotions (auto archive)
+- [x] Smart routing logic based on sender domain, subject keywords, Gmail labels
+- [x] Categories in left folder sidebar under Mail (not horizontal tabs)
+- [x] Minimal icons, gold accent for active section
+
+### Dynamic Signature System
+- [x] Build global signature engine from user profile (name, title, division, phone, location, website, tagline)
+- [x] Signature auto-generates based on profile data
+- [x] Minimal black/white design with gold accent line
+- [x] Auto-apply to all outgoing emails
+- [x] Auto-update when user edits profile
+- [x] Signature preview in Setup > Profile
+
+### Star Priority System
+- [ ] 1 Star = Reply Today
+- [ ] 2 Stars = Delegate
+- [ ] 3 Stars = Critical
+- [ ] Visual indicator in thread list for star level
+
+### Advanced Features
+- [ ] "Convert to Task" button on emails
+- [ ] "Link to Company" button on emails
+- [ ] Auto-detect invoice PDFs → suggest move to Capital
+- [ ] AI summary per thread (using LLM)
+
+### Testing
+- [x] All existing tests passing (305 tests across 21 files)
+- [x] 37 new mail intelligence tests covering all 6 categories
+- [ ] Visual verification across all categories and features

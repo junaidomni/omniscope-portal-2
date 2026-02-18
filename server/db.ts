@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -112,6 +112,29 @@ export async function completeOnboarding(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ onboardingCompleted: true }).where(eq(users.id, userId));
+}
+
+// ============================================================================
+// USER PROFILE / SIGNATURE OPERATIONS
+// ============================================================================
+
+export async function getUserProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1);
+  return profile || null;
+}
+
+export async function upsertUserProfile(userId: number, data: Partial<Omit<InsertUserProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getUserProfile(userId);
+  if (existing) {
+    await db.update(userProfiles).set(data).where(eq(userProfiles.userId, userId));
+  } else {
+    await db.insert(userProfiles).values({ userId, ...data });
+  }
+  return await getUserProfile(userId);
 }
 
 // ============================================================================
