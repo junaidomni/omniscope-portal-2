@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1451,4 +1451,148 @@ export async function upsertThreadSummary(
     messageCount: data.messageCount,
   });
   return { id: Number(result[0].insertId), cached: false };
+}
+
+// ============================================================================
+// BULK STAR ASSIGNMENT
+// ============================================================================
+
+export async function bulkSetEmailStars(threadIds: string[], userId: number, starLevel: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const results: { threadId: string; starLevel: number }[] = [];
+  for (const threadId of threadIds) {
+    const existing = await getEmailStar(threadId, userId);
+    if (existing) {
+      await db.update(emailStars)
+        .set({ starLevel, updatedAt: new Date() })
+        .where(and(eq(emailStars.threadId, threadId), eq(emailStars.userId, userId)));
+    } else {
+      await db.insert(emailStars).values({ threadId, userId, starLevel });
+    }
+    results.push({ threadId, starLevel });
+  }
+  return results;
+}
+
+export async function bulkRemoveEmailStars(threadIds: string[], userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  for (const threadId of threadIds) {
+    await db.delete(emailStars)
+      .where(and(eq(emailStars.threadId, threadId), eq(emailStars.userId, userId)));
+  }
+  return { removed: threadIds.length };
+}
+
+// ============================================================================
+// EMAIL ANALYTICS
+// ============================================================================
+
+export async function getEmailAnalytics(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Get all synced email messages for this user
+  const allMessages = await db.select()
+    .from(emailMessages)
+    .where(eq(emailMessages.userId, userId))
+    .orderBy(desc(emailMessages.internalDate));
+
+  // Get all stars for this user
+  const allStars = await db.select()
+    .from(emailStars)
+    .where(eq(emailStars.userId, userId));
+
+  const now = Date.now();
+  const oneDayMs = 86400000;
+  const oneWeekMs = 7 * oneDayMs;
+  const thirtyDaysMs = 30 * oneDayMs;
+
+  // Total counts
+  const totalMessages = allMessages.length;
+  const totalThreads = new Set(allMessages.map(m => m.gmailThreadId)).size;
+  const unreadCount = allMessages.filter(m => m.isUnread).length;
+
+  // Messages in last 7 days / 30 days
+  const last7Days = allMessages.filter(m => m.internalDate && (now - m.internalDate) < oneWeekMs);
+  const last30Days = allMessages.filter(m => m.internalDate && (now - m.internalDate) < thirtyDaysMs);
+
+  // Daily volume for last 14 days
+  const dailyVolume: { date: string; received: number; sent: number }[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const dayStart = now - (i * oneDayMs);
+    const dayEnd = dayStart + oneDayMs;
+    const dayStr = new Date(dayStart).toISOString().split("T")[0];
+    const dayMessages = allMessages.filter(m =>
+      m.internalDate && m.internalDate >= dayStart && m.internalDate < dayEnd
+    );
+    const received = dayMessages.filter(m => {
+      const labels = m.labelIds ? JSON.parse(m.labelIds) : [];
+      return labels.includes("INBOX") || !labels.includes("SENT");
+    }).length;
+    const sent = dayMessages.filter(m => {
+      const labels = m.labelIds ? JSON.parse(m.labelIds) : [];
+      return labels.includes("SENT");
+    }).length;
+    dailyVolume.push({ date: dayStr, received, sent });
+  }
+
+  // Top senders (from received emails)
+  const senderCounts: Record<string, { name: string; email: string; count: number }> = {};
+  allMessages.forEach(m => {
+    if (!m.fromEmail) return;
+    const labels = m.labelIds ? JSON.parse(m.labelIds) : [];
+    if (labels.includes("SENT")) return; // skip sent
+    const key = m.fromEmail.toLowerCase();
+    if (!senderCounts[key]) {
+      senderCounts[key] = { name: m.fromName || m.fromEmail, email: key, count: 0 };
+    }
+    senderCounts[key].count++;
+  });
+  const topSenders = Object.values(senderCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Top domains
+  const domainCounts: Record<string, number> = {};
+  allMessages.forEach(m => {
+    if (!m.fromEmail) return;
+    const labels = m.labelIds ? JSON.parse(m.labelIds) : [];
+    if (labels.includes("SENT")) return;
+    const domain = m.fromEmail.split("@")[1]?.toLowerCase();
+    if (domain) domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+  });
+  const topDomains = Object.entries(domainCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+    .map(([domain, count]) => ({ domain, count }));
+
+  // Star distribution
+  const starDistribution = { 1: 0, 2: 0, 3: 0 } as Record<number, number>;
+  allStars.forEach(s => {
+    starDistribution[s.starLevel] = (starDistribution[s.starLevel] || 0) + 1;
+  });
+  const totalStarred = allStars.length;
+
+  // Attachment rate
+  const withAttachments = allMessages.filter(m => m.hasAttachments).length;
+  const attachmentRate = totalMessages > 0 ? Math.round((withAttachments / totalMessages) * 100) : 0;
+
+  return {
+    totalMessages,
+    totalThreads,
+    unreadCount,
+    last7DaysCount: last7Days.length,
+    last30DaysCount: last30Days.length,
+    dailyVolume,
+    topSenders,
+    topDomains,
+    starDistribution,
+    totalStarred,
+    attachmentRate,
+    withAttachments,
+  };
 }

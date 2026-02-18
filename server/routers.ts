@@ -2237,6 +2237,31 @@ Return ONLY valid JSON. No markdown, no code blocks.`,
       const taskId = await db.createTask(taskData);
       return { id: taskId, threadId: input.threadId };
     }),
+
+  // Bulk Star Assignment
+  bulkSetStars: protectedProcedure
+    .input(z.object({
+      threadIds: z.array(z.string()).min(1).max(100),
+      starLevel: z.number().min(1).max(3),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const results = await db.bulkSetEmailStars(input.threadIds, ctx.user.id, input.starLevel);
+      return { updated: results.length, starLevel: input.starLevel };
+    }),
+
+  bulkRemoveStars: protectedProcedure
+    .input(z.object({
+      threadIds: z.array(z.string()).min(1).max(100),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await db.bulkRemoveEmailStars(input.threadIds, ctx.user.id);
+      return result;
+    }),
+
+  // Email Analytics
+  analytics: protectedProcedure.query(async ({ ctx }) => {
+    return await db.getEmailAnalytics(ctx.user.id);
+  }),
 });
 
 // ============================================================================

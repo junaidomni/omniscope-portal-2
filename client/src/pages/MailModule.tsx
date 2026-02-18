@@ -10,7 +10,8 @@ import {
   Reply, ReplyAll, Forward, Trash2, Users,
   DollarSign, Repeat, Newspaper, ArrowDown, Zap,
   CheckSquare, Building2, Link2, Unlink,
-  Sparkles, ChevronDown, ChevronUp, RotateCw, Target, ListChecks, Hash
+  Sparkles, ChevronDown, ChevronUp, RotateCw, Target, ListChecks, Hash,
+  BarChart3, Check, Minus, SquareCheck
 } from "lucide-react";
 
 // ============================================================================
@@ -811,32 +812,48 @@ function LinkToCompanyModal({
 // ============================================================================
 
 function ThreadRow({
-  thread, isSelected, onClick, starLevel,
+  thread, isSelected, onClick, starLevel, bulkMode, bulkSelected, onBulkToggle,
 }: {
   thread: CategorizedThread;
   isSelected: boolean;
   onClick: () => void;
   starLevel: number | null;
+  bulkMode?: boolean;
+  bulkSelected?: boolean;
+  onBulkToggle?: (threadId: string) => void;
 }) {
   const config = CATEGORY_CONFIG[thread.category];
   const CategoryIcon = config.icon;
 
   return (
     <button
-      onClick={onClick}
+      onClick={bulkMode ? () => onBulkToggle?.(thread.threadId) : onClick}
       className={`
         w-full text-left px-4 py-3 border-b border-zinc-800/30 transition-all group
-        ${isSelected
-          ? "bg-zinc-800/60 border-l-2 border-l-yellow-600"
-          : "hover:bg-zinc-900/80 border-l-2 border-l-transparent"
+        ${bulkSelected
+          ? "bg-yellow-600/5 border-l-2 border-l-yellow-600"
+          : isSelected
+            ? "bg-zinc-800/60 border-l-2 border-l-yellow-600"
+            : "hover:bg-zinc-900/80 border-l-2 border-l-transparent"
         }
       `}
     >
       <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className={`w-8 h-8 rounded-full ${avatarColor(thread.fromEmail)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-          <span className="text-[11px] font-semibold text-white">{senderInitials(thread.fromName || thread.fromEmail)}</span>
-        </div>
+        {/* Checkbox or Avatar */}
+        {bulkMode ? (
+          <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all
+            ${bulkSelected
+              ? "bg-yellow-600 border-yellow-600"
+              : "border-zinc-700 hover:border-zinc-500"
+            }`}
+          >
+            {bulkSelected && <Check className="h-4 w-4 text-black" />}
+          </div>
+        ) : (
+          <div className={`w-8 h-8 rounded-full ${avatarColor(thread.fromEmail)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+            <span className="text-[11px] font-semibold text-white">{senderInitials(thread.fromName || thread.fromEmail)}</span>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 min-w-0">
@@ -1296,7 +1313,61 @@ export default function MailModule() {
   const [replyAll, setReplyAll] = useState(false);
   const [forwardMsg, setForwardMsg] = useState<ServerMessage | undefined>();
   const [starFilter, setStarFilter] = useState<number | null>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // Bulk star mutations
+  const bulkSetStarsMutation = trpc.mail.bulkSetStars.useMutation();
+  const bulkRemoveStarsMutation = trpc.mail.bulkRemoveStars.useMutation();
+
+  const toggleBulkSelect = (threadId: string) => {
+    setBulkSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(threadId)) next.delete(threadId);
+      else next.add(threadId);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setBulkSelected(new Set(filteredThreads.map((t) => t.threadId)));
+  };
+
+  const deselectAll = () => {
+    setBulkSelected(new Set());
+  };
+
+  const exitBulkMode = () => {
+    setBulkMode(false);
+    setBulkSelected(new Set());
+  };
+
+  const handleBulkSetStar = async (level: number) => {
+    const ids = Array.from(bulkSelected);
+    if (!ids.length) return;
+    try {
+      await bulkSetStarsMutation.mutateAsync({ threadIds: ids, starLevel: level });
+      toast.success(`${ids.length} thread${ids.length !== 1 ? "s" : ""} marked as ${STAR_CONFIG[level].label}`);
+      starsQuery.refetch();
+      exitBulkMode();
+    } catch {
+      toast.error("Failed to assign stars");
+    }
+  };
+
+  const handleBulkRemoveStars = async () => {
+    const ids = Array.from(bulkSelected);
+    if (!ids.length) return;
+    try {
+      await bulkRemoveStarsMutation.mutateAsync({ threadIds: ids });
+      toast.success(`Stars removed from ${ids.length} thread${ids.length !== 1 ? "s" : ""}`);
+      starsQuery.refetch();
+      exitBulkMode();
+    } catch {
+      toast.error("Failed to remove stars");
+    }
+  };
 
   // Queries
   const connectionQuery = trpc.mail.connectionStatus.useQuery();
@@ -1413,6 +1484,10 @@ export default function MailModule() {
       }
       if (isInput) return;
       if (e.key === "c") openCompose();
+      if (e.key === "b") {
+        if (bulkMode) exitBulkMode();
+        else setBulkMode(true);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -1711,11 +1786,24 @@ export default function MailModule() {
               </nav>
             </div>
 
+            {/* Analytics link */}
+            <div className="mx-4 border-t border-zinc-800/40 my-2" />
+            <div className="px-3 pb-2">
+              <a
+                href="/mail/analytics"
+                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[12px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 transition-all"
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span>Analytics</span>
+              </a>
+            </div>
+
             {/* Keyboard hints */}
             <div className="px-4 py-3 border-t border-zinc-800/40">
               <div className="text-[10px] text-zinc-700 space-y-1">
                 <div className="flex justify-between"><span>Search</span><kbd className="font-mono text-zinc-600">⌘K</kbd></div>
                 <div className="flex justify-between"><span>Compose</span><kbd className="font-mono text-zinc-600">C</kbd></div>
+                <div className="flex justify-between"><span>Bulk select</span><kbd className="font-mono text-zinc-600">B</kbd></div>
                 <div className="flex justify-between"><span>Close</span><kbd className="font-mono text-zinc-600">Esc</kbd></div>
               </div>
             </div>
@@ -1734,6 +1822,75 @@ export default function MailModule() {
                 className="ml-auto text-zinc-600 hover:text-white"
               >
                 <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Bulk action toolbar */}
+          {bulkMode && (
+            <div className="px-3 py-2 border-b border-zinc-800/40 bg-zinc-900/60 flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={bulkSelected.size === filteredThreads.length ? deselectAll : selectAll}
+                  className="p-1 text-zinc-500 hover:text-white rounded transition-colors"
+                >
+                  {bulkSelected.size === filteredThreads.length ? (
+                    <SquareCheck className="h-3.5 w-3.5 text-yellow-500" />
+                  ) : bulkSelected.size > 0 ? (
+                    <Minus className="h-3.5 w-3.5" />
+                  ) : (
+                    <CheckSquare className="h-3.5 w-3.5" />
+                  )}
+                </button>
+                <span className="text-[11px] text-zinc-400">
+                  {bulkSelected.size > 0 ? `${bulkSelected.size} selected` : "Select threads"}
+                </span>
+              </div>
+
+              {bulkSelected.size > 0 && (
+                <div className="flex items-center gap-1 ml-auto">
+                  {[1, 2, 3].map((level) => {
+                    const config = STAR_CONFIG[level];
+                    return (
+                      <Tooltip key={level}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => handleBulkSetStar(level)}
+                            disabled={bulkSetStarsMutation.isPending}
+                            className={`p-1.5 rounded-md hover:bg-zinc-800/50 transition-colors ${config.color}`}
+                          >
+                            <div className="flex items-center gap-0">
+                              {Array.from({ length: level }).map((_, i) => (
+                                <Star key={i} className="h-2.5 w-2.5 fill-current -ml-0.5 first:ml-0" />
+                              ))}
+                            </div>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{config.label}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  <div className="w-px h-4 bg-zinc-800 mx-1" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleBulkRemoveStars}
+                        disabled={bulkRemoveStarsMutation.isPending}
+                        className="p-1.5 text-zinc-600 hover:text-red-400 rounded-md hover:bg-zinc-800/50 transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove stars</TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
+
+              <button
+                onClick={exitBulkMode}
+                className="ml-auto text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+              >
+                Done
               </button>
             </div>
           )}
@@ -1771,6 +1928,9 @@ export default function MailModule() {
                     isSelected={selectedThreadId === thread.threadId}
                     onClick={() => setSelectedThreadId(thread.threadId)}
                     starLevel={starMap[thread.threadId] || null}
+                    bulkMode={bulkMode}
+                    bulkSelected={bulkSelected.has(thread.threadId)}
+                    onBulkToggle={toggleBulkSelect}
                   />
                 ))}
 

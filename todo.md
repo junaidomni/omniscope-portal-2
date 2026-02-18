@@ -1241,3 +1241,28 @@
 - [x] Write vitest tests for AI summary (39 tests)
 - [x] Write vitest tests for star filter logic
 - [x] All 380 tests passing across 23 files
+
+## v34 — Bulk Star Assignment & Email Analytics Dashboard
+
+### Bulk Star Assignment
+- [x] Add multi-select mode to thread list (checkboxes on each row)
+- [x] Bulk action toolbar appears when threads are selected (count, star assign, clear)
+- [x] tRPC procedure for bulk star assignment (setStars for multiple threadIds)
+- [x] Select all / deselect all functionality
+- [x] Keyboard shortcut for toggling select mode (B key)
+- [x] Visual feedback during bulk operation (gold highlight + checkboxes)
+
+### Email Analytics Dashboard
+- [x] New MailAnalytics page accessible from mail sidebar
+- [x] Thread volume by category (bar/pie chart)
+- [x] Star priority distribution chart (donut pie chart)
+- [x] Daily volume area chart (received vs sent, last 14 days)
+- [x] Metric cards: total threads, messages, unread, 7-day count, starred, attachment rate
+- [x] Daily/weekly email volume trend line (area chart)
+- [x] Top senders table + domain distribution bar chart + domain pie chart
+- [x] Register route in App.tsx (/mail/analytics)
+
+### Testing
+- [x] Write vitest tests for bulk star procedures (35 tests)
+- [x] Write vitest tests for analytics calculations
+- [x] All 415 tests passing across 24 files

@@ -25,6 +25,7 @@ import PayrollHub from "./pages/PayrollHub";
 import Companies from "./pages/Companies";
 import CompanyProfile from "./pages/CompanyProfile";
 import MailModule from "./pages/MailModule";
+import MailAnalytics from "./pages/MailAnalytics";
 import Setup from "./pages/Setup";
 
 function Router() {
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/companies" component={Companies} />
         <Route path="/company/:id" component={CompanyProfile} />
         <Route path="/mail" component={MailModule} />
+        <Route path="/mail/analytics" component={MailAnalytics} />
         <Route path="/setup" component={Setup} />
         <Route path="/integrations">{() => { window.location.href = "/setup?tab=integrations"; return null; }}</Route>
         <Route path="/onboarding" component={Onboarding} />
