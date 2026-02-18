@@ -9,7 +9,8 @@ import {
   PanelLeft, PanelLeftClose, Loader2, X, AlertCircle, ChevronLeft,
   Reply, ReplyAll, Forward, Trash2, Users,
   DollarSign, Repeat, Newspaper, ArrowDown, Zap,
-  CheckSquare, Building2, Link2, Unlink
+  CheckSquare, Building2, Link2, Unlink,
+  Sparkles, ChevronDown, ChevronUp, RotateCw, Target, ListChecks, Hash
 } from "lucide-react";
 
 // ============================================================================
@@ -921,6 +922,17 @@ function ThreadView({
 
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+
+  // AI Summary
+  const summaryQuery = trpc.mail.getThreadSummary.useQuery({ threadId });
+  const summarizeMutation = trpc.mail.summarizeThread.useMutation({
+    onSuccess: () => {
+      utils.mail.getThreadSummary.invalidate({ threadId });
+      setSummaryOpen(true);
+    },
+  });
+  const summaryData = summarizeMutation.data || (summaryQuery.data ? { ...summaryQuery.data, cached: true } : null);
 
   const handleTrash = async (msgId: string) => {
     try {
@@ -989,6 +1001,34 @@ function ThreadView({
             currentLevel={starQuery.data?.starLevel ?? null}
           />
 
+          {/* AI Summary */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => {
+                  if (summaryData) {
+                    setSummaryOpen(!summaryOpen);
+                  } else {
+                    summarizeMutation.mutate({ threadId, force: false });
+                  }
+                }}
+                disabled={summarizeMutation.isPending}
+                className={`p-2 rounded-lg hover:bg-zinc-800/50 transition-colors ${
+                  summaryOpen ? "text-yellow-500 bg-zinc-800/50" :
+                  summaryData ? "text-yellow-600/60 hover:text-yellow-500" :
+                  "text-zinc-600 hover:text-yellow-500"
+                }`}
+              >
+                {summarizeMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{summaryData ? (summaryOpen ? "Hide Summary" : "Show Summary") : "AI Summary"}</TooltipContent>
+          </Tooltip>
+
           {/* Convert to Task */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1053,6 +1093,101 @@ function ThreadView({
                 </button>
               </span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Summary Panel */}
+      {summaryOpen && summaryData && (
+        <div className="border-b border-zinc-800/40 bg-gradient-to-b from-zinc-900/80 to-black">
+          <div className="px-5 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
+                <span className="text-[11px] font-semibold text-yellow-500 uppercase tracking-wider">AI Summary</span>
+                {summaryData.cached && (
+                  <span className="text-[9px] text-zinc-600 bg-zinc-800/60 rounded px-1.5 py-0.5">cached</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => summarizeMutation.mutate({ threadId, force: true })}
+                      disabled={summarizeMutation.isPending}
+                      className="p-1 text-zinc-600 hover:text-yellow-500 rounded transition-colors"
+                    >
+                      <RotateCw className={`h-3 w-3 ${summarizeMutation.isPending ? "animate-spin" : ""}`} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Regenerate</TooltipContent>
+                </Tooltip>
+                <button
+                  onClick={() => setSummaryOpen(false)}
+                  className="p-1 text-zinc-600 hover:text-white rounded transition-colors"
+                >
+                  <ChevronUp className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+
+            {/* Executive Summary */}
+            <p className="text-[13px] text-zinc-300 leading-relaxed mb-3">{summaryData.summary}</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Key Points */}
+              {summaryData.keyPoints?.length > 0 && (
+                <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-800/40">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Target className="h-3 w-3 text-yellow-600" />
+                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Key Points</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {summaryData.keyPoints.map((pt: string, i: number) => (
+                      <li key={i} className="text-[11px] text-zinc-400 leading-relaxed flex gap-1.5">
+                        <span className="text-zinc-600 flex-shrink-0">•</span>
+                        <span>{pt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Action Items */}
+              {summaryData.actionItems?.length > 0 && (
+                <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-800/40">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <ListChecks className="h-3 w-3 text-emerald-500" />
+                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Action Items</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {summaryData.actionItems.map((item: string, i: number) => (
+                      <li key={i} className="text-[11px] text-zinc-400 leading-relaxed flex gap-1.5">
+                        <span className="text-emerald-600 flex-shrink-0">○</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Entities */}
+              {summaryData.entities?.length > 0 && (
+                <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-800/40">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Hash className="h-3 w-3 text-blue-400" />
+                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Entities</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {summaryData.entities.map((entity: string, i: number) => (
+                      <span key={i} className="text-[10px] bg-zinc-800/60 border border-zinc-700/30 text-zinc-400 rounded-full px-2 py-0.5">
+                        {entity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1160,6 +1295,7 @@ export default function MailModule() {
   const [replyTo, setReplyTo] = useState<ServerMessage | undefined>();
   const [replyAll, setReplyAll] = useState(false);
   const [forwardMsg, setForwardMsg] = useState<ServerMessage | undefined>();
+  const [starFilter, setStarFilter] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   // Queries
@@ -1208,11 +1344,17 @@ export default function MailModule() {
     return counts;
   }, [categorizedThreads]);
 
-  // Filter by category
+  // Filter by category and star
   const filteredThreads = useMemo(() => {
-    if (category === "all") return categorizedThreads;
-    return categorizedThreads.filter((t) => t.category === category);
-  }, [categorizedThreads, category]);
+    let threads = categorizedThreads;
+    if (category !== "all") {
+      threads = threads.filter((t) => t.category === category);
+    }
+    if (starFilter !== null) {
+      threads = threads.filter((t) => starMap[t.threadId] === starFilter);
+    }
+    return threads;
+  }, [categorizedThreads, category, starFilter, starMap]);
 
   const handleSearch = () => {
     setSearchQuery(searchInput);
@@ -1526,17 +1668,33 @@ export default function MailModule() {
             {/* Divider */}
             <div className="mx-4 border-t border-zinc-800/40 my-2" />
 
-            {/* Star Priorities */}
+            {/* Star Priorities — clickable filter */}
             <div className="px-3 pb-4 flex-1">
-              <div className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest px-2 mb-2">Priorities</div>
+              <div className="flex items-center justify-between px-2 mb-2">
+                <span className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Priorities</span>
+                {starFilter !== null && (
+                  <button
+                    onClick={() => setStarFilter(null)}
+                    className="text-[9px] text-zinc-600 hover:text-yellow-500 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               <nav className="space-y-0.5">
                 {[1, 2, 3].map((level) => {
                   const config = STAR_CONFIG[level];
                   const count = Object.values(starMap).filter((l) => l === level).length;
+                  const isActive = starFilter === level;
                   return (
-                    <div
+                    <button
                       key={level}
-                      className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[12px] text-zinc-500"
+                      onClick={() => {
+                        setStarFilter(isActive ? null : level);
+                        setSelectedThreadId(null);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[12px] transition-all
+                        ${isActive ? "bg-zinc-800/70 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"}`}
                     >
                       <div className={`flex items-center gap-0 ${config.color}`}>
                         {Array.from({ length: level }).map((_, i) => (
@@ -1545,9 +1703,9 @@ export default function MailModule() {
                       </div>
                       <span className="flex-1 text-left">{config.label}</span>
                       {count > 0 && (
-                        <span className="text-[10px] font-semibold tabular-nums text-zinc-700">{count}</span>
+                        <span className={`text-[10px] font-semibold tabular-nums ${isActive ? config.color : "text-zinc-700"}`}>{count}</span>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </nav>
@@ -1630,9 +1788,29 @@ export default function MailModule() {
             )}
           </div>
 
+          {/* Star filter indicator */}
+          {starFilter !== null && (
+            <div className="px-4 py-2 border-b border-zinc-800/40 flex items-center gap-2">
+              <div className={`flex items-center gap-0 ${STAR_CONFIG[starFilter].color}`}>
+                {Array.from({ length: starFilter }).map((_, i) => (
+                  <Star key={i} className="h-2.5 w-2.5 fill-current -ml-0.5 first:ml-0" />
+                ))}
+              </div>
+              <span className="text-[11px] text-zinc-400">Showing {STAR_CONFIG[starFilter].label}</span>
+              <button
+                onClick={() => setStarFilter(null)}
+                className="ml-auto text-zinc-600 hover:text-white"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
           {/* Thread list footer */}
           <div className="px-4 py-2 border-t border-zinc-800/40 text-[10px] text-zinc-700 text-center">
-            {category !== "all" ? (
+            {starFilter !== null ? (
+              <span>{filteredThreads.length} {STAR_CONFIG[starFilter].label} thread{filteredThreads.length !== 1 ? "s" : ""}</span>
+            ) : category !== "all" ? (
               <span>{filteredThreads.length} in {CATEGORY_CONFIG[category as OmniCategory].label}</span>
             ) : threadsQuery.data?.resultSizeEstimate ? (
               <span>{threadsQuery.data.resultSizeEstimate} conversations</span>

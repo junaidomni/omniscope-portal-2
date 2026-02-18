@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1392,4 +1392,63 @@ export async function getCompanyEmailThreads(companyId: number) {
   return await db.select({ threadId: emailCompanyLinks.threadId })
     .from(emailCompanyLinks)
     .where(eq(emailCompanyLinks.companyId, companyId));
+}
+
+
+// ============================================================================
+// EMAIL THREAD SUMMARIES
+// ============================================================================
+
+export async function getThreadSummary(threadId: string, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.select()
+    .from(emailThreadSummaries)
+    .where(and(
+      eq(emailThreadSummaries.threadId, threadId),
+      eq(emailThreadSummaries.userId, userId)
+    ))
+    .limit(1);
+  return result || null;
+}
+
+export async function upsertThreadSummary(
+  threadId: string,
+  userId: number,
+  data: {
+    summary: string;
+    keyPoints: string[] | null;
+    actionItems: string[] | null;
+    entities: string[] | null;
+    messageCount: number;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await getThreadSummary(threadId, userId);
+  if (existing) {
+    await db.update(emailThreadSummaries)
+      .set({
+        summary: data.summary,
+        keyPoints: data.keyPoints ? JSON.stringify(data.keyPoints) : null,
+        actionItems: data.actionItems ? JSON.stringify(data.actionItems) : null,
+        entities: data.entities ? JSON.stringify(data.entities) : null,
+        messageCount: data.messageCount,
+        updatedAt: new Date(),
+      })
+      .where(eq(emailThreadSummaries.id, existing.id));
+    return { id: existing.id, cached: false };
+  }
+
+  const result = await db.insert(emailThreadSummaries).values({
+    threadId,
+    userId,
+    summary: data.summary,
+    keyPoints: data.keyPoints ? JSON.stringify(data.keyPoints) : null,
+    actionItems: data.actionItems ? JSON.stringify(data.actionItems) : null,
+    entities: data.entities ? JSON.stringify(data.entities) : null,
+    messageCount: data.messageCount,
+  });
+  return { id: Number(result[0].insertId), cached: false };
 }

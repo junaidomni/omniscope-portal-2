@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, index, bigint, decimal, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, index, uniqueIndex, bigint, decimal, json } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -794,3 +794,27 @@ export const emailCompanyLinksRelations = relations(emailCompanyLinks, ({ one })
     references: [users.id],
   }),
 }));
+
+
+/**
+ * Email Thread Summaries — cached AI-generated summaries for Gmail threads.
+ * Avoids re-invoking LLM for the same thread unless explicitly refreshed.
+ */
+export const emailThreadSummaries = mysqlTable("email_thread_summaries", {
+  id: int("id").autoincrement().primaryKey(),
+  threadId: varchar("threadId", { length: 255 }).notNull(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  summary: text("summary").notNull(),
+  keyPoints: text("keyPoints"), // JSON array of key points
+  actionItems: text("actionItems"), // JSON array of action items
+  entities: text("entities"), // JSON array of entities mentioned
+  messageCount: int("messageCount").notNull(), // number of messages when summary was generated
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  threadUserIdx: uniqueIndex("ets_thread_user_idx").on(table.threadId, table.userId),
+  userIdx: index("ets_user_idx").on(table.userId),
+}));
+
+export type EmailThreadSummary = typeof emailThreadSummaries.$inferSelect;
+export type InsertEmailThreadSummary = typeof emailThreadSummaries.$inferInsert;

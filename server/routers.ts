@@ -2089,6 +2089,124 @@ const mailRouter = router({
       return await db.unlinkEmailFromCompany(input.linkId);
     }),
 
+  // AI Thread Summary
+  getThreadSummary: protectedProcedure
+    .input(z.object({ threadId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const cached = await db.getThreadSummary(input.threadId, ctx.user.id);
+      if (!cached) return null;
+      return {
+        summary: cached.summary,
+        keyPoints: cached.keyPoints ? JSON.parse(cached.keyPoints) : [],
+        actionItems: cached.actionItems ? JSON.parse(cached.actionItems) : [],
+        entities: cached.entities ? JSON.parse(cached.entities) : [],
+        messageCount: cached.messageCount,
+        createdAt: cached.createdAt,
+        updatedAt: cached.updatedAt,
+      };
+    }),
+
+  summarizeThread: protectedProcedure
+    .input(z.object({ threadId: z.string(), force: z.boolean().default(false) }))
+    .mutation(async ({ ctx, input }) => {
+      // Check cache first (unless force refresh)
+      if (!input.force) {
+        const cached = await db.getThreadSummary(input.threadId, ctx.user.id);
+        if (cached) {
+          return {
+            summary: cached.summary,
+            keyPoints: cached.keyPoints ? JSON.parse(cached.keyPoints) : [],
+            actionItems: cached.actionItems ? JSON.parse(cached.actionItems) : [],
+            entities: cached.entities ? JSON.parse(cached.entities) : [],
+            messageCount: cached.messageCount,
+            cached: true,
+          };
+        }
+      }
+
+      // Fetch thread messages
+      const threadData = await gmailService.getGmailThread(ctx.user.id, input.threadId);
+      if (!threadData?.messages?.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Thread not found or empty" });
+      }
+
+      const messages = threadData.messages;
+      // Build conversation text for LLM
+      const conversationText = messages.map((msg: any) => {
+        const body = (msg.body || msg.bodyHtml || msg.snippet || "").replace(/<[^>]+>/g, "").trim();
+        const date = new Date(parseInt(msg.internalDate)).toISOString();
+        return `[${date}] ${msg.fromName || msg.fromEmail} <${msg.fromEmail}>:\n${body}`;
+      }).join("\n\n---\n\n");
+
+      const { invokeLLM } = await import("./_core/llm");
+      const result = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are OmniScope Intelligence — a private, institutional-grade email analysis engine.
+Your tone is precise, discreet, and professional. No fluff.
+
+Analyze the email thread and return a JSON object with:
+- "summary": A concise 2-3 sentence executive summary of the entire conversation
+- "keyPoints": An array of 3-5 key points or decisions from the thread
+- "actionItems": An array of action items or follow-ups identified (empty array if none)
+- "entities": An array of notable entities mentioned (companies, people, amounts, jurisdictions)
+
+Return ONLY valid JSON. No markdown, no code blocks.`,
+          },
+          {
+            role: "user",
+            content: `Summarize this email thread (${messages.length} messages):\n\n${conversationText.substring(0, 12000)}`,
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "thread_summary",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                summary: { type: "string", description: "Executive summary" },
+                keyPoints: { type: "array", items: { type: "string" }, description: "Key points" },
+                actionItems: { type: "array", items: { type: "string" }, description: "Action items" },
+                entities: { type: "array", items: { type: "string" }, description: "Notable entities" },
+              },
+              required: ["summary", "keyPoints", "actionItems", "entities"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const content = result.choices?.[0]?.message?.content as string | undefined;
+      if (!content) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "LLM returned empty response" });
+      }
+
+      let parsed: { summary: string; keyPoints: string[]; actionItems: string[]; entities: string[] };
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse LLM response" });
+      }
+
+      // Cache the result
+      await db.upsertThreadSummary(input.threadId, ctx.user.id, {
+        summary: parsed.summary,
+        keyPoints: parsed.keyPoints,
+        actionItems: parsed.actionItems,
+        entities: parsed.entities,
+        messageCount: messages.length,
+      });
+
+      return {
+        ...parsed,
+        messageCount: messages.length,
+        cached: false,
+      };
+    }),
+
   // Convert to Task
   convertToTask: protectedProcedure
     .input(z.object({

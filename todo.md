@@ -1219,3 +1219,25 @@
 - [x] Write vitest tests for convert-to-task flow
 - [x] Write vitest tests for link-to-company flow
 - [x] All 341 tests passing across 22 files (36 new mail-crm tests)
+
+## v33 — AI Thread Summary & Star-Filtered View
+
+### AI Thread Summary
+- [x] Add tRPC procedure that sends thread messages to LLM for summarization
+- [x] LLM prompt: institutional tone, extract key points, action items, and entities
+- [x] One-click "Summarize" button in thread view header (Sparkles icon)
+- [x] Summary displayed in a collapsible panel above messages with 3-column layout
+- [x] Loading state with spinner during LLM processing
+- [x] Cache summary in email_thread_summaries table with force-refresh option
+
+### Star-Filtered View
+- [x] Make priority items in sidebar clickable to filter thread list
+- [x] Active star filter highlighted in sidebar with gold accent
+- [x] Show only threads matching selected star level
+- [x] Clear filter button in sidebar + X button in filter indicator bar
+- [x] Thread count updates to reflect filtered results in footer
+
+### Testing
+- [x] Write vitest tests for AI summary (39 tests)
+- [x] Write vitest tests for star filter logic
+- [x] All 380 tests passing across 23 files
