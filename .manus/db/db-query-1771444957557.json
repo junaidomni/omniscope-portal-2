@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, userId, scope, email, createdAt, updatedAt FROM google_tokens LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, userId, scope, email, createdAt, updatedAt FROM google_tokens LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "scope": "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar openid",
+      "email": "junaid@omniscopex.ae",
+      "createdAt": "2026-02-16 18:11:08",
+      "updatedAt": "2026-02-18 19:56:37"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tscope\temail\tcreatedAt\tupdatedAt\n1\t1\thttps://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar openid\tjunaid@omniscopex.ae\t2026-02-16 18:11:08\t2026-02-18 19:56:37\n",
+  "stderr": "",
+  "execution_time_ms": 387
+}

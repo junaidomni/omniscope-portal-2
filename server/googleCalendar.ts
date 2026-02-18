@@ -24,7 +24,7 @@ function getOAuth2Client(redirectUri?: string) {
 /**
  * Generate the Google OAuth2 authorization URL
  */
-export function getGoogleAuthUrl(origin: string, userId: number): string {
+export function getGoogleAuthUrl(origin: string, userId: number, returnPath?: string): string {
   const redirectUri = `${origin}/api/google/callback`;
   const oauth2Client = getOAuth2Client(redirectUri);
 
@@ -41,7 +41,7 @@ export function getGoogleAuthUrl(origin: string, userId: number): string {
     access_type: "offline",
     scope: scopes,
     prompt: "consent", // Force consent to always get refresh_token
-    state: JSON.stringify({ userId, origin }),
+    state: JSON.stringify({ userId, origin, returnPath: returnPath || "/integrations" }),
   });
 }
 
@@ -51,9 +51,9 @@ export function getGoogleAuthUrl(origin: string, userId: number): string {
 export async function handleGoogleCallback(
   code: string,
   state: string
-): Promise<{ success: boolean; origin: string; error?: string }> {
+): Promise<{ success: boolean; origin: string; returnPath?: string; error?: string }> {
   try {
-    const { userId, origin } = JSON.parse(state);
+    const { userId, origin, returnPath } = JSON.parse(state);
     const redirectUri = `${origin}/api/google/callback`;
     const oauth2Client = getOAuth2Client(redirectUri);
 
@@ -85,7 +85,7 @@ export async function handleGoogleCallback(
     });
 
     console.log(`[Google] OAuth tokens stored for user ${userId} (${googleEmail})`);
-    return { success: true, origin };
+    return { success: true, origin, returnPath: returnPath || "/integrations" };
   } catch (error: any) {
     console.error("[Google] OAuth callback error:", error.message);
     return { success: false, origin: "", error: error.message };
@@ -189,12 +189,18 @@ export async function getGmailClient(userId: number) {
 /**
  * Check if a user has connected their Google account
  */
-export async function isGoogleConnected(userId: number): Promise<{ connected: boolean; email?: string }> {
+export async function isGoogleConnected(userId: number): Promise<{
+  connected: boolean;
+  email?: string;
+  hasCalendarScopes?: boolean;
+  hasGmailScopes?: boolean;
+  scopes?: string[];
+}> {
   const db = await getDb();
   if (!db) return { connected: false };
 
   const tokens = await db
-    .select({ email: googleTokens.email, refreshToken: googleTokens.refreshToken })
+    .select({ email: googleTokens.email, refreshToken: googleTokens.refreshToken, scope: googleTokens.scope })
     .from(googleTokens)
     .where(eq(googleTokens.userId, userId))
     .limit(1);
@@ -203,7 +209,18 @@ export async function isGoogleConnected(userId: number): Promise<{ connected: bo
     return { connected: false };
   }
 
-  return { connected: true, email: tokens[0].email || undefined };
+  const scopeStr = tokens[0].scope || "";
+  const scopes = scopeStr.split(/\s+/).filter(Boolean);
+  const hasCalendarScopes = scopes.some(s => s.includes("calendar"));
+  const hasGmailScopes = scopes.some(s => s.includes("gmail.readonly")) && scopes.some(s => s.includes("gmail.modify"));
+
+  return {
+    connected: true,
+    email: tokens[0].email || undefined,
+    hasCalendarScopes,
+    hasGmailScopes,
+    scopes,
+  };
 }
 
 /**

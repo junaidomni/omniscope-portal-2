@@ -57,9 +57,11 @@ calendarRouter.get("/google/callback", async (req: Request, res: Response) => {
   const result = await handleGoogleCallback(code, state);
 
   if (result.success) {
-    res.redirect(`${result.origin}/calendar?google=connected`);
+    const returnPath = result.returnPath || "/integrations";
+    res.redirect(`${result.origin}${returnPath}?google=connected`);
   } else {
-    res.redirect(`${result.origin}/calendar?google=error&message=${encodeURIComponent(result.error || "Unknown error")}`);
+    const returnPath = result.returnPath || "/integrations";
+    res.redirect(`${result.origin}${returnPath}?google=error&message=${encodeURIComponent(result.error || "Unknown error")}`);
   }
 });
 

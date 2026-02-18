@@ -1026,3 +1026,20 @@
 - [x] Test entity auto-linking
 - [x] Test Gmail service layer functions
 - [x] Run full test suite — 232 tests passing across 18 files
+## Gmail Integration Bugs (v27)
+- [x] Diagnosed root cause: stored tokens only have gmail.send scope, missing gmail.readonly + gmail.modify
+- [x] Diagnosed white page: redirect_uri_mismatch — callback URI not registered in Google Cloud Console
+- [x] Add scope detection to isGoogleConnected (hasGmailScopes, hasCalendarScopes, scopes array)
+- [x] Fix callback redirect: now goes to /integrations (or custom returnPath) instead of /calendar
+- [x] Add returnPath parameter to getGoogleAuthUrl and handleGoogleCallback
+- [x] Rebuild Integrations page with scope-aware status display
+- [x] Show redirect URI with copy button on Integrations page for easy Google Cloud Console setup
+- [x] Show per-service scope status (Gmail: Active/Limited, Calendar: Active, Fathom: Active)
+- [x] Show Gmail Permissions Required banner when scopes are insufficient
+- [x] Mail page shows clear re-auth prompt when Gmail scopes are missing (instead of empty inbox)
+- [x] Re-authenticate button from Mail page returns to /mail after OAuth flow
+- [x] Re-authenticate button from Integrations page returns to /integrations after OAuth flow
+- [x] 18 new scope detection tests passing (gmail-scope-detection.test.ts)
+- [x] All 250 tests passing across 19 test files
+- [ ] USER ACTION: Add redirect URI to Google Cloud Console OAuth credentials
+- [ ] USER ACTION: Re-authenticate to grant gmail.readonly + gmail.modify scopes

@@ -7,44 +7,64 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   Mail, Calendar, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
-  ExternalLink, Shield, Clock, Loader2, Unlink, ChevronRight
+  ExternalLink, Shield, Clock, Loader2, Copy, ChevronRight, Info
 } from "lucide-react";
+import { useSearch } from "wouter";
 
 export default function Integrations() {
-  const [disconnecting, setDisconnecting] = useState(false);
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const googleStatus = params.get("google");
 
-  // Check Google connection status
+  // Show toast on redirect from Google OAuth
+  useEffect(() => {
+    if (googleStatus === "connected") {
+      toast.success("Google account connected successfully! Gmail and Calendar scopes are now active.");
+      // Clean URL
+      window.history.replaceState({}, "", "/integrations");
+    } else if (googleStatus === "error") {
+      const msg = params.get("message") || "Unknown error";
+      toast.error(`Google connection failed: ${msg}`);
+      window.history.replaceState({}, "", "/integrations");
+    }
+  }, [googleStatus]);
+
+  // Check Google connection status (now includes scope info)
   const { data: mailStatus, isLoading: mailLoading, refetch: refetchMail } = trpc.mail.connectionStatus.useQuery();
   const authUrlMutation = trpc.mail.getAuthUrl.useMutation();
-  const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const [redirectUri, setRedirectUri] = useState<string | null>(null);
 
   const googleConnected = mailStatus?.connected === true;
   const googleEmail = mailStatus?.email || null;
-  // Calendar uses the same Google tokens as Gmail
-  const calendarConnected = googleConnected;
+  const hasGmailScopes = mailStatus?.hasGmailScopes === true;
+  const hasCalendarScopes = mailStatus?.hasCalendarScopes === true;
+  const needsReauth = googleConnected && !hasGmailScopes;
 
+  // Pre-fetch the redirect URI so we can display it
   useEffect(() => {
-    if (mailStatus?.connected === false && !authUrl) {
-      authUrlMutation.mutateAsync({ origin: window.location.origin })
-        .then(r => setAuthUrl(r.url))
-        .catch(() => {});
+    if (!redirectUri) {
+      const origin = window.location.origin;
+      setRedirectUri(`${origin}/api/google/callback`);
     }
-  }, [mailStatus?.connected]);
+  }, []);
 
   const handleConnect = () => {
-    if (authUrl) {
-      window.location.href = authUrl;
-    } else {
-      authUrlMutation.mutateAsync({ origin: window.location.origin })
-        .then(r => { window.location.href = r.url; })
-        .catch(() => toast.error("Failed to generate auth URL"));
-    }
+    authUrlMutation.mutateAsync({ origin: window.location.origin, returnPath: "/integrations" })
+      .then(r => { window.location.href = r.url; })
+      .catch(() => toast.error("Failed to generate auth URL"));
   };
 
   const handleReconnect = () => {
-    authUrlMutation.mutateAsync({ origin: window.location.origin })
+    authUrlMutation.mutateAsync({ origin: window.location.origin, returnPath: "/integrations" })
       .then(r => { window.location.href = r.url; })
       .catch(() => toast.error("Failed to generate auth URL"));
+  };
+
+  const copyRedirectUri = () => {
+    if (redirectUri) {
+      navigator.clipboard.writeText(redirectUri);
+      toast.success("Redirect URI copied to clipboard");
+    }
   };
 
   return (
@@ -56,6 +76,66 @@ export default function Integrations() {
           Manage connected services and data sources. All connections use secure OAuth — OmniScope never stores your passwords.
         </p>
       </div>
+
+      {/* Scope Warning Banner */}
+      {needsReauth && (
+        <div className="p-4 rounded-lg bg-yellow-600/10 border border-yellow-600/30 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-yellow-400 mb-1">Gmail Permissions Required</h3>
+            <p className="text-xs text-zinc-300 mb-3">
+              Your Google account is connected, but the current authorization only includes Calendar and Send permissions.
+              To use the full Mail module (read, search, star, and manage emails), you need to re-authenticate with expanded Gmail scopes.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={handleReconnect}
+                disabled={authUrlMutation.isPending}
+                size="sm"
+                className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium"
+              >
+                {authUrlMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                Re-authenticate with Gmail Access
+              </Button>
+              <span className="text-[10px] text-zinc-500">This will open Google's consent screen</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Redirect URI Setup Card */}
+      {redirectUri && (
+        <Card className="bg-zinc-900/50 border-zinc-800">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-blue-400" />
+              <CardTitle className="text-sm text-white">Google Cloud Console Setup</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-zinc-400">
+              For Google OAuth to work, you must add this <strong className="text-zinc-200">Authorized redirect URI</strong> to your Google Cloud Console OAuth 2.0 credentials:
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs text-yellow-400 bg-zinc-900 px-3 py-2 rounded border border-zinc-800 break-all">
+                {redirectUri}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyRedirectUri}
+                className="border-zinc-700 text-zinc-400 hover:text-white h-8 flex-shrink-0"
+              >
+                <Copy className="h-3.5 w-3.5 mr-1" />Copy
+              </Button>
+            </div>
+            <p className="text-[10px] text-zinc-500">
+              Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">Google Cloud Console → Credentials</a> → Edit your OAuth 2.0 Client ID → Add this URI under "Authorized redirect URIs" → Save.
+              {" "}Note: If you publish this site to a custom domain, you'll need to add that domain's redirect URI as well.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Google Workspace Integration */}
       <Card className="bg-zinc-900/50 border-zinc-800">
@@ -78,9 +158,15 @@ export default function Integrations() {
             {mailLoading ? (
               <Skeleton className="h-6 w-24 bg-zinc-800" />
             ) : googleConnected ? (
-              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                <CheckCircle2 className="h-3 w-3 mr-1" />Connected
-              </Badge>
+              needsReauth ? (
+                <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20">
+                  <AlertTriangle className="h-3 w-3 mr-1" />Partial
+                </Badge>
+              ) : (
+                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />Connected
+                </Badge>
+              )
             ) : (
               <Badge className="bg-red-500/10 text-red-400 border-red-500/20">
                 <XCircle className="h-3 w-3 mr-1" />Not Connected
@@ -105,8 +191,14 @@ export default function Integrations() {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleReconnect}
+                      disabled={authUrlMutation.isPending}
                       className="border-zinc-700 text-zinc-400 hover:text-white h-8">
-                      <RefreshCw className="h-3.5 w-3.5 mr-1.5" />Re-authenticate
+                      {authUrlMutation.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      Re-authenticate
                     </Button>
                   </div>
                 </div>
@@ -115,23 +207,43 @@ export default function Integrations() {
               {/* Service Status Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Gmail */}
-                <div className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-800">
+                <div className={`p-4 rounded-lg border ${hasGmailScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-yellow-600/5 border-yellow-600/20"}`}>
                   <div className="flex items-center gap-2 mb-3">
                     <Mail className="h-4 w-4 text-red-400" />
                     <span className="text-sm font-medium text-white">Gmail</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    {hasGmailScopes ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    ) : (
+                      <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-[10px] px-1.5 py-0 ml-auto">Limited</Badge>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Read emails
+                      {hasGmailScopes ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-yellow-500" />
+                      )}
+                      Read emails
                     </div>
                     <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Send emails
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      Send emails
                     </div>
                     <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Search threads
+                      {hasGmailScopes ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-yellow-500" />
+                      )}
+                      Search & manage
                     </div>
                   </div>
+                  {!hasGmailScopes && (
+                    <p className="text-[10px] text-yellow-500/70 mt-2">
+                      Re-authenticate to enable full Gmail access
+                    </p>
+                  )}
                 </div>
 
                 {/* Calendar */}
@@ -139,8 +251,8 @@ export default function Integrations() {
                   <div className="flex items-center gap-2 mb-3">
                     <Calendar className="h-4 w-4 text-blue-400" />
                     <span className="text-sm font-medium text-white">Calendar</span>
-                    <Badge className={`${calendarConnected ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'} text-[10px] px-1.5 py-0 ml-auto`}>
-                      {calendarConnected ? 'Active' : 'Pending'}
+                    <Badge className={`${hasCalendarScopes ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'} text-[10px] px-1.5 py-0 ml-auto`}>
+                      {hasCalendarScopes ? 'Active' : 'Pending'}
                     </Badge>
                   </div>
                   <div className="space-y-1.5">
@@ -195,8 +307,12 @@ export default function Integrations() {
                     <span>Tokens encrypted at rest</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                    <span>Scopes: Calendar, Gmail (read/send)</span>
+                    {hasGmailScopes ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
+                    )}
+                    <span>Scopes: Calendar{hasGmailScopes ? ", Gmail (full)" : ", Gmail (send only)"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
@@ -216,12 +332,15 @@ export default function Integrations() {
                 Connect your Google account to enable Gmail integration, calendar sync, and contact matching.
                 OmniScope uses OAuth 2.0 — your password is never stored.
               </p>
-              <Button onClick={handleConnect} className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium">
-                <ExternalLink className="h-4 w-4 mr-2" />Connect Google Account
+              <Button onClick={handleConnect}
+                disabled={authUrlMutation.isPending}
+                className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium">
+                {authUrlMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+                Connect Google Account
               </Button>
               <div className="mt-6 flex items-center justify-center gap-6 text-xs text-zinc-500">
                 <div className="flex items-center gap-1.5">
-                  <Shield className="h-3.5 w-3.5" />OAuth 2.0 Secure
+                  <Shield className="h-3.5 w-3.5" />Secure OAuth 2.0
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />Takes 30 seconds

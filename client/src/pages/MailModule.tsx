@@ -532,12 +532,12 @@ function ThreadView({
 // CONNECT GMAIL PROMPT
 // ============================================================================
 
-function ConnectGmailPrompt() {
+function ConnectGmailPrompt({ needsReauth }: { needsReauth?: boolean }) {
   const getAuthUrl = trpc.mail.getAuthUrl.useMutation();
 
   const handleConnect = async () => {
     try {
-      const { url } = await getAuthUrl.mutateAsync({ origin: window.location.origin });
+      const { url } = await getAuthUrl.mutateAsync({ origin: window.location.origin, returnPath: "/mail" });
       window.location.href = url;
     } catch {
       toast.error("Failed to get Google auth URL");
@@ -550,10 +550,14 @@ function ConnectGmailPrompt() {
         <div className="w-16 h-16 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mx-auto mb-6">
           <Mail className="h-8 w-8 text-yellow-600" />
         </div>
-        <h2 className="text-xl font-semibold text-white mb-2">Connect Gmail</h2>
+        <h2 className="text-xl font-semibold text-white mb-2">
+          {needsReauth ? "Gmail Permissions Required" : "Connect Gmail"}
+        </h2>
         <p className="text-sm text-zinc-400 mb-6">
-          Connect your Gmail account to view, send, and manage emails directly from OmniScope.
-          Your emails are fetched on-demand and never stored on our servers.
+          {needsReauth
+            ? "Your Google account is connected, but Gmail read/manage permissions are missing. Re-authenticate to grant full Gmail access, then come back to the Mail page."
+            : "Connect your Gmail account to view, send, and manage emails directly from OmniScope. Your emails are fetched on-demand and never stored on our servers."
+          }
         </p>
         <Button
           onClick={handleConnect}
@@ -561,8 +565,14 @@ function ConnectGmailPrompt() {
           className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium"
         >
           {getAuthUrl.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-          Connect Gmail
+          {needsReauth ? "Re-authenticate with Gmail Access" : "Connect Gmail"}
         </Button>
+        {needsReauth && (
+          <p className="text-xs text-zinc-500 mt-4">
+            Make sure the redirect URI is registered in your{" "}
+            <a href="/integrations" className="text-yellow-600 hover:text-yellow-500 underline">Integrations settings</a>.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -583,20 +593,21 @@ export default function MailModule() {
   const [forwardMsg, setForwardMsg] = useState<GmailMessage | undefined>();
   const [pageToken, setPageToken] = useState<string | undefined>();
 
-  // Check connection
+  // Check connection (now includes scope info)
   const connectionQuery = trpc.mail.connectionStatus.useQuery();
   const isConnected = connectionQuery.data?.connected;
+  const hasGmailScopes = connectionQuery.data?.hasGmailScopes;
 
-  // Unread count
+  // Unread count - only if we have Gmail scopes
   const unreadQuery = trpc.mail.getUnreadCount.useQuery(undefined, {
-    enabled: !!isConnected,
+    enabled: !!isConnected && !!hasGmailScopes,
     refetchInterval: 60000,
   });
 
-  // Thread list
+  // Thread list - only if we have Gmail scopes
   const threadsQuery = trpc.mail.listThreads.useQuery(
     { folder, search: searchQuery || undefined, maxResults: 25, pageToken },
-    { enabled: !!isConnected }
+    { enabled: !!isConnected && !!hasGmailScopes }
   );
 
   const handleSearch = () => {
@@ -647,11 +658,19 @@ export default function MailModule() {
     );
   }
 
-  // Not connected
+  // Not connected or missing Gmail scopes
   if (!isConnected) {
     return (
       <div className="h-full flex bg-black">
         <ConnectGmailPrompt />
+      </div>
+    );
+  }
+
+  if (!hasGmailScopes) {
+    return (
+      <div className="h-full flex bg-black">
+        <ConnectGmailPrompt needsReauth />
       </div>
     );
   }

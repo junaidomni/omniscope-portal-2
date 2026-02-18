@@ -2040,10 +2040,10 @@ const mailRouter = router({
   }),
 
   getAuthUrl: protectedProcedure
-    .input(z.object({ origin: z.string() }))
+    .input(z.object({ origin: z.string(), returnPath: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      const url = getGoogleAuthUrl(input.origin, ctx.user.id);
-      return { url };
+      const url = getGoogleAuthUrl(input.origin, ctx.user.id, input.returnPath);
+      return { url, redirectUri: `${input.origin}/api/google/callback` };
     }),
 });
 
