@@ -570,7 +570,7 @@ function ConnectGmailPrompt({ needsReauth }: { needsReauth?: boolean }) {
         {needsReauth && (
           <p className="text-xs text-zinc-500 mt-4">
             Make sure the redirect URI is registered in your{" "}
-            <a href="/integrations" className="text-yellow-600 hover:text-yellow-500 underline">Integrations settings</a>.
+            <a href="/setup?tab=integrations" className="text-yellow-600 hover:text-yellow-500 underline">Setup → Integrations</a>.
           </p>
         )}
       </div>

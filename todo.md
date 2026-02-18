@@ -1043,3 +1043,33 @@
 - [x] All 250 tests passing across 19 test files
 - [ ] USER ACTION: Add redirect URI to Google Cloud Console OAuth credentials
 - [ ] USER ACTION: Re-authenticate to grant gmail.readonly + gmail.modify scopes
+
+## v28 — Onboarding Guide & Setup Consolidation
+
+### Merge Integrations into Setup
+- [x] Move Integrations content into Setup page as a sub-tab
+- [x] Remove standalone Integrations sidebar item
+- [x] Setup page sub-navigation: Profile, Integrations, Webhooks & API
+- [x] Clean, tabbed layout within Setup
+- [x] Ensure all Integrations functionality preserved (Google OAuth, Fathom, Webhooks)
+- [x] /integrations redirects to /setup?tab=integrations for backward compatibility
+- [x] Callback redirect updated to use /setup?tab=integrations with proper query param handling
+
+### First-Login Onboarding Wizard
+- [x] Add onboardingCompleted field to users table + push migration
+- [x] Add onboarding router (status + complete procedures)
+- [x] Detect first-time login via onboardingCompleted flag
+- [x] Auto-redirect to /onboarding for new users (PortalLayout)
+- [x] Step 1: Welcome to OmniScope (branded intro with tool overview)
+- [x] Step 2: Connect Google Account (Gmail + Calendar with live status)
+- [x] Step 3: Quick tour of key features (Dashboard, Mail, Meetings, Contacts)
+- [x] Step 4: Ready confirmation with direct links to key areas
+- [x] Progress bar showing completion (4 steps)
+- [x] Skip option for users who want to set up later
+- [x] Redirect to Dashboard after completion
+- [x] 30-second experience — minimal friction
+- [x] Existing users auto-marked as onboarding completed
+
+### Testing
+- [x] 18 new onboarding tests (onboarding.test.ts) — routing, redirect logic, URL construction
+- [x] All 268 tests passing across 20 test files

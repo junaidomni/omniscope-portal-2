@@ -47,7 +47,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
   const setCollapsed = (v: boolean) => {
     setCollapsedState(v);
-    try { localStorage.setItem(SIDEBAR_KEY, String(v)); } catch {}
+    try { localStorage.setItem(SIDEBAR_KEY, String(v)); } catch {};
   };
 
   const handleLogout = async () => {
@@ -59,6 +59,13 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       toast.error("Failed to logout");
     }
   };
+
+  // Redirect first-time users to onboarding (skip if already on /onboarding)
+  useEffect(() => {
+    if (isAuthenticated && user && !user.onboardingCompleted && location !== '/onboarding') {
+      setLocation('/onboarding');
+    }
+  }, [isAuthenticated, user, location]);
 
   if (loading) {
     return (
@@ -110,7 +117,6 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     { path: "/companies", icon: Briefcase, label: "Companies" },
     { path: "/mail", icon: Mail, label: "Mail" },
     { path: "/hr", icon: Building2, label: "HR Hub" },
-    { path: "/integrations", icon: Settings, label: "Integrations" },
   ];
 
   const isAdmin = user?.role === 'admin';
@@ -174,10 +180,10 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
           {/* Setup & Admin - Bottom of sidebar above user */}
           <div className="px-2 pb-1 space-y-1">
-            <Link href="/onboarding">
+            <Link href="/setup">
               <button
                 className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} gap-3 ${collapsed ? 'px-2 py-3' : 'px-4 py-3'} rounded-lg transition-all ${
-                  location === '/onboarding'
+                  location === '/setup' || location.startsWith('/setup?')
                     ? "bg-yellow-600 text-black font-medium"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                 }`}

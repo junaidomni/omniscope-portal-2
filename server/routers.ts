@@ -2048,6 +2048,28 @@ const mailRouter = router({
 });
 
 // ============================================================================
+// ONBOARDING ROUTER
+// ============================================================================
+
+const onboardingRouter = router({
+  status: protectedProcedure.query(async ({ ctx }) => {
+    const googleStatus = await isGoogleConnected(ctx.user.id);
+    return {
+      onboardingCompleted: ctx.user.onboardingCompleted ?? false,
+      googleConnected: googleStatus.connected,
+      hasGmailScopes: googleStatus.hasGmailScopes ?? false,
+      hasCalendarScopes: googleStatus.hasCalendarScopes ?? false,
+      googleEmail: googleStatus.email ?? null,
+    };
+  }),
+
+  complete: protectedProcedure.mutation(async ({ ctx }) => {
+    await db.completeOnboarding(ctx.user.id);
+    return { success: true };
+  }),
+});
+
+// ============================================================================
 // MAIN APP ROUTER
 // ============================================================================
 
@@ -2081,6 +2103,7 @@ export const appRouter = router({
   interactions: interactionsRouter,
   search: searchRouter,
   mail: mailRouter,
+  onboarding: onboardingRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -108,6 +108,12 @@ export async function deleteUser(userId: number) {
   await db.delete(users).where(eq(users.id, userId));
 }
 
+export async function completeOnboarding(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ onboardingCompleted: true }).where(eq(users.id, userId));
+}
+
 // ============================================================================
 // CONTACT OPERATIONS
 // ============================================================================
