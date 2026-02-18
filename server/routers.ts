@@ -317,6 +317,13 @@ const contactsRouter = router({
       for (const [key, value] of Object.entries(updates)) {
         if (value !== undefined) cleanUpdates[key] = value;
       }
+      // If name is being updated, propagate across the system
+      if (cleanUpdates.name) {
+        const oldContact = await db.getContactById(id);
+        if (oldContact && oldContact.name !== cleanUpdates.name) {
+          await db.propagateContactNameChange(id, oldContact.name, cleanUpdates.name);
+        }
+      }
       await db.updateContact(id, cleanUpdates);
       return { success: true };
     }),
@@ -1805,6 +1812,13 @@ const companiesRouter = router({
       const cleanUpdates: any = {};
       for (const [key, value] of Object.entries(updates)) {
         if (value !== undefined) cleanUpdates[key] = value;
+      }
+      // If name is being updated, propagate across the system
+      if (cleanUpdates.name) {
+        const oldCompany = await db.getCompanyById(id);
+        if (oldCompany && oldCompany.name !== cleanUpdates.name) {
+          await db.propagateCompanyNameChange(id, oldCompany.name, cleanUpdates.name);
+        }
       }
       await db.updateCompany(id, cleanUpdates);
       return { success: true };

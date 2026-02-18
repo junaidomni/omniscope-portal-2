@@ -1159,3 +1159,102 @@ export async function globalSearch(query: string) {
   
   return { people, companies: companiesResult, meetings: meetingsResult, tasks: tasksResult };
 }
+
+
+// ============================================================================
+// SYSTEM-WIDE NAME PROPAGATION
+// When a contact or company name changes, propagate across the entire system
+// ============================================================================
+
+/**
+ * Propagate a contact name change across meetings (participants JSON),
+ * tasks (assignedName), and interactions (summary text).
+ */
+export async function propagateContactNameChange(contactId: number, oldName: string, newName: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    // 1. Update tasks where assignedName matches the old name
+    await db.update(tasks)
+      .set({ assignedName: newName })
+      .where(and(
+        eq(tasks.assignedName, oldName)
+      ));
+
+    // 2. Update meeting participants JSON — find meetings linked via meeting_contacts
+    const linkedMeetings = await db.select({ meetingId: meetingContacts.meetingId })
+      .from(meetingContacts)
+      .where(eq(meetingContacts.contactId, contactId));
+
+    for (const { meetingId } of linkedMeetings) {
+      const [meeting] = await db.select({ id: meetings.id, participants: meetings.participants })
+        .from(meetings)
+        .where(eq(meetings.id, meetingId));
+      if (meeting?.participants) {
+        try {
+          const participantsList: string[] = JSON.parse(meeting.participants);
+          const idx = participantsList.findIndex(p => p.toLowerCase() === oldName.toLowerCase());
+          if (idx !== -1) {
+            participantsList[idx] = newName;
+            await db.update(meetings)
+              .set({ participants: JSON.stringify(participantsList) })
+              .where(eq(meetings.id, meetingId));
+          }
+        } catch { /* skip if JSON parse fails */ }
+      }
+    }
+
+    // 3. Update primaryLead in meetings if it matches
+    await db.update(meetings)
+      .set({ primaryLead: newName })
+      .where(eq(meetings.primaryLead, oldName));
+
+    console.log(`[Propagation] Contact name "${oldName}" → "${newName}" propagated across system`);
+  } catch (error) {
+    console.error("[Propagation] Failed to propagate contact name change:", error);
+  }
+}
+
+/**
+ * Propagate a company name change across contacts (organization field),
+ * meetings (organizations JSON), and interactions.
+ */
+export async function propagateCompanyNameChange(companyId: number, oldName: string, newName: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    // 1. Update contacts linked to this company — update their organization field
+    await db.update(contacts)
+      .set({ organization: newName })
+      .where(and(
+        eq(contacts.companyId, companyId),
+        eq(contacts.organization, oldName)
+      ));
+
+    // 2. Update meetings organizations JSON where the old name appears
+    const allMeetings = await db.select({ id: meetings.id, organizations: meetings.organizations })
+      .from(meetings)
+      .where(like(meetings.organizations, `%${oldName}%`));
+
+    for (const meeting of allMeetings) {
+      if (meeting.organizations) {
+        try {
+          const orgList: string[] = JSON.parse(meeting.organizations);
+          const idx = orgList.findIndex(o => o.toLowerCase() === oldName.toLowerCase());
+          if (idx !== -1) {
+            orgList[idx] = newName;
+            await db.update(meetings)
+              .set({ organizations: JSON.stringify(orgList) })
+              .where(eq(meetings.id, meeting.id));
+          }
+        } catch { /* skip if JSON parse fails */ }
+      }
+    }
+
+    console.log(`[Propagation] Company name "${oldName}" → "${newName}" propagated across system`);
+  } catch (error) {
+    console.error("[Propagation] Failed to propagate company name change:", error);
+  }
+}

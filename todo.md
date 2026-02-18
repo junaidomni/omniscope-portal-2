@@ -933,3 +933,29 @@
 - [x] Full dossier embedded inline (no separate page needed)
 - [x] Panel scrolls independently from the left contact list
 - [x] Document upload with category and notes support
+
+## v25 — Companies Dossier Panel, Collapsible Sidebar, System-Wide Tags
+
+### Collapsible Sidebar
+- [x] Add collapse/expand toggle to PortalLayout sidebar
+- [x] Collapsed state shows only icons (no text labels)
+- [x] Smooth animation on collapse/expand (300ms ease-in-out)
+- [x] Persist collapse state in localStorage
+- [x] All pages adjust layout when sidebar collapses (more content space)
+- [x] SidebarContext exported for child pages to read collapse state
+
+### Companies Page — Inline Dossier Panel
+- [x] Left panel: Searchable company list with filters (industry, status, entity type)
+- [x] Left panel: Pending companies section at top with approve/reject
+- [x] Right panel: Full company dossier (header, stats, people cards, AI snapshot, timeline)
+- [x] Right panel: Full edit mode for all company fields including strategic intelligence
+- [x] Right panel: Delete company with confirmation
+- [x] Right panel: Add/remove contacts from company via autocomplete
+- [x] Right panel: Tabs (Overview, People, Timeline, Tasks, AI Memory)
+
+### System-Wide Name/Company Tags
+- [x] Names and companies function as tags throughout the system
+- [x] When a contact name is updated, it propagates to meetings (participants JSON, primaryLead), tasks (assignedName)
+- [x] When a company name is updated, it propagates to contacts (organization), meetings (organizations JSON)
+- [ ] Tag-style display for names/companies in meetings, tasks, and other views
+- [ ] Clicking a name/company tag anywhere navigates to their profile
