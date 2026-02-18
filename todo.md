@@ -917,3 +917,19 @@
 - [x] Test pending approval workflow (approve, reject, delete) — 24 tests passing
 - [x] Test new schema fields save and load correctly
 - [x] Test delete cascading for contacts and companies — 199 tests passing (16 test files)
+
+## v24 — Relationship Hub Right-Side Detail Panel
+
+### Right-Side Detail Panel (Dossier View)
+- [x] Clicking a contact opens a rich detail panel on the right side (not a separate page)
+- [x] Panel header: Avatar, name, star toggle, health badge, "X days since last contact"
+- [x] Action buttons in header: AI Enrich, Star, Edit, Delete
+- [x] Stats grid: Meetings, Tasks, Open Tasks, Documents, Days Since
+- [x] AI Relationship Intelligence section (collapsible, with Generate button)
+- [x] Tabs: Overview, Meetings, Documents, Notes
+- [x] Overview tab: Recent Meetings list, Assigned Tasks, Notes, Documents
+- [x] Edit mode: inline editing of all contact fields including intelligence fields
+- [x] Delete with confirmation dialog
+- [x] Full dossier embedded inline (no separate page needed)
+- [x] Panel scrolls independently from the left contact list
+- [x] Document upload with category and notes support
