@@ -1553,3 +1553,29 @@
 - [x] Omni appearance: Sigil / Character / Hidden
 - [x] Sidebar visibility: Show / Hide
 - [x] All preferences persisted in localStorage (omniscope-omni-mode, omniscope-omni-sidebar-visible)
+
+## v43 — NOMI-Inspired Character Upgrade + Omni Settings Page
+
+### NOMI-Style Character Redesign
+- [x] Redesign character mode inspired by NIO NOMI — dark sphere with expressive gold eyes
+- [x] Rounded-rectangle pill-shaped eyes (gold on dark body)
+- [x] Eye tracking follows cursor position (maxOffset 3px small, 5px large)
+- [x] Expression states: idle (calm), hover (attentive/wide), thinking (narrowed + pulse), success (happy squint arcs), error (worried tilt)
+- [x] Periodic blinking animation (120ms blink, 20% double-blink, 2.5-5.5s interval)
+- [x] Mouth appears only for strong emotions (success smile curve, error frown, hover neutral line)
+- [x] Subtle gold rim glow on the dark circular body (opacity varies by state)
+- [x] Premium feel — not cartoonish, NOMI-level polish
+
+### Omni Settings Page
+- [x] Add dedicated "Omni Assistant" tab in Setup page (4th tab)
+- [x] Visual mode picker: Sigil / Character / Hidden — with live preview of each
+- [x] State preview buttons (idle, hover, thinking, success, error) to test expressions
+- [x] Sidebar visibility toggle: Show / Hide Ask Omni in sidebar
+- [x] Settings persist to localStorage and apply immediately via StorageEvent dispatch
+- [x] Clean, premium settings UI consistent with OmniScope design language
+- [x] Keyboard shortcuts reference card (⌘K, Esc)
+
+### Settings Integration
+- [x] Wire settings changes to PortalLayout OmniAvatar and sidebar via StorageEvent listener
+- [x] Changes apply in real-time without page reload
+- [x] Settings page accessible from sidebar Settings entry → Omni Assistant tab

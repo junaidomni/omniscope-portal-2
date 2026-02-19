@@ -10,10 +10,11 @@ import { useSearch } from "wouter";
 import {
   Mail, Calendar, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
   ExternalLink, Shield, Clock, Loader2, Copy, Info, User, Settings,
-  Link2, Zap, ChevronRight
+  Link2, Zap, ChevronRight, Sparkles, Eye, EyeOff, Monitor
 } from "lucide-react";
+import OmniAvatar, { OmniMode, OmniState } from "@/components/OmniAvatar";
 
-type Tab = "profile" | "integrations" | "webhooks";
+type Tab = "profile" | "integrations" | "webhooks" | "omni";
 
 export default function Setup() {
   const search = useSearch();
@@ -40,6 +41,7 @@ export default function Setup() {
     { id: "profile", label: "Profile", icon: <User className="h-4 w-4" /> },
     { id: "integrations", label: "Integrations", icon: <Settings className="h-4 w-4" /> },
     { id: "webhooks", label: "Webhooks & API", icon: <Link2 className="h-4 w-4" /> },
+    { id: "omni", label: "Omni Assistant", icon: <Sparkles className="h-4 w-4" /> },
   ];
 
   return (
@@ -77,6 +79,7 @@ export default function Setup() {
       {activeTab === "profile" && <ProfileTab />}
       {activeTab === "integrations" && <IntegrationsTab />}
       {activeTab === "webhooks" && <WebhooksTab />}
+      {activeTab === "omni" && <OmniTab />}
     </div>
   );
 }
@@ -534,6 +537,203 @@ function WebhooksTab() {
             <div className="p-3 rounded-lg bg-zinc-800/20 border border-zinc-800/50 text-center">
               <p className="text-sm font-medium text-zinc-400">HubSpot</p>
               <p className="text-xs text-zinc-600 mt-1">CRM sync</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
+// ============================================================================
+// OMNI ASSISTANT TAB
+// ============================================================================
+
+const OMNI_MODE_KEY = "omniscope-omni-mode";
+const OMNI_SIDEBAR_KEY = "omniscope-omni-sidebar-visible";
+
+function OmniTab() {
+  const [mode, setMode] = useState<OmniMode>(() => {
+    try { return (localStorage.getItem(OMNI_MODE_KEY) as OmniMode) || "sigil"; } catch { return "sigil"; }
+  });
+  const [sidebarVisible, setSidebarVisible] = useState(() => {
+    try { return localStorage.getItem(OMNI_SIDEBAR_KEY) !== "false"; } catch { return true; }
+  });
+  const [previewState, setPreviewState] = useState<OmniState>("idle");
+
+  const handleModeChange = (newMode: OmniMode) => {
+    setMode(newMode);
+    try { localStorage.setItem(OMNI_MODE_KEY, newMode); } catch {}
+    // Dispatch storage event so PortalLayout picks up the change in real-time
+    window.dispatchEvent(new StorageEvent("storage", { key: OMNI_MODE_KEY, newValue: newMode }));
+    toast.success(`Omni appearance set to ${newMode === "sigil" ? "Sigil" : newMode === "character" ? "Character" : "Hidden"}`);
+  };
+
+  const handleSidebarToggle = (visible: boolean) => {
+    setSidebarVisible(visible);
+    try { localStorage.setItem(OMNI_SIDEBAR_KEY, String(visible)); } catch {}
+    window.dispatchEvent(new StorageEvent("storage", { key: OMNI_SIDEBAR_KEY, newValue: String(visible) }));
+  };
+
+  const modes: { id: OmniMode; label: string; description: string }[] = [
+    { id: "sigil", label: "Sigil", description: "Concentric gold rings — institutional, geometric, premium" },
+    { id: "character", label: "Character", description: "NOMI-inspired companion — expressive eyes, interactive personality" },
+    { id: "hidden", label: "Hidden", description: "No floating avatar — access Omni only from sidebar or ⌘K" },
+  ];
+
+  const states: { id: OmniState; label: string }[] = [
+    { id: "idle", label: "Idle" },
+    { id: "hover", label: "Hover" },
+    { id: "thinking", label: "Thinking" },
+    { id: "success", label: "Success" },
+    { id: "error", label: "Error" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Live Preview */}
+      <Card className="bg-zinc-900/50 border-zinc-800">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg text-white flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-yellow-500" />
+            Omni Assistant
+          </CardTitle>
+          <p className="text-xs text-zinc-400 mt-1">
+            Your persistent AI companion. Customize how Omni appears and behaves across the portal.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {/* Live Preview Area */}
+          <div className="mb-8">
+            <label className="text-xs text-zinc-500 uppercase tracking-wider mb-3 block">Live Preview</label>
+            <div className="bg-black/50 rounded-xl border border-zinc-800 p-8 flex flex-col items-center gap-6">
+              {mode === "hidden" ? (
+                <div className="flex flex-col items-center gap-3 py-4">
+                  <EyeOff className="h-10 w-10 text-zinc-600" />
+                  <p className="text-sm text-zinc-500">Avatar hidden — use ⌘K or sidebar to access Omni</p>
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <OmniAvatar mode={mode} state={previewState} size={96} badge={previewState === "idle"} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-white">
+                      {mode === "sigil" ? "OmniScope Sigil" : "NOMI Companion"}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {previewState === "idle" && "Calm, breathing — ready when you are"}
+                      {previewState === "hover" && "Attentive — eyes tracking, glow intensifies"}
+                      {previewState === "thinking" && "Processing — contemplative, focused"}
+                      {previewState === "success" && "Task complete — brief celebration"}
+                      {previewState === "error" && "Something's off — subtle concern"}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* State Switcher */}
+              {mode !== "hidden" && (
+                <div className="flex gap-2">
+                  {states.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setPreviewState(s.id)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        previewState === s.id
+                          ? "bg-yellow-600/20 text-yellow-400 border border-yellow-600/30"
+                          : "bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300 hover:bg-zinc-800"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mode Selector */}
+          <div className="mb-8">
+            <label className="text-xs text-zinc-500 uppercase tracking-wider mb-3 block">Appearance Mode</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {modes.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => handleModeChange(m.id)}
+                  className={`p-4 rounded-xl border text-left transition-all ${
+                    mode === m.id
+                      ? "bg-yellow-600/10 border-yellow-600/40 ring-1 ring-yellow-600/20"
+                      : "bg-zinc-900/30 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                      mode === m.id ? "bg-yellow-600/20" : "bg-zinc-800"
+                    }`}>
+                      {m.id === "sigil" && <Monitor className={`h-4 w-4 ${mode === m.id ? "text-yellow-500" : "text-zinc-500"}`} />}
+                      {m.id === "character" && <Eye className={`h-4 w-4 ${mode === m.id ? "text-yellow-500" : "text-zinc-500"}`} />}
+                      {m.id === "hidden" && <EyeOff className={`h-4 w-4 ${mode === m.id ? "text-yellow-500" : "text-zinc-500"}`} />}
+                    </div>
+                    <span className={`text-sm font-semibold ${mode === m.id ? "text-yellow-400" : "text-white"}`}>
+                      {m.label}
+                    </span>
+                    {mode === m.id && (
+                      <Badge className="ml-auto bg-yellow-600/20 text-yellow-500 border-yellow-600/30 text-[10px]">Active</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-500 leading-relaxed">{m.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sidebar Toggle */}
+          <div>
+            <label className="text-xs text-zinc-500 uppercase tracking-wider mb-3 block">Sidebar Visibility</label>
+            <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/30 border border-zinc-800">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-5 w-5 text-zinc-500" />
+                <div>
+                  <p className="text-sm font-medium text-white">Show "Ask Omni" in sidebar</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Display the Ask Omni entry in the sidebar navigation. You can always use ⌘K regardless.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleSidebarToggle(!sidebarVisible)}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                  sidebarVisible ? "bg-yellow-600" : "bg-zinc-700"
+                }`}
+              >
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${
+                  sidebarVisible ? "translate-x-5" : "translate-x-0"
+                }`} />
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Keyboard Shortcuts Reference */}
+      <Card className="bg-zinc-900/30 border-zinc-800/50">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-zinc-300">Keyboard Shortcuts</p>
+              <div className="mt-2 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <kbd className="text-[10px] text-zinc-400 font-mono bg-zinc-800 border border-zinc-700/60 px-1.5 py-0.5 rounded">⌘K</kbd>
+                  <span className="text-xs text-zinc-500">Open Ask Omni from anywhere</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <kbd className="text-[10px] text-zinc-400 font-mono bg-zinc-800 border border-zinc-700/60 px-1.5 py-0.5 rounded">Esc</kbd>
+                  <span className="text-xs text-zinc-500">Close Omni panel</span>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

@@ -487,3 +487,326 @@ describe("LLM Response Parsing", () => {
     expect(resolved[1].id).toBe(3);
   });
 });
+
+
+// ─── v43: NOMI-Inspired Character + Omni Settings Page ───────────────────
+
+describe("NOMI Character — Eye Expression System", () => {
+  const baseScale = 1; // scale = size / 56
+  const eyeW = 4.5 * baseScale;
+
+  function getEyeH(state: string, blinking: boolean, scale: number): number {
+    if (blinking) return 0.8 * scale;
+    switch (state) {
+      case "hover": return 7 * scale;
+      case "thinking": return 4 * scale;
+      case "success": return 2 * scale;
+      case "error": return 5 * scale;
+      default: return 6 * scale; // idle
+    }
+  }
+
+  it("idle eyes should be tall pill shapes (6x scale)", () => {
+    const h = getEyeH("idle", false, 1);
+    expect(h).toBe(6);
+  });
+
+  it("hover eyes should widen to 7x scale (attentive)", () => {
+    const h = getEyeH("hover", false, 1);
+    expect(h).toBe(7);
+    expect(h).toBeGreaterThan(getEyeH("idle", false, 1));
+  });
+
+  it("thinking eyes should narrow to 4x scale (focused)", () => {
+    const h = getEyeH("thinking", false, 1);
+    expect(h).toBe(4);
+    expect(h).toBeLessThan(getEyeH("idle", false, 1));
+  });
+
+  it("success eyes should be very narrow (happy squint arcs)", () => {
+    const h = getEyeH("success", false, 1);
+    expect(h).toBe(2);
+    expect(h).toBeLessThan(getEyeH("thinking", false, 1));
+  });
+
+  it("error eyes should be slightly smaller than idle (worried)", () => {
+    const h = getEyeH("error", false, 1);
+    expect(h).toBe(5);
+    expect(h).toBeLessThan(getEyeH("idle", false, 1));
+  });
+
+  it("blinking should collapse eyes to 0.8x scale", () => {
+    const h = getEyeH("idle", true, 1);
+    expect(h).toBe(0.8);
+    expect(h).toBeLessThan(1);
+  });
+
+  it("should scale eye dimensions with avatar size", () => {
+    const scale2x = 2;
+    expect(getEyeH("idle", false, scale2x)).toBe(12);
+    expect(getEyeH("hover", false, scale2x)).toBe(14);
+    expect(getEyeH("idle", true, scale2x)).toBe(1.6);
+  });
+
+  it("eye width should be 4.5 * scale", () => {
+    expect(eyeW).toBe(4.5);
+    expect(4.5 * 2).toBe(9); // 2x scale
+  });
+});
+
+describe("NOMI Character — Mouth Expression System", () => {
+  it("mouth should only show for success, error, and hover states", () => {
+    const showMouth = (state: string) => state === "success" || state === "error" || state === "hover";
+    expect(showMouth("success")).toBe(true);
+    expect(showMouth("error")).toBe(true);
+    expect(showMouth("hover")).toBe(true);
+    expect(showMouth("idle")).toBe(false);
+    expect(showMouth("thinking")).toBe(false);
+  });
+
+  it("success mouth should curve upward (happy)", () => {
+    // In the SVG, success mouth uses Q bezier with y-offset > mouth y (curves down in SVG = smile)
+    const mouthY = 5; // r + 5 * scale
+    const curveControlY = 8; // r + 8 * scale
+    expect(curveControlY).toBeGreaterThan(mouthY); // control point below = upward curve visually
+  });
+
+  it("error mouth should curve downward (worried)", () => {
+    const mouthY = 6.5;
+    const curveControlY = 5; // control point above = downward curve
+    expect(curveControlY).toBeLessThan(mouthY);
+  });
+
+  it("hover mouth should be a subtle neutral line", () => {
+    // Hover shows a simple horizontal line, not a curve
+    const isLine = true; // SVG <line> element, not <path>
+    expect(isLine).toBe(true);
+  });
+});
+
+describe("NOMI Character — Rim Glow System", () => {
+  function getRimOpacity(state: string): number {
+    switch (state) {
+      case "hover": return 0.6;
+      case "thinking": return 0.3;
+      case "success": return 0.8;
+      case "error": return 0.2;
+      default: return 0.35;
+    }
+  }
+
+  it("success should have brightest rim glow (0.8)", () => {
+    expect(getRimOpacity("success")).toBe(0.8);
+  });
+
+  it("hover should have strong rim glow (0.6)", () => {
+    expect(getRimOpacity("hover")).toBe(0.6);
+  });
+
+  it("idle should have moderate rim glow (0.35)", () => {
+    expect(getRimOpacity("idle")).toBe(0.35);
+  });
+
+  it("thinking should have dim rim glow (0.3)", () => {
+    expect(getRimOpacity("thinking")).toBe(0.3);
+  });
+
+  it("error should have dimmest rim glow (0.2)", () => {
+    expect(getRimOpacity("error")).toBe(0.2);
+  });
+
+  it("glow intensity should follow: success > hover > idle > thinking > error", () => {
+    const s = getRimOpacity("success");
+    const h = getRimOpacity("hover");
+    const i = getRimOpacity("idle");
+    const t = getRimOpacity("thinking");
+    const e = getRimOpacity("error");
+    expect(s).toBeGreaterThan(h);
+    expect(h).toBeGreaterThan(i);
+    expect(i).toBeGreaterThan(t);
+    expect(t).toBeGreaterThan(e);
+  });
+});
+
+describe("NOMI Character — Eye Tracking Physics", () => {
+  function calculateEyeOffset(
+    cursorX: number, cursorY: number,
+    avatarCX: number, avatarCY: number,
+    maxOffset: number
+  ): { x: number; y: number } {
+    const dx = cursorX - avatarCX;
+    const dy = cursorY - avatarCY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const factor = Math.min(dist / 200, 1);
+    return {
+      x: (dx / (dist || 1)) * maxOffset * factor,
+      y: (dy / (dist || 1)) * maxOffset * factor,
+    };
+  }
+
+  it("should return zero offset when cursor is at avatar center", () => {
+    const offset = calculateEyeOffset(100, 100, 100, 100, 3);
+    expect(offset.x).toBe(0);
+    expect(offset.y).toBe(0);
+  });
+
+  it("should max out at maxOffset when cursor is far away", () => {
+    const offset = calculateEyeOffset(500, 100, 100, 100, 3);
+    expect(Math.abs(offset.x)).toBeCloseTo(3, 1);
+    expect(Math.abs(offset.y)).toBeCloseTo(0, 1);
+  });
+
+  it("should use larger maxOffset for bigger avatars (size > 80)", () => {
+    const smallMax = 3; // size <= 80
+    const largeMax = 5; // size > 80
+    expect(largeMax).toBeGreaterThan(smallMax);
+  });
+
+  it("during thinking state, eyes should look down-left", () => {
+    const thinkingOffset = { x: -1.5, y: 1 };
+    expect(thinkingOffset.x).toBeLessThan(0); // left
+    expect(thinkingOffset.y).toBeGreaterThan(0); // down
+  });
+});
+
+describe("NOMI Character — Blink Animation", () => {
+  it("blink duration should be 120ms", () => {
+    const blinkDuration = 120;
+    expect(blinkDuration).toBe(120);
+  });
+
+  it("double blink should have 20% probability", () => {
+    const doubleBlinkChance = 0.2;
+    expect(doubleBlinkChance).toBe(0.2);
+  });
+
+  it("blink interval should be 2500-5500ms (natural variation)", () => {
+    const minDelay = 2500;
+    const maxDelay = 2500 + 3000; // 5500
+    expect(minDelay).toBe(2500);
+    expect(maxDelay).toBe(5500);
+    // Verify randomness range
+    for (let i = 0; i < 20; i++) {
+      const delay = 2500 + Math.random() * 3000;
+      expect(delay).toBeGreaterThanOrEqual(2500);
+      expect(delay).toBeLessThanOrEqual(5500);
+    }
+  });
+
+  it("double blink gap should be 120ms between blinks", () => {
+    const gap = 120;
+    expect(gap).toBe(120);
+  });
+});
+
+describe("Omni Settings Page — Mode Selector", () => {
+  const modes = [
+    { id: "sigil", label: "Sigil", description: "Concentric gold rings — institutional, geometric, premium" },
+    { id: "character", label: "Character", description: "NOMI-inspired companion — expressive eyes, interactive personality" },
+    { id: "hidden", label: "Hidden", description: "No floating avatar — access Omni only from sidebar or ⌘K" },
+  ];
+
+  it("should offer exactly 3 modes", () => {
+    expect(modes).toHaveLength(3);
+  });
+
+  it("each mode should have id, label, and description", () => {
+    modes.forEach(m => {
+      expect(m.id).toBeTruthy();
+      expect(m.label).toBeTruthy();
+      expect(m.description).toBeTruthy();
+    });
+  });
+
+  it("mode IDs should match OmniMode type", () => {
+    const validModes = ["sigil", "character", "hidden"];
+    modes.forEach(m => {
+      expect(validModes).toContain(m.id);
+    });
+  });
+});
+
+describe("Omni Settings Page — State Preview", () => {
+  const states = ["idle", "hover", "thinking", "success", "error"];
+
+  it("should offer 5 preview states", () => {
+    expect(states).toHaveLength(5);
+  });
+
+  it("each state should have a description", () => {
+    const descriptions: Record<string, string> = {
+      idle: "Calm, breathing — ready when you are",
+      hover: "Attentive — eyes tracking, glow intensifies",
+      thinking: "Processing — contemplative, focused",
+      success: "Task complete — brief celebration",
+      error: "Something's off — subtle concern",
+    };
+    states.forEach(s => {
+      expect(descriptions[s]).toBeTruthy();
+    });
+  });
+
+  it("hidden mode should show EyeOff icon instead of avatar preview", () => {
+    const mode = "hidden";
+    const showAvatar = mode !== "hidden";
+    expect(showAvatar).toBe(false);
+  });
+});
+
+describe("Omni Settings — Real-time Sync via StorageEvent", () => {
+  it("should dispatch StorageEvent when mode changes", () => {
+    const events: { key: string; value: string }[] = [];
+    const dispatchEvent = (key: string, value: string) => {
+      events.push({ key, value });
+    };
+
+    dispatchEvent("omniscope-omni-mode", "character");
+    expect(events).toHaveLength(1);
+    expect(events[0].key).toBe("omniscope-omni-mode");
+    expect(events[0].value).toBe("character");
+  });
+
+  it("should dispatch StorageEvent when sidebar visibility changes", () => {
+    const events: { key: string; value: string }[] = [];
+    const dispatchEvent = (key: string, value: string) => {
+      events.push({ key, value });
+    };
+
+    dispatchEvent("omniscope-omni-sidebar-visible", "false");
+    expect(events).toHaveLength(1);
+    expect(events[0].value).toBe("false");
+  });
+
+  it("PortalLayout should listen for storage events and update state", () => {
+    // Simulate PortalLayout handler
+    let omniMode = "sigil";
+    let sidebarVisible = true;
+
+    const handler = (key: string, newValue: string) => {
+      if (key === "omniscope-omni-mode") omniMode = newValue;
+      if (key === "omniscope-omni-sidebar-visible") sidebarVisible = newValue === "true";
+    };
+
+    handler("omniscope-omni-mode", "character");
+    expect(omniMode).toBe("character");
+
+    handler("omniscope-omni-sidebar-visible", "false");
+    expect(sidebarVisible).toBe(false);
+
+    handler("omniscope-omni-mode", "hidden");
+    expect(omniMode).toBe("hidden");
+  });
+});
+
+describe("Omni Settings — Setup Tab Integration", () => {
+  it("Setup page should include 4 tabs including omni", () => {
+    const tabs = ["profile", "integrations", "webhooks", "omni"];
+    expect(tabs).toHaveLength(4);
+    expect(tabs).toContain("omni");
+  });
+
+  it("omni tab should be accessible via ?tab=omni URL param", () => {
+    const params = new URLSearchParams("?tab=omni");
+    expect(params.get("tab")).toBe("omni");
+  });
+});

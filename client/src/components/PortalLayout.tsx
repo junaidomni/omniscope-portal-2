@@ -123,6 +123,20 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     try { localStorage.setItem(OMNI_SIDEBAR_KEY, String(omniSidebarVisible)); } catch {}
   }, [omniSidebarVisible]);
 
+  // Listen for settings changes from the Setup > Omni tab (same-window storage events)
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === OMNI_MODE_KEY && e.newValue) {
+        setOmniMode(e.newValue as OmniMode);
+      }
+      if (e.key === OMNI_SIDEBAR_KEY && e.newValue) {
+        setOmniSidebarVisible(e.newValue === "true");
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
+
   // ⌘K keyboard shortcut for Omni chat
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

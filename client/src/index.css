@@ -195,3 +195,18 @@
 .animate-bounce-dot-2 { animation: bounce-dot 0.6s ease-in-out infinite 0.15s; }
 .animate-bounce-dot-3 { animation: bounce-dot 0.6s ease-in-out infinite 0.3s; }
 .animate-slide-up-panel { animation: slide-up-panel 0.3s ease-out; }
+
+/* NOMI-inspired character animations */
+@keyframes omni-think {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(202, 138, 4, 0.2)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 8px rgba(202, 138, 4, 0.4)); transform: scale(1.02); }
+}
+
+@keyframes omni-success {
+  0% { filter: drop-shadow(0 0 4px rgba(234, 179, 8, 0.3)); }
+  30% { filter: drop-shadow(0 0 20px rgba(234, 179, 8, 0.7)); }
+  100% { filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.4)); }
+}
+
+.animate-omni-think { animation: omni-think 2s ease-in-out infinite; }
+.animate-omni-success { animation: omni-success 0.8s ease-out forwards; }
