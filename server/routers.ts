@@ -3761,7 +3761,7 @@ const vaultRouter = router({
     .input(z.object({
       name: z.string().min(1),
       collection: z.enum(["company_repo", "personal", "counterparty", "templates", "signed", "transactions"]),
-      parentId: z.number().optional(),
+      parentId: z.number().nullable().optional(),
       entityType: z.enum(["company", "contact"]).optional(),
       entityId: z.number().optional(),
     }))

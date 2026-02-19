@@ -639,7 +639,7 @@ export default function Vault() {
         parentId={selectedFolderId}
         collection={selectedCollection || "company_repo"}
         onSubmit={(name, collection, parentId) => {
-          createFolder.mutate({ name, collection, parentId });
+          createFolder.mutate({ name, collection, parentId: parentId ?? undefined });
         }}
         isLoading={createFolder.isPending}
       />
