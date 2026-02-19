@@ -839,15 +839,6 @@ function GreetingBar({
             </button>
           )}
 
-          {/* Strategic Insights — under quote */}
-          <div className="mt-3 pl-0 sm:pl-[52px] border-t border-zinc-800/30 pt-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Brain className="h-3 w-3 text-yellow-500/60" />
-              <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Strategic Insights</span>
-              <span className="text-[9px] text-yellow-600/40 ml-auto">AI</span>
-            </div>
-            <InlineInsights />
-          </div>
         </div>
 
         {/* Center-Right: Omni Character (large, interactive) */}
@@ -881,30 +872,48 @@ function GreetingBar({
         </div>
       </div>
 
-      {/* ── Stat Cards (inside greeting box) ─────────────────────────── */}
+      {/* ── Insights + Stats side-by-side ─────────────────────────── */}
       <div className="mt-4 pt-4 border-t border-zinc-800/30">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <Filter className="h-3 w-3 text-zinc-600" />
-            <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">Quick Stats</span>
+        <div className="flex flex-col lg:flex-row lg:gap-6">
+          {/* Left: Strategic Insights */}
+          <div className="flex-1 min-w-0 mb-4 lg:mb-0">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Brain className="h-3 w-3 text-yellow-500/60" />
+              <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Strategic Insights</span>
+              <span className="text-[9px] text-yellow-600/40 ml-2">AI</span>
+            </div>
+            <InlineInsights />
           </div>
-          {activeFilter && (
-            <button
-              onClick={() => onFilterChange(null)}
-              className="flex items-center gap-1 text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors"
-            >
-              <X className="h-3 w-3" />
-              Clear filter
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-          <StatCard icon={<ListTodo className="h-3.5 w-3.5 text-zinc-300" />} label="Open Tasks" value={summary.totalOpen} color="bg-zinc-800/60" active={activeFilter === "open"} onClick={() => toggleFilter("open")} />
-          <StatCard icon={<AlertTriangle className="h-3.5 w-3.5 text-red-400" />} label="Overdue" value={summary.totalOverdue} color="bg-red-950/40" active={activeFilter === "overdue"} onClick={() => toggleFilter("overdue")} highlight={summary.totalOverdue > 0} />
-          <StatCard icon={<Flame className="h-3.5 w-3.5 text-yellow-400" />} label="High Priority" value={summary.totalHighPriority} color="bg-yellow-950/40" active={activeFilter === "high"} onClick={() => toggleFilter("high")} />
-          <StatCard icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />} label="Done Today" value={summary.completedToday} color="bg-emerald-950/40" active={activeFilter === "done"} onClick={() => toggleFilter("done")} />
-          <StatCard icon={<Star className="h-3.5 w-3.5 text-yellow-400" />} label="Starred Mail" value={summary.totalStarred} color="bg-yellow-950/40" active={activeFilter === "starred"} onClick={() => toggleFilter("starred")} />
-          <StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="Pending" value={summary.totalPendingApprovals} color="bg-blue-950/40" active={activeFilter === "pending"} onClick={() => toggleFilter("pending")} />
+
+          {/* Vertical divider (desktop only) */}
+          <div className="hidden lg:block w-px bg-zinc-800/40 self-stretch" />
+
+          {/* Right: Quick Stats */}
+          <div className="lg:w-[420px] xl:w-[480px] shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-3 w-3 text-zinc-600" />
+                <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">Quick Stats</span>
+              </div>
+              {activeFilter && (
+                <button
+                  onClick={() => onFilterChange(null)}
+                  className="flex items-center gap-1 text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                  Clear filter
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <StatCard icon={<ListTodo className="h-3.5 w-3.5 text-zinc-300" />} label="Open Tasks" value={summary.totalOpen} color="bg-zinc-800/60" active={activeFilter === "open"} onClick={() => toggleFilter("open")} />
+              <StatCard icon={<AlertTriangle className="h-3.5 w-3.5 text-red-400" />} label="Overdue" value={summary.totalOverdue} color="bg-red-950/40" active={activeFilter === "overdue"} onClick={() => toggleFilter("overdue")} highlight={summary.totalOverdue > 0} />
+              <StatCard icon={<Flame className="h-3.5 w-3.5 text-yellow-400" />} label="High Priority" value={summary.totalHighPriority} color="bg-yellow-950/40" active={activeFilter === "high"} onClick={() => toggleFilter("high")} />
+              <StatCard icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />} label="Done Today" value={summary.completedToday} color="bg-emerald-950/40" active={activeFilter === "done"} onClick={() => toggleFilter("done")} />
+              <StatCard icon={<Star className="h-3.5 w-3.5 text-yellow-400" />} label="Starred Mail" value={summary.totalStarred} color="bg-yellow-950/40" active={activeFilter === "starred"} onClick={() => toggleFilter("starred")} />
+              <StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="Pending" value={summary.totalPendingApprovals} color="bg-blue-950/40" active={activeFilter === "pending"} onClick={() => toggleFilter("pending")} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

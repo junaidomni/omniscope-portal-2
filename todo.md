@@ -1646,3 +1646,8 @@
 - [x] Pending → shows pending approvals
 - [x] Active filter state highlighted with gold accent
 - [x] Click again to clear filter and return to default view
+
+### Layout Refinement — Insights + Stats Side-by-Side
+- [x] Place Strategic Insights and Quick Stats side-by-side in the greeting box instead of stacked
+- [x] On desktop: two-column layout (Insights left, Stats right)
+- [x] On mobile: stack vertically as fallback

@@ -1255,11 +1255,11 @@ describe("v44 — Layout Optimization", () => {
     expect(source).toMatch(/function InlineInsights/);
   });
 
-  it("Stat cards use compact 6-column grid", async () => {
+  it("Stat cards use compact 3-column grid (side-by-side with insights)", async () => {
     const source = await import("fs").then(fs =>
       fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
     );
-    expect(source).toMatch(/lg:grid-cols-6/);
+    expect(source).toMatch(/grid-cols-3/);
   });
 
   it("Mobile responsive: insights appear below greeting on small screens", async () => {
