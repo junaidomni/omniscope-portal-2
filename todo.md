@@ -2043,3 +2043,17 @@
 - [x] View and revoke existing access from Share dialog
 - [x] Backend: grantAccess, revokeAccess, getAccessList procedures
 - [x] All 938 tests passing across 37 files
+
+## v60 — Folder Browsing UX
+
+### Folder Display & Navigation
+- [x] Show created folders in the Vault main view ("My Folders" section on home/recents view)
+- [x] Click into folders to see their contents (documents + subfolders)
+- [x] Breadcrumb navigation when inside a folder (Root → Folder Name)
+- [x] Back button to return to parent folder
+- [x] Folder context menus (rename, delete, share) on home view folder cards
+- [x] Empty folder state with actionable buttons (Upload, New Doc, New Folder)
+- [x] rootFolders query enabled on recents view for immediate folder visibility
+- [x] Folder mutations (create, rename, delete) all refetch rootFolders for instant updates
+- [x] Wider folder cards (4-column grid) to show full folder names
+- [x] All 938 tests passing across 37 files

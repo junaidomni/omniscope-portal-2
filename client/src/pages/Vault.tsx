@@ -159,6 +159,12 @@ export default function Vault() {
     { enabled: mainTab === "vault" && (viewMode === "collection" || viewMode === "folder") }
   );
 
+  // Root-level folders for the home/recents view
+  const rootFolders = trpc.vault.getFolderContents.useQuery(
+    { folderId: null },
+    { enabled: mainTab === "vault" && viewMode === "recents" }
+  );
+
   const toggleFavorite = trpc.vault.toggleFavorite.useMutation({
     onSuccess: (data) => {
       toast.success(data.isFavorited ? "Added to favorites" : "Removed from favorites");
@@ -181,6 +187,7 @@ export default function Vault() {
     onSuccess: () => {
       toast.success("Folder created");
       folders.refetch();
+      rootFolders.refetch();
       setNewFolderOpen(false);
     },
     onError: (e) => toast.error(e.message),
@@ -202,6 +209,7 @@ export default function Vault() {
     onSuccess: () => {
       toast.success("Folder renamed");
       folders.refetch();
+      rootFolders.refetch();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -210,6 +218,7 @@ export default function Vault() {
     onSuccess: () => {
       toast.success("Folder deleted");
       folders.refetch();
+      rootFolders.refetch();
       recentDocs.refetch();
     },
     onError: (e) => toast.error(e.message),
@@ -471,6 +480,74 @@ export default function Vault() {
                   </div>
                 </div>
 
+                {/* My Folders */}
+                {(rootFolders.data?.folders?.length ?? 0) > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">My Folders</h3>
+                      <button
+                        onClick={() => setNewFolderOpen(true)}
+                        className="flex items-center gap-1 text-xs text-zinc-500 hover:text-yellow-500 transition-colors"
+                      >
+                        <FolderPlus className="h-3.5 w-3.5" /> New Folder
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      {rootFolders.data!.folders.map((folder: any) => (
+                        <div
+                          key={folder.id}
+                          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-zinc-900/60 border border-zinc-800/60 hover:border-yellow-600/30 hover:bg-zinc-900 transition-all group cursor-pointer"
+                          onClick={() => navigateToFolder(folder.id, folder.name)}
+                        >
+                          <div className="h-9 w-9 rounded-lg bg-yellow-600/10 border border-yellow-600/20 flex items-center justify-center shrink-0">
+                            <FolderOpen className="h-4.5 w-4.5 text-yellow-600" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-zinc-300 group-hover:text-white truncate font-medium">{folder.name}</p>
+                            <p className="text-[11px] text-zinc-600">{COLLECTION_LABELS[folder.collection]?.label || folder.collection}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 rounded opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all shrink-0"
+                              >
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShareTarget({ type: 'folder', id: folder.id, name: folder.name }); setShareDialogOpen(true); }}>
+                                <Users className="h-4 w-4 mr-2" /> Share / Tag Access
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                const newName = prompt("Rename folder:", folder.name);
+                                if (newName && newName.trim() !== folder.name) {
+                                  renameFolder.mutate({ id: folder.id, name: newName.trim() });
+                                }
+                              }}>
+                                <Edit3 className="h-4 w-4 mr-2" /> Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Delete folder "${folder.name}"? Documents inside will be moved to root.`)) {
+                                    deleteFolder.mutate({ id: folder.id });
+                                  }
+                                }}
+                                className="text-red-400"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete Folder
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Recent Documents */}
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Recent</h3>
@@ -573,13 +650,30 @@ export default function Vault() {
                   <div className="space-y-2">
                     {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-14 bg-zinc-900" />)}
                   </div>
-                ) : currentDocs.length === 0 ? (
+                ) : currentDocs.length === 0 && currentFolders.length === 0 ? (
                   <div className="text-center py-16">
-                    <FileText className="h-12 w-12 text-zinc-700 mx-auto mb-3" />
+                    <FolderOpen className="h-12 w-12 text-zinc-700 mx-auto mb-3" />
                     <p className="text-zinc-500">
-                      {viewMode === "search" ? "No documents match your search" : "No documents in this collection"}
+                      {viewMode === "search" ? "No documents match your search" : viewMode === "folder" ? "This folder is empty" : "No documents in this collection"}
                     </p>
+                    <p className="text-zinc-600 text-sm mt-1">
+                      {viewMode === "folder" ? "Add documents by uploading, creating, or copying from Drive" : "Create a document or import from Google Drive"}
+                    </p>
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      <Button onClick={() => setUploadDialogOpen(true)} className="bg-yellow-600 hover:bg-yellow-700 text-black" size="sm">
+                        <Upload className="h-4 w-4 mr-1.5" /> Upload
+                      </Button>
+                      <Button onClick={() => { setCreateType("doc"); setCreateDialogOpen(true); }} variant="outline" className="border-zinc-700 text-zinc-300" size="sm">
+                        <FileText className="h-4 w-4 mr-1.5" /> New Doc
+                      </Button>
+                      <Button onClick={() => setNewFolderOpen(true)} variant="outline" className="border-zinc-700 text-zinc-300" size="sm">
+                        <FolderPlus className="h-4 w-4 mr-1.5" /> New Folder
+                      </Button>
+                    </div>
                   </div>
+                ) : currentDocs.length === 0 ? (
+                  <div />
+                  /* Folders exist but no documents — don't show empty state */
                 ) : (
                   <DocumentList
                     documents={currentDocs}
