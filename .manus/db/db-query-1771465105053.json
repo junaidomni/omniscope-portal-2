@@ -1,0 +1,171 @@
+{
+  "query": "SELECT id, meetingTitle, meetingDate, primaryLead, sourceId FROM meetings ORDER BY meetingDate DESC LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, meetingTitle, meetingDate, primaryLead, sourceId FROM meetings ORDER BY meetingDate DESC LIMIT 30;",
+  "rows": [
+    {
+      "id": "330008",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 01:27:53",
+      "primaryLead": "Kyle",
+      "sourceId": "duplicate-test-1771464472922"
+    },
+    {
+      "id": "330007",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 01:27:51",
+      "primaryLead": "Kyle",
+      "sourceId": "test-1771464471388"
+    },
+    {
+      "id": "330005",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 01:27:48",
+      "primaryLead": "Kyle",
+      "sourceId": "test-recap-meeting"
+    },
+    {
+      "id": "330004",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 01:27:17",
+      "primaryLead": "Kyle",
+      "sourceId": "duplicate-test-1771464437114"
+    },
+    {
+      "id": "330002",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 01:27:15",
+      "primaryLead": "Kyle",
+      "sourceId": "test-1771464435476"
+    },
+    {
+      "id": "330001",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 01:27:13",
+      "primaryLead": "Kyle",
+      "sourceId": "test-recap-meeting"
+    },
+    {
+      "id": "300056",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 00:05:59",
+      "primaryLead": "Kyle",
+      "sourceId": "duplicate-test-1771459559460"
+    },
+    {
+      "id": "300054",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 00:05:58",
+      "primaryLead": "Kyle",
+      "sourceId": "test-1771459557921"
+    },
+    {
+      "id": "300053",
+      "meetingTitle": "NULL",
+      "meetingDate": "2026-02-19 00:05:55",
+      "primaryLead": "Kyle",
+      "sourceId": "test-recap-meeting"
+    },
+    {
+      "id": "210001",
+      "meetingTitle": "Zulfiqar x Carbon Credits Pakistan",
+      "meetingDate": "2026-02-18 14:01:34",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-123294101"
+    },
+    {
+      "id": "180001",
+      "meetingTitle": "Asim x Omniscope ",
+      "meetingDate": "2026-02-17 15:00:33",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-122951031"
+    },
+    {
+      "id": "150001",
+      "meetingTitle": "Impromptu Google Meet Meeting",
+      "meetingDate": "2026-02-16 23:03:33",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-122811802"
+    },
+    {
+      "id": "90018",
+      "meetingTitle": "Hassan x Jake ",
+      "meetingDate": "2026-02-16 16:01:38",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-122682330"
+    },
+    {
+      "id": "30012",
+      "meetingTitle": "JD x Noah",
+      "meetingDate": "2026-02-11 00:18:22",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-121305081"
+    },
+    {
+      "id": "30013",
+      "meetingTitle": "Pakistan x Comet Cash x OmniScope",
+      "meetingDate": "2026-02-05 08:00:18",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-119902499"
+    },
+    {
+      "id": "30014",
+      "meetingTitle": "Intro Meeting",
+      "meetingDate": "2026-01-28 19:31:28",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-117782780"
+    },
+    {
+      "id": "90002",
+      "meetingTitle": "OffTake x OmniScope",
+      "meetingDate": "2026-01-28 00:00:52",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-117554203"
+    },
+    {
+      "id": "90003",
+      "meetingTitle": "Obi x OmniScope",
+      "meetingDate": "2026-01-21 00:00:40",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-115708811"
+    },
+    {
+      "id": "30015",
+      "meetingTitle": "Apparel Discussion : : Hoodies",
+      "meetingDate": "2026-01-16 22:00:34",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-114941686"
+    },
+    {
+      "id": "90004",
+      "meetingTitle": "Team Meeting",
+      "meetingDate": "2025-12-31 04:06:08",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-111327697"
+    },
+    {
+      "id": "30016",
+      "meetingTitle": "Little Miracles Website Meeting ",
+      "meetingDate": "2025-12-17 21:19:07",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-109445645"
+    },
+    {
+      "id": "30017",
+      "meetingTitle": "Little Miracles - Web Design",
+      "meetingDate": "2025-12-15 23:30:57",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-108815712"
+    },
+    {
+      "id": "30018",
+      "meetingTitle": "Steven X Raj ",
+      "meetingDate": "2025-11-22 03:30:01",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-103635855"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tmeetingTitle\tmeetingDate\tprimaryLead\tsourceId\n330008\tNULL\t2026-02-19 01:27:53\tKyle\tduplicate-test-1771464472922\n330007\tNULL\t2026-02-19 01:27:51\tKyle\ttest-1771464471388\n330005\tNULL\t2026-02-19 01:27:48\tKyle\ttest-recap-meeting\n330004\tNULL\t2026-02-19 01:27:17\tKyle\tduplicate-test-1771464437114\n330002\tNULL\t2026-02-19 01:27:15\tKyle\ttest-1771464435476\n330001\tNULL\t2026-02-19 01:27:13\tKyle\ttest-recap-meeting\n300056\tNULL\t2026-02-19 00:05:59\tKyle\tduplicate-test-1771459559460\n300054\tNULL\t2026-02-19 00:05:58\tKyle\ttest-1771459557921\n300053\tNULL\t2026-02-19 00:05:55\tKyle\ttest-recap-meeting\n210001\tZulfiqar x Carbon Credits Pakistan\t2026-02-18 14:01:34\tJunaid Qureshi\tfathom-123294101\n180001\tAsim x Omniscope \t2026-02-17 15:00:33\tJunaid Qureshi\tfathom-122951031\n150001\tImpromptu Google Meet Meeting\t2026-02-16 23:03:33\tJunaid Qureshi\tfathom-122811802\n90018\tHassan x Jake \t2026-02-16 16:01:38\tJunaid Qureshi\tfathom-122682330\n30012\tJD x Noah\t2026-02-11 00:18:22\tJunaid Qureshi\tfathom-121305081\n30013\tPakistan x Comet Cash x OmniScope\t2026-02-05 08:00:18\tJunaid Qureshi\tfathom-119902499\n30014\tIntro Meeting\t2026-01-28 19:31:28\tJunaid Qureshi\tfathom-117782780\n90002\tOffTake x OmniScope\t2026-01-28 00:00:52\tJunaid Qureshi\tfathom-117554203\n90003\tObi x OmniScope\t2026-01-21 00:00:40\tJunaid Qureshi\tfathom-115708811\n30015\tApparel Discussion : : Hoodies\t2026-01-16 22:00:34\tJunaid Qureshi\tfathom-114941686\n90004\tTeam Meeting\t2025-12-31 04:06:08\tJunaid Qureshi\tfathom-111327697\n30016\tLittle Miracles Website Meeting \t2025-12-17 21:19:07\tJunaid Qureshi\tfathom-109445645\n30017\tLittle Miracles - Web Design\t2025-12-15 23:30:57\tJunaid Qureshi\tfathom-108815712\n30018\tSteven X Raj \t2025-11-22 03:30:01\tJunaid Qureshi\tfathom-103635855\n",
+  "stderr": "",
+  "execution_time_ms": 368
+}

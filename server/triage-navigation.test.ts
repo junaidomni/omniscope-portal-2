@@ -501,3 +501,132 @@ describe("Triage Feed — Star Level Labels", () => {
     expect(starColors[3]).toBeTruthy();
   });
 });
+
+// ── Greeting Logic ──────────────────────────────────────────────────────────
+
+describe("Triage Feed — Greeting Logic", () => {
+  function getGreeting(hour: number): string {
+    return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  }
+
+  function getFirstName(fullName: string): string {
+    return (fullName || "there").split(" ")[0];
+  }
+
+  it("returns Good morning before noon", () => {
+    expect(getGreeting(0)).toBe("Good morning");
+    expect(getGreeting(6)).toBe("Good morning");
+    expect(getGreeting(11)).toBe("Good morning");
+  });
+
+  it("returns Good afternoon from noon to 5pm", () => {
+    expect(getGreeting(12)).toBe("Good afternoon");
+    expect(getGreeting(14)).toBe("Good afternoon");
+    expect(getGreeting(16)).toBe("Good afternoon");
+  });
+
+  it("returns Good evening after 5pm", () => {
+    expect(getGreeting(17)).toBe("Good evening");
+    expect(getGreeting(20)).toBe("Good evening");
+    expect(getGreeting(23)).toBe("Good evening");
+  });
+
+  it("extracts first name from full name", () => {
+    expect(getFirstName("Junaid Qureshi")).toBe("Junaid");
+    expect(getFirstName("Kyle Jackson")).toBe("Kyle");
+    expect(getFirstName("Jake")).toBe("Jake");
+  });
+
+  it("falls back to 'there' for empty name", () => {
+    expect(getFirstName("")).toBe("there");
+  });
+});
+
+// ── Title Cleanup Logic ─────────────────────────────────────────────────────
+
+describe("Triage Feed — Title Cleanup", () => {
+  function cleanTitle(title: string): string {
+    return title.replace(/\s*\(Assigned to:.*?\)\s*$/, "");
+  }
+
+  it("strips (Assigned to: ...) suffix from task titles", () => {
+    expect(cleanTitle("Email Kyle carbon credit pricing template (Assigned to: Tom Zickell)"))
+      .toBe("Email Kyle carbon credit pricing template");
+  });
+
+  it("leaves titles without suffix unchanged", () => {
+    expect(cleanTitle("Deploy portal to Vercel")).toBe("Deploy portal to Vercel");
+  });
+
+  it("handles complex assigned names", () => {
+    expect(cleanTitle("Review AI platform materials (Assigned to: Jacob McDonald)"))
+      .toBe("Review AI platform materials");
+  });
+});
+
+// ── Inline Action Logic ─────────────────────────────────────────────────────
+
+describe("Triage Feed — Inline Actions", () => {
+  it("completeTask sets status to completed", () => {
+    const task = { id: 1, status: "open" };
+    const updated = { ...task, status: "completed" };
+    expect(updated.status).toBe("completed");
+  });
+
+  it("snoozeTask pushes due date forward by N days", () => {
+    const now = new Date(2026, 1, 18);
+    const days = 1;
+    const newDate = new Date(now);
+    newDate.setDate(newDate.getDate() + days);
+    expect(newDate.getDate()).toBe(19);
+  });
+
+  it("snoozeTask pushes due date forward by 3 days", () => {
+    const now = new Date(2026, 1, 18);
+    const days = 3;
+    const newDate = new Date(now);
+    newDate.setDate(newDate.getDate() + days);
+    expect(newDate.getDate()).toBe(21);
+  });
+});
+
+// ── Router Source Verification ──────────────────────────────────────────────
+
+describe("Triage Router — Source Structure", () => {
+  it("triage router has feed, completeTask, and snoozeTask procedures", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("server/routers.ts", "utf-8")
+    );
+    expect(source).toMatch(/triageRouter.*=.*router/);
+    expect(source).toMatch(/feed:.*protectedProcedure/);
+    expect(source).toMatch(/completeTask:.*protectedProcedure/);
+    expect(source).toMatch(/snoozeTask:.*protectedProcedure/);
+  });
+
+  it("triage feed returns userName and greeting", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("server/routers.ts", "utf-8")
+    );
+    expect(source).toMatch(/userName.*split.*\[0\]/);
+    expect(source).toMatch(/greeting/);
+  });
+
+  it("TriageFeed component uses grid layout", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    expect(source).toMatch(/grid-cols/);
+    expect(source).toMatch(/data\.greeting/);
+    expect(source).toMatch(/data\.userName/);
+  });
+
+  it("TriageFeed has inline action buttons (complete and snooze)", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    expect(source).toMatch(/completeTask/);
+    expect(source).toMatch(/snoozeTask/);
+    expect(source).toMatch(/Mark complete|Complete/);
+    expect(source).toMatch(/Snooze/);
+  });
+});

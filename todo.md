@@ -1416,3 +1416,21 @@
 ### Testing
 - [x] Write vitest tests for triage feed logic (46 new tests)
 - [x] All existing tests still passing (539 total passing across 28 files)
+
+## v39 — Triage Room Redesign & Data Cleanup
+
+### Triage Room Redesign
+- [x] Personal greeting ("Good morning, Junaid") with warm, inviting tone + time-based sub-greeting
+- [x] Better use of horizontal space — 2-3 items per row grid layout (grid-cols-1/2/3)
+- [x] Stop endless scrolling — organized into distinct visual sections with stat cards
+- [x] Inline actions on triage cards (complete + snooze buttons with hover reveal)
+- [x] Items can be resolved without leaving Command Center (completeTask + snoozeTask mutations)
+- [x] Premium, interactive feel — first thing people see
+- [x] Task title cleanup — strips "(Assigned to: ...)" suffix for cleaner display
+- [x] Two-column layout for High Priority + Starred/Approvals section
+- [x] Meeting cards with executive summary preview
+
+### Data Cleanup
+- [x] Remove all test/junk meetings (9 deleted, 14 real Fathom meetings remain)
+- [x] Clean up test/junk tasks from database (~80 junk tasks removed, 54 real tasks remain)
+- [x] Ensure only real data remains in the system

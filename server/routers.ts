@@ -2604,12 +2604,11 @@ const directoryRouter = router({
 const triageRouter = router({
   feed: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
+    const userName = ctx.user.name || 'there';
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(startOfToday);
     endOfToday.setDate(endOfToday.getDate() + 1);
-    const endOfWeek = new Date(startOfToday);
-    endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
 
     // 1. Overdue tasks
     const allTasks = await db.getAllTasks();
@@ -2642,10 +2641,10 @@ const triageRouter = router({
     const allCompanies = await db.getAllCompanies();
     const pendingCompanies = allCompanies.filter(c => c.approvalStatus === 'pending').slice(0, 10);
 
-    // 7. Recent meetings (last 3 days)
-    const threeDaysAgo = new Date(startOfToday);
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    const recentMeetings = await db.getAllMeetings({ startDate: threeDaysAgo, endDate: endOfToday, limit: 10 });
+    // 7. Recent meetings (last 7 days)
+    const sevenDaysAgo = new Date(startOfToday);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentMeetings = await db.getAllMeetings({ startDate: sevenDaysAgo, endDate: endOfToday, limit: 6 });
 
     // 8. Summary counts
     const totalOpen = allTasks.filter(t => t.status !== 'completed').length;
@@ -2655,7 +2654,13 @@ const triageRouter = router({
     const totalStarred = starredEmails.length;
     const totalPendingApprovals = pendingContacts.length + pendingCompanies.length;
 
+    // Time-based greeting
+    const hour = now.getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
     return {
+      userName: userName.split(' ')[0], // First name only
+      greeting,
       summary: {
         totalOpen,
         totalOverdue,
@@ -2686,11 +2691,29 @@ const triageRouter = router({
         id: c.id, name: c.name, sector: c.sector,
       })),
       recentMeetings: recentMeetings.map(m => ({
-        id: m.id, title: m.title, meetingDate: m.meetingDate,
+        id: m.id, title: m.meetingTitle, meetingDate: m.meetingDate,
         primaryLead: m.primaryLead, executiveSummary: m.executiveSummary,
       })),
     };
   }),
+
+  // Quick-complete a task from triage
+  completeTask: protectedProcedure
+    .input(z.object({ taskId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.updateTask(input.taskId, { status: 'completed' });
+      return { success: true };
+    }),
+
+  // Dismiss a task (snooze by pushing due date forward)
+  snoozeTask: protectedProcedure
+    .input(z.object({ taskId: z.number(), days: z.number().min(1).max(30).default(1) }))
+    .mutation(async ({ input }) => {
+      const newDate = new Date();
+      newDate.setDate(newDate.getDate() + input.days);
+      await db.updateTask(input.taskId, { dueDate: newDate });
+      return { success: true, newDueDate: newDate };
+    }),
 });
 
 // ============================================================================

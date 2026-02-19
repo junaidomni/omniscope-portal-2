@@ -1,0 +1,94 @@
+{
+  "query": "SELECT id, meetingTitle, primaryLead, sourceId FROM meetings ORDER BY id DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, meetingTitle, primaryLead, sourceId FROM meetings ORDER BY id DESC;",
+  "rows": [
+    {
+      "id": "210001",
+      "meetingTitle": "Zulfiqar x Carbon Credits Pakistan",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-123294101"
+    },
+    {
+      "id": "180001",
+      "meetingTitle": "Asim x Omniscope ",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-122951031"
+    },
+    {
+      "id": "150001",
+      "meetingTitle": "Impromptu Google Meet Meeting",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-122811802"
+    },
+    {
+      "id": "90018",
+      "meetingTitle": "Hassan x Jake ",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-122682330"
+    },
+    {
+      "id": "90004",
+      "meetingTitle": "Team Meeting",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-111327697"
+    },
+    {
+      "id": "90003",
+      "meetingTitle": "Obi x OmniScope",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-115708811"
+    },
+    {
+      "id": "90002",
+      "meetingTitle": "OffTake x OmniScope",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-117554203"
+    },
+    {
+      "id": "30018",
+      "meetingTitle": "Steven X Raj ",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-103635855"
+    },
+    {
+      "id": "30017",
+      "meetingTitle": "Little Miracles - Web Design",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-108815712"
+    },
+    {
+      "id": "30016",
+      "meetingTitle": "Little Miracles Website Meeting ",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-109445645"
+    },
+    {
+      "id": "30015",
+      "meetingTitle": "Apparel Discussion : : Hoodies",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-114941686"
+    },
+    {
+      "id": "30014",
+      "meetingTitle": "Intro Meeting",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-117782780"
+    },
+    {
+      "id": "30013",
+      "meetingTitle": "Pakistan x Comet Cash x OmniScope",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-119902499"
+    },
+    {
+      "id": "30012",
+      "meetingTitle": "JD x Noah",
+      "primaryLead": "Junaid Qureshi",
+      "sourceId": "fathom-121305081"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tmeetingTitle\tprimaryLead\tsourceId\n210001\tZulfiqar x Carbon Credits Pakistan\tJunaid Qureshi\tfathom-123294101\n180001\tAsim x Omniscope \tJunaid Qureshi\tfathom-122951031\n150001\tImpromptu Google Meet Meeting\tJunaid Qureshi\tfathom-122811802\n90018\tHassan x Jake \tJunaid Qureshi\tfathom-122682330\n90004\tTeam Meeting\tJunaid Qureshi\tfathom-111327697\n90003\tObi x OmniScope\tJunaid Qureshi\tfathom-115708811\n90002\tOffTake x OmniScope\tJunaid Qureshi\tfathom-117554203\n30018\tSteven X Raj \tJunaid Qureshi\tfathom-103635855\n30017\tLittle Miracles - Web Design\tJunaid Qureshi\tfathom-108815712\n30016\tLittle Miracles Website Meeting \tJunaid Qureshi\tfathom-109445645\n30015\tApparel Discussion : : Hoodies\tJunaid Qureshi\tfathom-114941686\n30014\tIntro Meeting\tJunaid Qureshi\tfathom-117782780\n30013\tPakistan x Comet Cash x OmniScope\tJunaid Qureshi\tfathom-119902499\n30012\tJD x Noah\tJunaid Qureshi\tfathom-121305081\n",
+  "stderr": "",
+  "execution_time_ms": 349
+}
