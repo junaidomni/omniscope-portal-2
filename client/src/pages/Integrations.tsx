@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   Mail, Calendar, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
-  ExternalLink, Shield, Clock, Loader2, Copy, ChevronRight, Info
+  ExternalLink, Shield, Clock, Loader2, Copy, ChevronRight, Info,
+  HardDrive, FileText, Table2
 } from "lucide-react";
 import { useSearch } from "wouter";
 
@@ -19,7 +20,8 @@ export default function Integrations() {
   // Show toast on redirect from Google OAuth
   useEffect(() => {
     if (googleStatus === "connected") {
-      toast.success("Google account connected successfully! Gmail and Calendar scopes are now active.");
+      toast.success("Google account connected successfully! All services are now active.");
+      refetchMail();
       // Clean URL
       window.history.replaceState({}, "", "/integrations");
     } else if (googleStatus === "error") {
@@ -38,7 +40,10 @@ export default function Integrations() {
   const googleEmail = mailStatus?.email || null;
   const hasGmailScopes = mailStatus?.hasGmailScopes === true;
   const hasCalendarScopes = mailStatus?.hasCalendarScopes === true;
-  const needsReauth = googleConnected && !hasGmailScopes;
+  const hasDriveScopes = mailStatus?.hasDriveScopes === true;
+  const hasDocsScopes = mailStatus?.hasDocsScopes === true;
+  const hasSheetsScopes = mailStatus?.hasSheetsScopes === true;
+  const needsReauth = googleConnected && (!hasGmailScopes || !hasDriveScopes || !hasDocsScopes || !hasSheetsScopes);
 
   // Pre-fetch the redirect URI so we can display it
   useEffect(() => {
@@ -77,7 +82,31 @@ export default function Integrations() {
         </p>
       </div>
 
-      {/* Scope Warning Banner */}
+      {/* Scope Warning Banner — Drive/Docs/Sheets */}
+      {googleConnected && (!hasDriveScopes || !hasDocsScopes || !hasSheetsScopes) && (
+        <Card className="bg-yellow-600/5 border-yellow-600/20">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-yellow-400 mb-1">Google Drive, Docs & Sheets Permissions Required</h3>
+                <p className="text-xs text-zinc-400 mb-3">
+                  Your Google account is connected, but the current authorization doesn't include Drive, Docs, or Sheets permissions.
+                  To use the Intelligence Vault (browse Drive, create documents, use templates), you need to re-authenticate with expanded scopes.
+                </p>
+                <Button size="sm" onClick={handleReconnect}
+                  disabled={authUrlMutation.isPending}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium h-8">
+                  {authUrlMutation.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                  Re-authenticate with Drive, Docs & Sheets Access
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Scope Warning Banner — Gmail */}
       {needsReauth && (
         <div className="p-4 rounded-lg bg-yellow-600/10 border border-yellow-600/30 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
@@ -152,7 +181,7 @@ export default function Integrations() {
               </div>
               <div>
                 <CardTitle className="text-lg text-white">Google Workspace</CardTitle>
-                <p className="text-xs text-zinc-400 mt-0.5">Gmail, Calendar, and Contacts</p>
+                <p className="text-xs text-zinc-400 mt-0.5">Gmail, Calendar, Drive, Docs & Sheets</p>
               </div>
             </div>
             {mailLoading ? (
@@ -268,6 +297,99 @@ export default function Integrations() {
                   </div>
                 </div>
 
+                {/* Google Drive */}
+                <div className={`p-4 rounded-lg border ${hasDriveScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-yellow-600/5 border-yellow-600/20"}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <HardDrive className="h-4 w-4 text-green-400" />
+                    <span className="text-sm font-medium text-white">Drive</span>
+                    {hasDriveScopes ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    ) : (
+                      <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-[10px] px-1.5 py-0 ml-auto">Needs Auth</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Browse files
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Import to Vault
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Create folders
+                    </div>
+                  </div>
+                  {!hasDriveScopes && (
+                    <p className="text-[10px] text-yellow-500/70 mt-2">Re-authenticate to enable Drive access</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 2: Docs, Sheets, Fathom */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Google Docs */}
+                <div className={`p-4 rounded-lg border ${hasDocsScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-yellow-600/5 border-yellow-600/20"}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="h-4 w-4 text-blue-400" />
+                    <span className="text-sm font-medium text-white">Docs</span>
+                    {hasDocsScopes ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    ) : (
+                      <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-[10px] px-1.5 py-0 ml-auto">Needs Auth</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Create documents
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Template engine
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Read & index
+                    </div>
+                  </div>
+                  {!hasDocsScopes && (
+                    <p className="text-[10px] text-yellow-500/70 mt-2">Re-authenticate to enable Docs access</p>
+                  )}
+                </div>
+
+                {/* Google Sheets */}
+                <div className={`p-4 rounded-lg border ${hasSheetsScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-yellow-600/5 border-yellow-600/20"}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Table2 className="h-4 w-4 text-emerald-400" />
+                    <span className="text-sm font-medium text-white">Sheets</span>
+                    {hasSheetsScopes ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    ) : (
+                      <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-[10px] px-1.5 py-0 ml-auto">Needs Auth</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Create spreadsheets
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Read data
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
+                      Import to Vault
+                    </div>
+                  </div>
+                  {!hasSheetsScopes && (
+                    <p className="text-[10px] text-yellow-500/70 mt-2">Re-authenticate to enable Sheets access</p>
+                  )}
+                </div>
+
                 {/* Fathom */}
                 <div className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-800">
                   <div className="flex items-center gap-2 mb-3">
@@ -312,7 +434,7 @@ export default function Integrations() {
                     ) : (
                       <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
                     )}
-                    <span>Scopes: Calendar{hasGmailScopes ? ", Gmail (full)" : ", Gmail (send only)"}</span>
+                    <span>Scopes: Calendar{hasGmailScopes ? ", Gmail" : ""}{hasDriveScopes ? ", Drive" : ""}{hasDocsScopes ? ", Docs" : ""}{hasSheetsScopes ? ", Sheets" : ""}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
@@ -329,7 +451,7 @@ export default function Integrations() {
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Connect Google Workspace</h3>
               <p className="text-sm text-zinc-400 max-w-md mx-auto mb-6">
-                Connect your Google account to enable Gmail integration, calendar sync, and contact matching.
+                Connect your Google account to enable Gmail, Calendar, Google Drive, Docs, and Sheets integration.
                 OmniScope uses OAuth 2.0 — your password is never stored.
               </p>
               <Button onClick={handleConnect}

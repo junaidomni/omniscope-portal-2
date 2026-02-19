@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, userId, email, scope FROM google_tokens LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, userId, email, scope FROM google_tokens LIMIT 5;",
+  "rows": [
+    {
+      "id": "60001",
+      "userId": "1",
+      "email": "junaid@omniscopex.ae",
+      "scope": "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email openid"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\temail\tscope\n60001\t1\tjunaid@omniscopex.ae\thttps://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email openid\n",
+  "stderr": "",
+  "execution_time_ms": 383
+}

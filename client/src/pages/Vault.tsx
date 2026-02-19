@@ -39,11 +39,17 @@ const COLLECTION_LABELS: Record<string, { label: string; icon: typeof FileText; 
   signed: { label: "Signed Documents", icon: Shield, color: "text-green-400" },
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  agreement: "Agreement", compliance: "Compliance", intake: "Intake Form",
-  profile: "Profile", strategy: "Strategy", operations: "Operations",
-  transaction: "Transaction", correspondence: "Correspondence",
-  template: "Template", other: "Other",
+const CATEGORY_LABELS: Record<string, { label: string; desc: string }> = {
+  agreement: { label: "Agreement", desc: "Contracts, JVAs, SPPPs, NCNDAs, MOUs, and binding documents" },
+  compliance: { label: "Compliance", desc: "KYB, KYC, AML docs, OFAC checks, source of funds" },
+  intake: { label: "Intake Form", desc: "Client onboarding forms, buyer/seller intake, questionnaires" },
+  profile: { label: "Profile", desc: "Executive bios, company profiles, resumes, credentials" },
+  strategy: { label: "Strategy", desc: "Business plans, market analysis, pitch decks, proposals" },
+  operations: { label: "Operations", desc: "Trackers, order books, salary sheets, expense reports" },
+  transaction: { label: "Transaction", desc: "Deal sheets, trade confirmations, settlement records" },
+  correspondence: { label: "Correspondence", desc: "Letters, emails, memos, formal communications" },
+  template: { label: "Template", desc: "Reusable document templates for generating new documents" },
+  other: { label: "Other", desc: "Documents that don't fit other categories" },
 };
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {
@@ -297,7 +303,7 @@ export default function Vault() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -529,19 +535,23 @@ export default function Vault() {
 // ─── Google Drive Browser ───
 function DriveBrowser({ onImport }: { onImport: () => void }) {
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(undefined);
+  const [currentDriveId, setCurrentDriveId] = useState<string | undefined>(undefined);
   const [folderPath, setFolderPath] = useState<Array<{ id: string | undefined; name: string }>>([{ id: undefined, name: "My Drive" }]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [importingFileId, setImportingFileId] = useState<string | null>(null);
 
   const driveStatus = trpc.drive.connectionStatus.useQuery();
+  const sharedDrives = trpc.drive.listSharedDrives.useQuery(undefined, {
+    enabled: !!driveStatus.data?.connected && !!driveStatus.data?.hasDriveScopes,
+  });
   const driveFiles = trpc.drive.listFiles.useQuery(
-    { folderId: currentFolderId, pageSize: 50 },
-    { enabled: !!driveStatus.data?.connected && !isSearching }
+    { folderId: currentFolderId, driveId: currentDriveId, pageSize: 50 },
+    { enabled: !!driveStatus.data?.connected && !!driveStatus.data?.hasDriveScopes && !isSearching }
   );
   const searchResults = trpc.drive.searchFiles.useQuery(
     { query: searchQuery, pageSize: 30 },
-    { enabled: !!driveStatus.data?.connected && isSearching && searchQuery.length > 0 }
+    { enabled: !!driveStatus.data?.connected && !!driveStatus.data?.hasDriveScopes && isSearching && searchQuery.length > 0 }
   );
 
   const importToVault = trpc.drive.importToVault.useMutation({
@@ -559,6 +569,22 @@ function DriveBrowser({ onImport }: { onImport: () => void }) {
   const navigateToFolder = (folderId: string, folderName: string) => {
     setCurrentFolderId(folderId);
     setFolderPath(prev => [...prev, { id: folderId, name: folderName }]);
+    setIsSearching(false);
+    setSearchQuery("");
+  };
+
+  const navigateToSharedDrive = (driveId: string, driveName: string) => {
+    setCurrentDriveId(driveId);
+    setCurrentFolderId(driveId);
+    setFolderPath([{ id: driveId, name: driveName }]);
+    setIsSearching(false);
+    setSearchQuery("");
+  };
+
+  const navigateToMyDrive = () => {
+    setCurrentDriveId(undefined);
+    setCurrentFolderId(undefined);
+    setFolderPath([{ id: undefined, name: "My Drive" }]);
     setIsSearching(false);
     setSearchQuery("");
   };
@@ -589,6 +615,7 @@ function DriveBrowser({ onImport }: { onImport: () => void }) {
   const files = isSearching ? (searchResults.data || []) : (driveFiles.data?.files || []);
   const isLoadingFiles = isSearching ? searchResults.isLoading : driveFiles.isLoading;
 
+  // Not connected at all
   if (!driveStatus.data?.connected) {
     return (
       <div className="p-6">
@@ -607,8 +634,56 @@ function DriveBrowser({ onImport }: { onImport: () => void }) {
     );
   }
 
+  // Connected but missing Drive scopes — needs re-auth
+  if (!driveStatus.data?.hasDriveScopes) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-20">
+          <HardDrive className="h-16 w-16 text-yellow-600/50 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">Drive Permissions Required</h3>
+          <p className="text-zinc-500 text-sm max-w-md mx-auto mb-4">
+            Your Google account is connected but doesn't have Drive, Docs, or Sheets permissions yet.
+            Please re-authenticate to grant the required scopes.
+          </p>
+          <p className="text-zinc-600 text-xs max-w-sm mx-auto mb-6">
+            Go to <span className="text-yellow-500">Settings → Integrations</span> and click <span className="text-yellow-500">"Reconnect"</span> on your Google account.
+            This will prompt you to grant Drive, Docs, and Sheets access.
+          </p>
+          <Badge variant="outline" className="text-yellow-500 border-yellow-600/30">
+            Settings → Integrations → Reconnect Google
+          </Badge>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-4">
+      {/* Shared Drives Quick Access */}
+      {(sharedDrives.data || []).length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={navigateToMyDrive}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              !currentDriveId ? "bg-yellow-600/20 text-yellow-500 border border-yellow-600/30" : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+            }`}
+          >
+            <HardDrive className="h-3 w-3 inline mr-1.5" />My Drive
+          </button>
+          {(sharedDrives.data || []).map((sd: any) => (
+            <button
+              key={sd.id}
+              onClick={() => navigateToSharedDrive(sd.id, sd.name)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                currentDriveId === sd.id ? "bg-yellow-600/20 text-yellow-500 border border-yellow-600/30" : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+              }`}
+            >
+              <Users className="h-3 w-3 inline mr-1.5" />{sd.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Drive Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -753,6 +828,18 @@ function CreateGoogleDialog({
   const [title, setTitle] = useState("");
   const [collection, setCollection] = useState("company_repo");
   const [category, setCategory] = useState("other");
+  const [entitySearch, setEntitySearch] = useState("");
+  const [linkedEntities, setLinkedEntities] = useState<Array<{ type: "company" | "contact"; id: number; name: string }>>([]);
+
+  // Entity search queries
+  const companyResults = trpc.companies.list.useQuery(
+    { search: entitySearch, limit: 5 },
+    { enabled: entitySearch.length >= 2 }
+  );
+  const contactResults = trpc.contacts.searchByName.useQuery(
+    { query: entitySearch, limit: 5 },
+    { enabled: entitySearch.length >= 2 }
+  );
 
   const createDoc = trpc.drive.createDoc.useMutation({
     onSuccess: (data) => {
@@ -778,11 +865,26 @@ function CreateGoogleDialog({
     onError: (err) => toast.error(err.message),
   });
 
+  const linkEntity = trpc.vault.linkEntity.useMutation();
+
   const resetAndClose = () => {
     setTitle("");
     setCollection("company_repo");
     setCategory("other");
+    setEntitySearch("");
+    setLinkedEntities([]);
     onClose();
+  };
+
+  const addEntity = (entity: { type: "company" | "contact"; id: number; name: string }) => {
+    if (!linkedEntities.find(e => e.type === entity.type && e.id === entity.id)) {
+      setLinkedEntities(prev => [...prev, entity]);
+    }
+    setEntitySearch("");
+  };
+
+  const removeEntity = (type: string, id: number) => {
+    setLinkedEntities(prev => prev.filter(e => !(e.type === type && e.id === id)));
   };
 
   const handleCreate = () => {
@@ -791,6 +893,7 @@ function CreateGoogleDialog({
       registerInVault: true,
       collection: collection as any,
       category: category as any,
+      entityLinks: linkedEntities.map(e => ({ entityType: e.type, entityId: e.id, linkType: "related" as const })),
     };
     if (type === "doc") {
       createDoc.mutate(params);
@@ -848,17 +951,86 @@ function CreateGoogleDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                    <SelectItem key={k} value={k}>
+                      <div>
+                        <span>{v.label}</span>
+                        <span className="text-[10px] text-zinc-500 ml-1.5">{v.desc}</span>
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {category && CATEGORY_LABELS[category] && (
+                <p className="text-[10px] text-zinc-500 mt-1">{CATEGORY_LABELS[category].desc}</p>
+              )}
             </div>
+          </div>
+
+          {/* Entity Tagging */}
+          <div>
+            <Label className="text-zinc-400 text-xs">Tag People & Companies</Label>
+            <p className="text-[10px] text-zinc-600 mb-1.5">Link this document to contacts or companies so it appears in their profile</p>
+            <div className="relative">
+              <Input
+                value={entitySearch}
+                onChange={(e) => setEntitySearch(e.target.value)}
+                placeholder="Search contacts or companies..."
+                className="bg-zinc-900 border-zinc-800 text-white"
+              />
+              {entitySearch.length >= 2 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-auto">
+                  {(companyResults.data?.items || []).map((c: any) => (
+                    <button
+                      key={`co-${c.id}`}
+                      className="w-full px-3 py-2 text-left hover:bg-zinc-800 flex items-center gap-2 text-sm"
+                      onClick={() => addEntity({ type: "company", id: c.id, name: c.name })}
+                    >
+                      <Building2 className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+                      <span className="text-zinc-300 truncate">{c.name}</span>
+                      <Badge variant="outline" className="text-[9px] ml-auto shrink-0">Company</Badge>
+                    </button>
+                  ))}
+                  {(contactResults.data || []).map((c: any) => (
+                    <button
+                      key={`ct-${c.id}`}
+                      className="w-full px-3 py-2 text-left hover:bg-zinc-800 flex items-center gap-2 text-sm"
+                      onClick={() => addEntity({ type: "contact", id: c.id, name: c.name })}
+                    >
+                      <User className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                      <span className="text-zinc-300 truncate">{c.name}</span>
+                      <Badge variant="outline" className="text-[9px] ml-auto shrink-0">Contact</Badge>
+                    </button>
+                  ))}
+                  {(companyResults.data?.items || []).length === 0 && (contactResults.data || []).length === 0 && (
+                    <p className="px-3 py-2 text-xs text-zinc-600">No results found</p>
+                  )}
+                </div>
+              )}
+            </div>
+            {linkedEntities.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {linkedEntities.map((e) => (
+                  <Badge
+                    key={`${e.type}-${e.id}`}
+                    variant="outline"
+                    className={`text-xs cursor-pointer hover:bg-zinc-800 ${
+                      e.type === "company" ? "border-yellow-500/30 text-yellow-400" : "border-blue-500/30 text-blue-400"
+                    }`}
+                    onClick={() => removeEntity(e.type, e.id)}
+                  >
+                    {e.type === "company" ? <Building2 className="h-3 w-3 mr-1" /> : <User className="h-3 w-3 mr-1" />}
+                    {e.name}
+                    <X className="h-3 w-3 ml-1" />
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-3">
             <p className="text-xs text-zinc-500">
               This will create a new {type === "doc" ? "Google Doc" : "Google Sheet"} in your Drive and register it in the Vault.
-              It will open in a new tab for editing.
+              {linkedEntities.length > 0 && ` It will be linked to ${linkedEntities.length} ${linkedEntities.length === 1 ? "entity" : "entities"} and appear in their profiles.`}
             </p>
           </div>
         </div>
@@ -955,7 +1127,7 @@ function DocumentList({
       {documents.map((doc: any) => {
         const FileIcon = getFileIcon(doc.sourceType);
         const status = STATUS_BADGES[doc.status] || STATUS_BADGES.active;
-        const category = CATEGORY_LABELS[doc.category] || doc.category;
+        const category = CATEGORY_LABELS[doc.category]?.label || doc.category;
         return (
           <button
             key={doc.id}
@@ -1046,6 +1218,18 @@ function UploadDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
   const [subcategory, setSubcategory] = useState("");
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   const [textContent, setTextContent] = useState("");
+  const [entitySearch, setEntitySearch] = useState("");
+  const [linkedEntities, setLinkedEntities] = useState<Array<{ type: "company" | "contact"; id: number; name: string }>>([]);
+
+  // Entity search queries
+  const companyResults = trpc.companies.list.useQuery(
+    { search: entitySearch, limit: 5 },
+    { enabled: entitySearch.length >= 2 }
+  );
+  const contactResults = trpc.contacts.searchByName.useQuery(
+    { query: entitySearch, limit: 5 },
+    { enabled: entitySearch.length >= 2 }
+  );
 
   const analyzeDoc = trpc.vault.analyzeDocument.useMutation();
   const createDoc = trpc.vault.createDocument.useMutation({
@@ -1057,6 +1241,17 @@ function UploadDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
     onError: (err) => toast.error(err.message),
   });
 
+  const addEntity = (entity: { type: "company" | "contact"; id: number; name: string }) => {
+    if (!linkedEntities.find(e => e.type === entity.type && e.id === entity.id)) {
+      setLinkedEntities(prev => [...prev, entity]);
+    }
+    setEntitySearch("");
+  };
+
+  const removeEntity = (type: string, id: number) => {
+    setLinkedEntities(prev => prev.filter(e => !(e.type === type && e.id === id)));
+  };
+
   const resetAndClose = () => {
     setStep("upload");
     setFile(null);
@@ -1067,6 +1262,8 @@ function UploadDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
     setSubcategory("");
     setAiSuggestions(null);
     setTextContent("");
+    setEntitySearch("");
+    setLinkedEntities([]);
     onClose();
   };
 
@@ -1118,6 +1315,7 @@ function UploadDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
       category: category as any,
       subcategory: subcategory || undefined,
       visibility: "organization",
+      entityLinks: linkedEntities.map(e => ({ entityType: e.type, entityId: e.id, linkType: "primary" as const })),
     });
   };
 
@@ -1255,16 +1453,85 @@ function UploadDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                      <SelectItem key={k} value={k}>
+                        <div>
+                          <span>{v.label}</span>
+                          <span className="text-[10px] text-zinc-500 ml-1.5">{v.desc}</span>
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {category && CATEGORY_LABELS[category] && (
+                  <p className="text-[10px] text-zinc-500 mt-1">{CATEGORY_LABELS[category].desc}</p>
+                )}
               </div>
             </div>
 
             <div>
               <Label className="text-zinc-400 text-xs">Subcategory (e.g., SPPP, NCNDA, JVA, KYC)</Label>
               <Input value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className="bg-zinc-900 border-zinc-800 text-white mt-1" placeholder="Optional" />
+            </div>
+
+            {/* Entity Tagging */}
+            <div>
+              <Label className="text-zinc-400 text-xs">Tag People & Companies</Label>
+              <p className="text-[10px] text-zinc-600 mb-1.5">Link this document to contacts or companies so it appears in their profile</p>
+              <div className="relative">
+                <Input
+                  value={entitySearch}
+                  onChange={(e) => setEntitySearch(e.target.value)}
+                  placeholder="Search contacts or companies..."
+                  className="bg-zinc-900 border-zinc-800 text-white"
+                />
+                {entitySearch.length >= 2 && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-auto">
+                    {(companyResults.data?.items || []).map((c: any) => (
+                      <button
+                        key={`co-${c.id}`}
+                        className="w-full px-3 py-2 text-left hover:bg-zinc-800 flex items-center gap-2 text-sm"
+                        onClick={() => addEntity({ type: "company", id: c.id, name: c.name })}
+                      >
+                        <Building2 className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+                        <span className="text-zinc-300 truncate">{c.name}</span>
+                        <Badge variant="outline" className="text-[9px] ml-auto shrink-0">Company</Badge>
+                      </button>
+                    ))}
+                    {(contactResults.data || []).map((c: any) => (
+                      <button
+                        key={`ct-${c.id}`}
+                        className="w-full px-3 py-2 text-left hover:bg-zinc-800 flex items-center gap-2 text-sm"
+                        onClick={() => addEntity({ type: "contact", id: c.id, name: c.name })}
+                      >
+                        <User className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                        <span className="text-zinc-300 truncate">{c.name}</span>
+                        <Badge variant="outline" className="text-[9px] ml-auto shrink-0">Contact</Badge>
+                      </button>
+                    ))}
+                    {(companyResults.data?.items || []).length === 0 && (contactResults.data || []).length === 0 && (
+                      <p className="px-3 py-2 text-xs text-zinc-600">No results found</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              {linkedEntities.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {linkedEntities.map((e) => (
+                    <Badge
+                      key={`${e.type}-${e.id}`}
+                      variant="outline"
+                      className={`text-xs cursor-pointer hover:bg-zinc-800 ${
+                        e.type === "company" ? "border-yellow-500/30 text-yellow-400" : "border-blue-500/30 text-blue-400"
+                      }`}
+                      onClick={() => removeEntity(e.type, e.id)}
+                    >
+                      {e.type === "company" ? <Building2 className="h-3 w-3 mr-1" /> : <User className="h-3 w-3 mr-1" />}
+                      {e.name}
+                      <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             <DialogFooter className="gap-2">
@@ -1353,7 +1620,7 @@ function DocumentDetailPanel({ documentId, onClose }: { documentId: number; onCl
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500">Category</span>
-              <span className="text-zinc-300">{CATEGORY_LABELS[d.category] || d.category}</span>
+              <span className="text-zinc-300">{CATEGORY_LABELS[d.category]?.label || d.category}</span>
             </div>
             {d.subcategory && (
               <div className="flex items-center justify-between text-sm">

@@ -185,7 +185,7 @@ export default function MeetingDetail() {
         {/* Top Bar */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-zinc-800/80">
           <div className="flex items-center gap-3">
-            <img src="/omniscope-only.png" alt="OmniScope" className="h-7" />
+            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663324311854/EnEmyoNefHCeqBIl.png" alt="OmniScope" className="h-7" />
             <span className="text-zinc-500 text-xs tracking-[0.25em] font-medium">ALL MARKETS. ONE SCOPE.</span>
           </div>
           <Badge variant="outline" className="border-yellow-600/30 bg-yellow-600/10 text-yellow-600 text-xs tracking-wider font-semibold">
@@ -595,7 +595,7 @@ export default function MeetingDetail() {
 
         {/* OmniScope Footer */}
         <div className="text-center py-10 border-t border-zinc-800 mt-8">
-          <img src="/omniscope-only.png" alt="OmniScope" className="h-5 mx-auto mb-3 opacity-40" />
+          <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663324311854/EnEmyoNefHCeqBIl.png" alt="OmniScope" className="h-5 mx-auto mb-3 opacity-40" />
           <p className="text-zinc-500 text-sm mb-1">omniscopex.ae</p>
           <p className="text-zinc-600 text-xs">Confidential & Proprietary</p>
         </div>

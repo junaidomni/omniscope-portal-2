@@ -197,7 +197,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
           <div className="absolute bottom-0 left-0 right-0 h-96 bg-gradient-to-t from-yellow-900/10 to-transparent" />
         </div>
         <div className="text-center relative z-10">
-          <img src="/omniscope-only.png" alt="OmniScope" className="h-48 mx-auto mb-12" />
+          <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663324311854/EnEmyoNefHCeqBIl.png" alt="OmniScope" className="h-48 mx-auto mb-12" />
           <h1 className="text-3xl font-bold text-white mb-3">Intelligence Portal</h1>
           <p className="text-zinc-400 mb-10 text-lg">Secure access required</p>
           <Button

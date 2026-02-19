@@ -3863,9 +3863,9 @@ const driveRouter = router({
     return {
       connected: status.connected,
       email: status.email,
-      hasDriveScopes: (status as any).hasDriveScopes ?? false,
-      hasDocsScopes: (status as any).hasDocsScopes ?? false,
-      hasSheetsScopes: (status as any).hasSheetsScopes ?? false,
+      hasDriveScopes: status.hasDriveScopes ?? false,
+      hasDocsScopes: status.hasDocsScopes ?? false,
+      hasSheetsScopes: status.hasSheetsScopes ?? false,
     };
   }),
 
@@ -3876,6 +3876,7 @@ const driveRouter = router({
       pageToken: z.string().optional(),
       pageSize: z.number().min(1).max(100).default(50),
       query: z.string().optional(),
+      driveId: z.string().optional(),
     }).optional())
     .query(async ({ input, ctx }) => {
       const result = await googleDrive.listDriveFiles(
@@ -3884,6 +3885,7 @@ const driveRouter = router({
         input?.pageToken,
         input?.pageSize,
         input?.query,
+        input?.driveId,
       );
       if (!result) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Google Drive not connected. Please connect your Google account in Settings." });
       return result;

@@ -126,6 +126,7 @@ export async function listDriveFiles(
   pageToken?: string,
   pageSize: number = 50,
   query?: string,
+  driveId?: string,
 ): Promise<{ files: DriveFile[]; nextPageToken?: string } | null> {
   const drive = await getDriveClient(userId);
   if (!drive) return null;
@@ -139,7 +140,7 @@ export async function listDriveFiles(
       q += ` and (name contains '${query.replace(/'/g, "\\'")}')`;
     }
 
-    const response = await drive.files.list({
+    const listParams: any = {
       q,
       pageSize,
       pageToken: pageToken || undefined,
@@ -147,7 +148,12 @@ export async function listDriveFiles(
       orderBy: "modifiedTime desc",
       includeItemsFromAllDrives: true,
       supportsAllDrives: true,
-    });
+    };
+    if (driveId) {
+      listParams.driveId = driveId;
+      listParams.corpora = "drive";
+    }
+    const response = await drive.files.list(listParams);
 
     return {
       files: (response.data.files || []) as DriveFile[],

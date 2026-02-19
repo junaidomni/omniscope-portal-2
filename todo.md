@@ -1940,3 +1940,36 @@
 ### Vault Enhancement
 - [x] "New Document" and "New Spreadsheet" creation buttons in Vault
 - [x] Google file type icons (Doc, Sheet, Slide) in document lists
+
+## v56 — Vault UX Fixes + Entity Tagging + Shared Drive Import
+
+### Bug Fixes
+- [x] Fix document creation not working (diagnose and fix error)
+- [x] Debug New Doc / New Sheet creation flow
+
+### Settings Enhancement
+- [x] Show "Connected to Google Drive, Google Docs, Google Sheets" status in Settings
+- [x] Update re-authenticate button area with connection details
+
+### Document Creation UX
+- [x] Add category explanations/descriptions in document creation dialog
+- [x] Add entity tagging (people/companies) to document creation flow
+- [x] Tagged entities should show document in their profile
+
+### Shared Drive Import
+- [x] Import OMNISCOPE shared Google Drive folder into Vault
+- [x] Support browsing shared drives (not just My Drive)
+
+### Google APIs Enabled & Verified
+- [x] Google Drive API enabled in Cloud Console (project 121903194822)
+- [x] Google Docs API enabled in Cloud Console
+- [x] Google Sheets API enabled in Cloud Console
+- [x] Google Slides API enabled in Cloud Console (for future use)
+- [x] Verified My Drive file browsing works (files, folders, sizes, dates)
+- [x] Verified OMNISCOPE shared drive browsing works (Kinetix KYB, OTC Transactions, JUNAID, etc.)
+- [x] Verified folder navigation within shared drive (breadcrumb trail)
+- [x] Verified New Doc dialog with category explanations and entity tagging
+- [x] Verified New Sheet dialog with category explanations and entity tagging
+- [x] Verified Template registration dialog with Google Doc ID field
+- [x] Verified Pipeline Kanban view (Draft/Sent/Viewed/Signed/Declined)
+- [x] All 938 tests passing across 37 files

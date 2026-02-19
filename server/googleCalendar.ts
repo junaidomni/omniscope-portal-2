@@ -199,6 +199,9 @@ export async function isGoogleConnected(userId: number): Promise<{
   email?: string;
   hasCalendarScopes?: boolean;
   hasGmailScopes?: boolean;
+  hasDriveScopes?: boolean;
+  hasDocsScopes?: boolean;
+  hasSheetsScopes?: boolean;
   scopes?: string[];
 }> {
   const db = await getDb();
