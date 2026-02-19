@@ -2801,6 +2801,7 @@ const triageRouter = router({
       })),
       pendingContacts: pendingContacts.map(c => ({
         id: c.id, name: c.name, email: c.email, organization: c.organization,
+        title: c.title, source: c.source, createdAt: c.createdAt,
       })),
       pendingCompanies: pendingCompanies.map(c => ({
         id: c.id, name: c.name, sector: c.sector,
@@ -2874,6 +2875,105 @@ const triageRouter = router({
       if (updates.category !== undefined) cleanUpdates.category = updates.category;
       await db.updateTask(taskId, cleanUpdates);
       return { success: true };
+    }),
+
+  // Find potential duplicates for a specific pending contact
+  findDuplicatesFor: protectedProcedure
+    .input(z.object({ contactId: z.number() }))
+    .query(async ({ input }) => {
+      const target = await db.getContactById(input.contactId);
+      if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
+      const allContacts = await db.getAllContacts();
+      const approvedContacts = allContacts.filter(c => c.approvalStatus === 'approved' && c.id !== target.id);
+      const targetName = target.name.toLowerCase().trim();
+      const targetParts = targetName.split(/\s+/);
+      const targetEmail = target.email?.toLowerCase().trim();
+      const targetOrg = target.organization?.toLowerCase().trim();
+
+      const matches: { contact: typeof approvedContacts[0]; confidence: number; reason: string }[] = [];
+
+      for (const c of approvedContacts) {
+        const cName = c.name.toLowerCase().trim();
+        const cParts = cName.split(/\s+/);
+        const cEmail = c.email?.toLowerCase().trim();
+        const cOrg = c.organization?.toLowerCase().trim();
+        let confidence = 0;
+        const reasons: string[] = [];
+
+        // Exact name match
+        if (targetName === cName) { confidence = 95; reasons.push('Exact name match'); }
+        // Email match (strongest signal)
+        else if (targetEmail && cEmail && targetEmail === cEmail) { confidence = 90; reasons.push('Same email address'); }
+        // First+last swap (e.g., "Jake Ryan" vs "Ryan Jake")
+        else if (targetParts.length >= 2 && cParts.length >= 2 &&
+          targetParts[0] === cParts[cParts.length - 1] && targetParts[targetParts.length - 1] === cParts[0]) {
+          confidence = 80; reasons.push('Name parts swapped');
+        }
+        // First name match + same org
+        else if (targetParts[0] === cParts[0] && targetOrg && cOrg && targetOrg === cOrg) {
+          confidence = 75; reasons.push('Same first name + organization');
+        }
+        // One name contains the other
+        else if (targetName.length > 3 && cName.length > 3 && (targetName.includes(cName) || cName.includes(targetName))) {
+          confidence = 65; reasons.push('Name overlap');
+        }
+        // Same last name + same org
+        else if (targetParts.length >= 2 && cParts.length >= 2 &&
+          targetParts[targetParts.length - 1] === cParts[cParts.length - 1] &&
+          targetOrg && cOrg && targetOrg === cOrg) {
+          confidence = 55; reasons.push('Same last name + organization');
+        }
+        // First name match only
+        else if (targetParts[0] === cParts[0] && targetParts[0].length >= 3) {
+          confidence = 40; reasons.push('Same first name');
+        }
+
+        if (confidence > 0) {
+          // Boost confidence if org matches
+          if (targetOrg && cOrg && targetOrg === cOrg && !reasons.includes('Same first name + organization') && !reasons.includes('Same last name + organization')) {
+            confidence = Math.min(confidence + 10, 99);
+            reasons.push('Same organization');
+          }
+          matches.push({
+            contact: c,
+            confidence,
+            reason: reasons.join(', '),
+          });
+        }
+      }
+
+      return matches.sort((a, b) => b.confidence - a.confidence).slice(0, 5);
+    }),
+
+  // Merge a pending contact into an existing approved contact
+  mergeAndApprove: protectedProcedure
+    .input(z.object({ pendingId: z.number(), mergeIntoId: z.number() }))
+    .mutation(async ({ input }) => {
+      const pending = await db.getContactById(input.pendingId);
+      const target = await db.getContactById(input.mergeIntoId);
+      if (!pending || !target) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      // Transfer meeting links from pending to target
+      const pendingMeetings = await db.getMeetingsForContact(input.pendingId);
+      for (const mm of pendingMeetings) {
+        try { await db.linkContactToMeeting(mm.meeting.id, input.mergeIntoId); } catch {}
+      }
+
+      // Fill in missing fields from pending contact
+      const updates: any = {};
+      if (!target.email && pending.email) updates.email = pending.email;
+      if (!target.phone && pending.phone) updates.phone = pending.phone;
+      if (!target.organization && pending.organization) updates.organization = pending.organization;
+      if (!target.title && pending.title) updates.title = pending.title;
+      if (!target.dateOfBirth && pending.dateOfBirth) updates.dateOfBirth = pending.dateOfBirth;
+      if (!target.address && pending.address) updates.address = pending.address;
+      if (!target.website && pending.website) updates.website = pending.website;
+      if (!target.linkedin && pending.linkedin) updates.linkedin = pending.linkedin;
+      if (Object.keys(updates).length > 0) await db.updateContact(input.mergeIntoId, updates);
+
+      // Delete the pending contact
+      await db.deleteContact(input.pendingId);
+      return { success: true, mergedInto: target.name };
     }),
 
   // Approve a contact from triage

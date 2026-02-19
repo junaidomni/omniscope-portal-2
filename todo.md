@@ -1682,3 +1682,26 @@
 - [x] Investigate why email name/subject not showing on Triage
 - [x] Ensure Gmail thread metadata is properly enriched and passed to frontend
 - [x] Verify frontend renders subject/fromName when available
+
+## v49 — Contact Approval Flow + Merge/Duplicate Detection
+
+### Contact Approval Flow (like companies)
+- [x] Stop auto-adding contacts from meetings — route through approval instead
+- [x] Add approvalStatus field to contacts (pending/approved/rejected) if not already present
+- [x] New contacts from meeting sync go to "pending" status
+- [x] Pending contacts appear in Triage feed for review
+- [x] Quick actions: Approve, Reject, Merge with existing contact
+- [x] Approved contacts become full contacts in the system
+
+### Duplicate/Merge Detection
+- [x] Detect potential duplicates when new contacts come in (name similarity, email match)
+- [x] Show merge suggestions with quick action: "This is the same person as [existing contact]"
+- [x] Merge action: combine data from both records into one
+- [x] Support name variations (e.g., "Jake Ryan" = "Jacob McDonald")
+- [x] Show confidence indicator for duplicate matches
+
+### Contact Approval UI
+- [x] Approval cards in Triage with Approve/Reject/Merge buttons
+- [x] Merge modal: select which existing contact to merge with
+- [x] Show side-by-side comparison when merging
+- [x] Bulk approve/reject for multiple pending contacts

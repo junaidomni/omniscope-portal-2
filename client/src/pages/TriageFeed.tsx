@@ -43,6 +43,10 @@ import {
   Filter,
   Minimize2,
   Maximize2,
+  GitMerge,
+  Search,
+  ArrowDown,
+  Briefcase,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -348,13 +352,14 @@ function TaskModal({
   );
 }
 
-// ─── Approval Modal ──────────────────────────────────────────────────────
+// ─── Approval Modal with Merge/Duplicate Detection ──────────────────────
 function ApprovalModal({
   item,
   type,
   onClose,
   onApprove,
   onReject,
+  onMerge,
   isActing,
 }: {
   item: any;
@@ -362,15 +367,53 @@ function ApprovalModal({
   onClose: () => void;
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
+  onMerge?: (pendingId: number, mergeIntoId: number) => void;
   isActing: boolean;
 }) {
+  const [showMerge, setShowMerge] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Only fetch duplicates for contacts
+  const { data: duplicates, isLoading: dupsLoading } = trpc.triage.findDuplicatesFor.useQuery(
+    { contactId: item.id },
+    { enabled: type === "contact" }
+  );
+
+  // Also fetch all approved contacts for manual search
+  const { data: allContacts } = trpc.contacts.list.useQuery(undefined, {
+    enabled: type === "contact" && showMerge,
+  });
+
+  const hasDuplicates = duplicates && duplicates.length > 0;
+
+  // Filter contacts for manual search
+  const searchResults = useMemo(() => {
+    if (!allContacts || !searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return (allContacts as any[])
+      .filter((c: any) => c.approvalStatus === "approved" && c.id !== item.id)
+      .filter((c: any) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.email && c.email.toLowerCase().includes(q)) ||
+        (c.organization && c.organization.toLowerCase().includes(q))
+      )
+      .slice(0, 8);
+  }, [allContacts, searchQuery, item.id]);
+
+  const confidenceColor = (conf: number) => {
+    if (conf >= 80) return "text-red-400 bg-red-950/40 border-red-900/40";
+    if (conf >= 60) return "text-yellow-400 bg-yellow-950/40 border-yellow-900/40";
+    return "text-zinc-400 bg-zinc-800/40 border-zinc-700/40";
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${showMerge ? "max-w-lg" : "max-w-sm"}`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-2">
             {type === "contact" ? (
@@ -379,7 +422,7 @@ function ApprovalModal({
               <Building2 className="h-4 w-4 text-purple-400" />
             )}
             <span className="text-xs text-zinc-500 uppercase tracking-wider">
-              Pending {type}
+              {showMerge ? "Merge Contact" : `Pending ${type}`}
             </span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-white transition-colors">
@@ -387,33 +430,148 @@ function ApprovalModal({
           </button>
         </div>
 
-        <div className="px-5 pb-4">
-          <h3 className="text-base font-semibold text-white mb-1">{item.name}</h3>
-          {type === "contact" && item.organization && (
-            <p className="text-xs text-zinc-500">{item.organization}</p>
-          )}
-          {type === "company" && item.sector && (
-            <p className="text-xs text-zinc-500">{item.sector}</p>
+        {/* Contact Info */}
+        <div className="px-5 pb-3">
+          <h3 className="text-base font-semibold text-white mb-0.5">{item.name}</h3>
+          <div className="flex items-center gap-3 text-xs text-zinc-500">
+            {type === "contact" && item.organization && (
+              <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" />{item.organization}</span>
+            )}
+            {type === "contact" && item.email && (
+              <span className="truncate">{item.email}</span>
+            )}
+            {type === "contact" && item.title && (
+              <span className="truncate">{item.title}</span>
+            )}
+            {type === "company" && item.sector && (
+              <span>{item.sector}</span>
+            )}
+          </div>
+          {type === "contact" && item.source && (
+            <p className="text-[10px] text-zinc-600 mt-1">Source: {item.source}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-2 px-5 pb-5">
-          <button
-            onClick={() => onApprove(item.id)}
-            disabled={isActing}
-            className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
-          >
-            <Shield className="h-3.5 w-3.5" />
-            Approve
-          </button>
-          <button
-            onClick={() => onReject(item.id)}
-            disabled={isActing}
-            className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-red-950 text-zinc-300 hover:text-red-400 font-medium text-sm py-2.5 rounded-lg transition-colors"
-          >
-            <ShieldX className="h-3.5 w-3.5" />
-            Reject
-          </button>
+        {/* Duplicate Suggestions (auto-detected) */}
+        {type === "contact" && !showMerge && hasDuplicates && (
+          <div className="mx-5 mb-3 border border-yellow-900/30 bg-yellow-950/20 rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <GitMerge className="h-3.5 w-3.5 text-yellow-500" />
+              <span className="text-xs font-medium text-yellow-400">Possible Duplicates Detected</span>
+            </div>
+            <div className="space-y-1.5">
+              {duplicates!.map((d: any) => (
+                <div
+                  key={d.contact.id}
+                  className="flex items-center justify-between gap-2 bg-zinc-900/60 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-yellow-800/40 transition-colors cursor-pointer group"
+                  onClick={() => onMerge?.(item.id, d.contact.id)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-zinc-200 truncate">{d.contact.name}</p>
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                      {d.contact.organization && <span>{d.contact.organization}</span>}
+                      {d.contact.email && <span className="truncate">{d.contact.email}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${confidenceColor(d.confidence)}`}>
+                      {d.confidence}%
+                    </span>
+                    <span className="text-xs text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      Same person
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Manual Merge Search */}
+        {type === "contact" && showMerge && (
+          <div className="mx-5 mb-3">
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search existing contacts to merge with..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-zinc-800/60 border border-zinc-700/40 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-yellow-800/60"
+                autoFocus
+              />
+            </div>
+            {searchQuery.trim() && searchResults.length > 0 && (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {searchResults.map((c: any) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between gap-2 bg-zinc-900/60 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-yellow-800/40 transition-colors cursor-pointer group"
+                    onClick={() => onMerge?.(item.id, c.id)}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-zinc-200 truncate">{c.name}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                        {c.organization && <span>{c.organization}</span>}
+                        {c.email && <span className="truncate">{c.email}</span>}
+                      </div>
+                    </div>
+                    <span className="text-xs text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      Merge into this
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {searchQuery.trim() && searchResults.length === 0 && (
+              <p className="text-xs text-zinc-600 text-center py-3">No matching contacts found</p>
+            )}
+            {!searchQuery.trim() && (
+              <p className="text-xs text-zinc-600 text-center py-3">Type a name, email, or organization to find contacts</p>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="px-5 pb-5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onApprove(item.id)}
+              disabled={isActing}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
+            >
+              <Shield className="h-3.5 w-3.5" />
+              Approve
+            </button>
+            {type === "contact" && onMerge && (
+              <button
+                onClick={() => setShowMerge(!showMerge)}
+                className={`flex items-center justify-center gap-2 font-medium text-sm py-2.5 px-4 rounded-lg transition-colors ${
+                  showMerge
+                    ? "bg-yellow-600/20 text-yellow-400 border border-yellow-700/40"
+                    : "bg-zinc-800 hover:bg-yellow-950/40 text-zinc-300 hover:text-yellow-400"
+                }`}
+              >
+                <GitMerge className="h-3.5 w-3.5" />
+                Merge
+              </button>
+            )}
+            <button
+              onClick={() => onReject(item.id)}
+              disabled={isActing}
+              className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-red-950 text-zinc-300 hover:text-red-400 font-medium text-sm py-2.5 rounded-lg transition-colors"
+            >
+              <ShieldX className="h-3.5 w-3.5" />
+              Reject
+            </button>
+          </div>
+
+          {/* Duplicate hint when not in merge mode */}
+          {type === "contact" && !showMerge && hasDuplicates && (
+            <p className="text-[10px] text-zinc-600 text-center mt-2">
+              Click a suggestion above or use Merge to search manually
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -1111,6 +1269,15 @@ export default function TriageFeed() {
     onError: () => toast.error("Could not reject company"),
   });
 
+  const mergeAndApproveMutation = trpc.triage.mergeAndApprove.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Merged into ${data.mergedInto}`);
+      setSelectedApproval(null);
+      utils.triage.feed.invalidate();
+    },
+    onError: () => toast.error("Could not merge contact"),
+  });
+
   // Local time values
   const localHour = now.getHours();
   const greeting = getGreeting(localHour);
@@ -1185,6 +1352,9 @@ export default function TriageFeed() {
               ? rejectContactMutation.mutate({ contactId: id })
               : rejectCompanyMutation.mutate({ companyId: id })
           }
+          onMerge={selectedApproval.type === "contact" ? (pendingId, mergeIntoId) => {
+            mergeAndApproveMutation.mutate({ pendingId, mergeIntoId });
+          } : undefined}
           isActing={false}
         />
       )}
