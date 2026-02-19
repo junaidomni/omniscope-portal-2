@@ -437,7 +437,7 @@ function TaskCard({
   return (
     <div
       onClick={onClick}
-      className="group bg-zinc-900/60 border border-zinc-800/40 rounded-xl p-3.5 hover:border-zinc-700/50 hover:bg-zinc-900/80 transition-all duration-200 cursor-pointer"
+      className="group bg-zinc-900/60 border border-zinc-800/40 rounded-xl p-3.5 hover:border-zinc-700/50 hover:bg-zinc-900/80 transition-all duration-200 cursor-pointer hover:shadow-lg hover:shadow-black/20 hover:-translate-y-px"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <PriorityBadge priority={task.priority} />
@@ -578,14 +578,14 @@ function Section({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className={className}>
+    <div className={`animate-fade-in-up ${className || ''}`}>
       <div className="flex items-center justify-between mb-3">
         <button
           className="flex items-center gap-2"
           onClick={collapsible ? () => setOpen(!open) : undefined}
         >
           <div className={`p-1.5 rounded-lg ${accentColor}`}>{icon}</div>
-          <h3 className="text-sm font-semibold text-white">{title}</h3>
+          <h3 className="text-sm font-semibold text-white tracking-tight">{title}</h3>
           {count !== undefined && count > 0 && (
             <span className="text-xs text-zinc-500 font-mono bg-zinc-800/50 px-1.5 py-0.5 rounded">
               {count}
@@ -632,7 +632,7 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className={`w-full border rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all duration-200 cursor-pointer text-left ${
+      className={`w-full border rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all duration-200 cursor-pointer text-left hover:scale-[1.02] active:scale-[0.98] ${
         active
           ? "bg-yellow-600/15 border-yellow-500/40 ring-1 ring-yellow-500/20"
           : highlight
@@ -649,8 +649,9 @@ function StatCard({
   );
 }
 
-// ─── Inline Strategic Insights (for greeting bar) ────────────────────────
+// // ─── Inline Strategic Insights (for greeting bar) ────────────────────
 function InlineInsights() {
+  const [, navigate] = useLocation();
   const { data, isLoading } = trpc.triage.strategicInsights.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     retry: false,
@@ -677,12 +678,39 @@ function InlineInsights() {
 
   return (
     <div className="space-y-2">
-      {data.insights.map((insight: string, i: number) => (
-        <div key={i} className="flex items-start gap-2">
-          <Zap className="h-3 w-3 text-yellow-500/70 mt-0.5 shrink-0" />
-          <p className="text-xs text-zinc-400 leading-relaxed">{insight}</p>
-        </div>
-      ))}
+      {data.insights.map((insight: any, i: number) => {
+        const text = typeof insight === 'string' ? insight : insight.text;
+        const linkTo = typeof insight === 'string' ? null : insight.linkTo;
+        const linkLabel = typeof insight === 'string' ? null : insight.linkLabel;
+        const isClickable = !!linkTo;
+
+        return (
+          <div
+            key={i}
+            className={`flex items-start gap-2 group ${
+              isClickable ? 'cursor-pointer hover:bg-zinc-800/30 -mx-2 px-2 py-1 rounded-lg transition-all duration-200' : 'py-1'
+            }`}
+            onClick={isClickable ? () => navigate(linkTo) : undefined}
+            role={isClickable ? 'button' : undefined}
+            tabIndex={isClickable ? 0 : undefined}
+            onKeyDown={isClickable ? (e) => { if (e.key === 'Enter') navigate(linkTo); } : undefined}
+          >
+            <Zap className={`h-3 w-3 mt-0.5 shrink-0 transition-colors ${
+              isClickable ? 'text-yellow-500/70 group-hover:text-yellow-400' : 'text-yellow-500/70'
+            }`} />
+            <div className="min-w-0 flex-1">
+              <p className={`text-xs leading-relaxed transition-colors ${
+                isClickable ? 'text-zinc-400 group-hover:text-zinc-200' : 'text-zinc-400'
+              }`}>{text}</p>
+              {isClickable && linkLabel && (
+                <span className="text-[9px] text-yellow-600/50 group-hover:text-yellow-500/80 transition-colors flex items-center gap-0.5 mt-0.5">
+                  <ArrowRight className="h-2 w-2" /> {linkLabel}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -789,7 +817,7 @@ function GreetingBar({
   };
 
   return (
-    <div className="bg-gradient-to-br from-zinc-900/80 via-zinc-900/60 to-zinc-900/40 border border-zinc-800/40 rounded-2xl p-5 lg:p-6">
+    <div className="bg-gradient-to-br from-zinc-900/80 via-zinc-900/60 to-zinc-900/40 border border-zinc-800/40 rounded-2xl p-5 lg:p-6 backdrop-blur-sm shadow-[0_1px_3px_0_rgba(0,0,0,0.3),0_1px_2px_-1px_rgba(0,0,0,0.3)] animate-fade-in-up">
       <div className="flex flex-col lg:flex-row lg:items-start lg:gap-6">
         {/* Left: Greeting + Summary + Quote + Insights */}
         <div className="flex-1 min-w-0">
@@ -1256,10 +1284,11 @@ export default function TriageFeed() {
                   <Link key={s.threadId} href="/communications">
                     <div className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer">
                       <Mail className="h-3.5 w-3.5 text-zinc-500" />
-                      <span className="text-sm text-zinc-300 truncate flex-1 font-mono">
-                        {s.threadId.slice(0, 16)}...
-                      </span>
-                      <span className={`text-xs ${starColors[s.starLevel] || "text-zinc-400"}`}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-zinc-200 truncate">{s.subject || s.fromName || s.threadId.slice(0, 16) + "..."}</p>
+                        {s.fromName && <p className="text-[10px] text-zinc-500 truncate">{s.fromName}{s.fromEmail ? ` <${s.fromEmail}>` : ""}</p>}
+                      </div>
+                      <span className={`text-xs shrink-0 ${starColors[s.starLevel] || "text-zinc-400"}`}>
                         {"★".repeat(s.starLevel)} {starLabels[s.starLevel] || ""}
                       </span>
                     </div>
@@ -1460,10 +1489,11 @@ export default function TriageFeed() {
                           <Link key={s.threadId} href="/communications">
                             <div className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer">
                               <Mail className="h-3.5 w-3.5 text-zinc-500" />
-                              <span className="text-sm text-zinc-300 truncate flex-1 font-mono">
-                                {s.threadId.slice(0, 16)}...
-                              </span>
-                              <span className={`text-xs ${starColors[s.starLevel] || "text-zinc-400"}`}>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm text-zinc-200 truncate">{s.subject || s.fromName || s.threadId.slice(0, 16) + "..."}</p>
+                                {s.fromName && <p className="text-[10px] text-zinc-500 truncate">{s.fromName}{s.fromEmail ? ` <${s.fromEmail}>` : ""}</p>}
+                              </div>
+                              <span className={`text-xs shrink-0 ${starColors[s.starLevel] || "text-zinc-400"}`}>
                                 {"★".repeat(s.starLevel)} {starLabels[s.starLevel] || ""}
                               </span>
                             </div>

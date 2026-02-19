@@ -248,3 +248,63 @@
 .animate-sparkle-1 { animation: sparkle-float-1 1.5s ease-in-out infinite; }
 .animate-sparkle-2 { animation: sparkle-float-2 1.8s ease-in-out infinite 0.3s; }
 .animate-sparkle-3 { animation: sparkle-float-3 2s ease-in-out infinite 0.6s; }
+
+/* ── Premium Polish: Apple/Tesla-grade refinements ──────────────────────── */
+
+/* Smooth page-level transitions */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+/* Refined scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.30 0 0);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.40 0 0);
+}
+
+/* Subtle selection color */
+::selection {
+  background: oklch(0.65 0.15 85 / 0.25);
+  color: oklch(0.95 0.03 85);
+}
+
+/* Smooth focus transitions */
+*:focus-visible {
+  outline: 2px solid oklch(0.65 0.15 85 / 0.5);
+  outline-offset: 2px;
+  transition: outline-color 0.2s ease;
+}
+
+/* Card hover lift effect */
+@keyframes card-lift {
+  from { transform: translateY(0); }
+  to { transform: translateY(-1px); }
+}
+
+/* Staggered fade-in for list items */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-stagger-in {
+  animation: stagger-in 0.3s ease-out both;
+}

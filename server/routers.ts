@@ -2674,8 +2674,30 @@ const triageRouter = router({
       .filter(t => t.status !== 'completed' && t.priority === 'high' && !overdueTasks.find(o => o.id === t.id) && !todayTasks.find(o => o.id === t.id))
       .slice(0, 10);
 
-    // 4. Starred emails
-    const starredEmails = await db.getEmailStarsForUser(userId);
+    // 4. Starred emails — enrich with thread metadata from Gmail
+    const rawStarredEmails = await db.getEmailStarsForUser(userId);
+    // Try to get thread details for each starred email
+    let starredEmails: { threadId: string; starLevel: number; subject?: string; fromName?: string; fromEmail?: string }[] = [];
+    try {
+      const gmailThreads = await gmailService.listGmailThreads(userId, { folder: 'starred', maxResults: 50 });
+      const threadMap = new Map<string, { subject: string; fromName: string; fromEmail: string }>();
+      for (const t of gmailThreads.threads || []) {
+        threadMap.set(t.threadId, { subject: t.subject, fromName: t.fromName, fromEmail: t.fromEmail });
+      }
+      starredEmails = rawStarredEmails.map(s => {
+        const meta = threadMap.get(s.threadId);
+        return {
+          threadId: s.threadId,
+          starLevel: s.starLevel,
+          subject: meta?.subject,
+          fromName: meta?.fromName,
+          fromEmail: meta?.fromEmail,
+        };
+      });
+    } catch {
+      // Gmail not connected or error — fall back to raw data
+      starredEmails = rawStarredEmails.map(s => ({ threadId: s.threadId, starLevel: s.starLevel }));
+    }
 
     // 5. Pending contact approvals
     const allContacts = await db.getAllContacts();
@@ -2751,6 +2773,9 @@ const triageRouter = router({
       })),
       starredEmails: starredEmails.map(s => ({
         threadId: s.threadId, starLevel: s.starLevel,
+        subject: s.subject || null,
+        fromName: s.fromName || null,
+        fromEmail: s.fromEmail || null,
       })),
       pendingContacts: pendingContacts.map(c => ({
         id: c.id, name: c.name, email: c.email, organization: c.organization,
@@ -2887,12 +2912,23 @@ const triageRouter = router({
       }
     }
 
+    // Build stale contact details for navigation targets
+    const staleContactDetails: { name: string; id: number; days: number }[] = [];
+    for (const c of allContacts.filter(c => c.starred || c.category === 'client')) {
+      const meetings = await db.getMeetingsForContact(c.id);
+      if (meetings.length > 0) {
+        const daysSince = Math.floor((now.getTime() - new Date(meetings[0].meeting.meetingDate).getTime()) / 86400000);
+        if (daysSince > 10) staleContactDetails.push({ name: c.name, id: c.id, days: daysSince });
+      }
+    }
+    staleContactDetails.sort((a, b) => b.days - a.days);
+
     const prompt = `You are OmniScope's strategic intelligence engine. Generate exactly 3 short, actionable insights based on this data. Each insight should be 1 sentence max, direct and commanding — like a military briefing or Tesla dashboard notification.
 
 Data:
 - Open tasks: ${openTasks.length}, Overdue: ${overdueTasks.length}, High priority: ${highPriority.length}
 - Pending approvals: ${pendingApprovals}
-- Stale contacts (no meeting 10+ days): ${staleContacts.slice(0, 5).join(', ') || 'None'}
+- Stale contacts (no meeting 10+ days): ${staleContactDetails.slice(0, 5).map(c => `${c.name} (${c.days} days)`).join(', ') || 'None'}
 - Recent meetings: ${recentMeetings.slice(0, 5).map(m => m.meetingTitle).join(', ') || 'None'}
 - Today's date: ${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
 
@@ -2936,16 +2972,43 @@ Example output:
       });
       const content = result.choices[0]?.message?.content as string;
       const parsed = JSON.parse(content);
-      return { insights: parsed.insights?.slice(0, 3) || [] };
+      const rawInsights: string[] = parsed.insights?.slice(0, 3) || [];
+
+      // Attach navigation targets to each insight
+      const insights = rawInsights.map(text => {
+        // Check if insight mentions a stale contact
+        const matchedContact = staleContactDetails.find(c => text.toLowerCase().includes(c.name.toLowerCase().split(' ')[0]));
+        if (matchedContact) return { text, linkTo: `/relationships`, linkLabel: matchedContact.name, type: 'contact' as const };
+        // Check if insight mentions overdue tasks
+        if (/overdue/i.test(text)) return { text, linkTo: '/', linkLabel: 'View overdue', type: 'overdue' as const, filterKey: 'overdue' as const };
+        // Check if insight mentions approvals
+        if (/approval|pending/i.test(text)) return { text, linkTo: '/', linkLabel: 'View pending', type: 'pending' as const, filterKey: 'pending' as const };
+        // Check if insight mentions high priority
+        if (/high.?priority/i.test(text)) return { text, linkTo: '/', linkLabel: 'View high priority', type: 'high' as const, filterKey: 'high' as const };
+        // Default: no link
+        return { text, linkTo: null, linkLabel: null, type: 'info' as const };
+      });
+
+      return { insights };
     } catch {
       // Fallback: generate insights from data without LLM
-      const insights: string[] = [];
-      if (overdueTasks.length > 0) insights.push(`${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''} require immediate attention.`);
-      else insights.push('No critical risks detected today.');
-      if (staleContacts.length > 0) insights.push(`You haven't contacted ${staleContacts[0].split(' (')[0]} in ${staleContacts[0].match(/\((\d+)/)?.[1] || '10+'} days.`);
-      else insights.push('All key contacts are up to date.');
-      if (pendingApprovals > 0) insights.push(`${pendingApprovals} approval${pendingApprovals > 1 ? 's' : ''} awaiting your review.`);
-      else insights.push(`${openTasks.length} open tasks across your pipeline.`);
+      const insights: { text: string; linkTo: string | null; linkLabel: string | null; type: string }[] = [];
+      if (overdueTasks.length > 0) {
+        insights.push({ text: `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''} require immediate attention.`, linkTo: '/', linkLabel: 'View overdue', type: 'overdue' });
+      } else {
+        insights.push({ text: 'No critical risks detected today.', linkTo: null, linkLabel: null, type: 'info' });
+      }
+      if (staleContactDetails.length > 0) {
+        const sc = staleContactDetails[0];
+        insights.push({ text: `${sc.name} is a stale contact, last interaction ${sc.days} days ago.`, linkTo: '/relationships', linkLabel: sc.name, type: 'contact' });
+      } else {
+        insights.push({ text: 'All key contacts are up to date.', linkTo: null, linkLabel: null, type: 'info' });
+      }
+      if (pendingApprovals > 0) {
+        insights.push({ text: `${pendingApprovals} pending approval${pendingApprovals > 1 ? 's' : ''} require${pendingApprovals === 1 ? 's' : ''} immediate action.`, linkTo: '/', linkLabel: 'View pending', type: 'pending' });
+      } else {
+        insights.push({ text: `${openTasks.length} open tasks across your pipeline.`, linkTo: '/operations', linkLabel: 'View tasks', type: 'info' });
+      }
       return { insights: insights.slice(0, 3) };
     }
   }),

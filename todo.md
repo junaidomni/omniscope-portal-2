@@ -1651,3 +1651,20 @@
 - [x] Place Strategic Insights and Quick Stats side-by-side in the greeting box instead of stacked
 - [x] On desktop: two-column layout (Insights left, Stats right)
 - [x] On mobile: stack vertically as fallback
+
+## v47 — Email Names, Insight Click-Through, Premium Polish
+
+### Fix Starred Email Display
+- [x] Starred emails showing raw thread ID instead of sender name/subject
+- [x] Show sender name or email subject in the starred emails section
+- [x] Fallback gracefully if no name/subject available
+
+### Insight Click-Through Navigation
+- [x] Make each Strategic Insight bullet clickable
+- [x] Navigate to relevant contact, approval, or risk item
+- [x] Visual hover state indicating clickability
+
+### Final Premium Polish
+- [x] Review overall Triage page for Apple/Tesla-level feel
+- [x] Micro-interactions, transitions, spacing refinements
+- [x] Run full test suite and verify all features
