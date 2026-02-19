@@ -1,9 +1,0 @@
-{
-  "query": "DELETE d1 FROM documents d1 \nINNER JOIN documents d2 \nON d1.docTitle = d2.docTitle AND d1.id > d2.id;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute DELETE d1 FROM documents d1 \nINNER JOIN documents d2 \nON d1.docTitle = d2.docTitle AND d1.id > d2.id;",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 381
-}

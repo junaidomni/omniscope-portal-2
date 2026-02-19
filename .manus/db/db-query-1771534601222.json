@@ -1,9 +1,0 @@
-{
-  "query": "\nINSERT INTO document_entity_links (delDocumentId, delEntityType, delEntityId, delLinkType) VALUES\n(30003, 'company', 1, 'primary'),\n(30004, 'company', 1, 'primary'),\n(30007, 'company', 1, 'primary'),\n(30008, 'company', 1, 'primary'),\n(30009, 'company', 1, 'primary'),\n(30010, 'company', 1, 'primary'),\n(30002, 'company', 1, 'primary'),\n(30094, 'company', 1, 'primary'),\n(30151, 'company', 1, 'primary'),\n(30090, 'company', 1, 'primary'),\n(30128, 'company', 1, 'primary'),\n(30005, 'company', 1, 'primary'),\n(30423, 'company', 1, 'primary');\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute \nINSERT INTO document_entity_links (delDocumentId, delEntityType, delEntityId, delLinkType) VALUES\n(30003, 'company', 1, 'primary'),\n(30004, 'company', 1, 'primary'),\n(30007, 'company', 1, 'primary'),\n(30008, 'company', 1, 'primary'),\n(30009, 'company', 1, 'primary'),\n(30010, 'company', 1, 'primary'),\n(30002, 'company', 1, 'primary'),\n(30094, 'company', 1, 'primary'),\n(30151, 'company', 1, 'primary'),\n(30090, 'company', 1, 'primary'),\n(30128, 'company', 1, 'primary'),\n(30005, 'company', 1, 'primary'),\n(30423, 'company', 1, 'primary');\n",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 349
-}

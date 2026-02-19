@@ -1,9 +1,0 @@
-{
-  "query": "\nINSERT INTO document_entity_links (delDocumentId, delEntityType, delEntityId, delLinkType) VALUES\n(30118, 'contact', 360026, 'primary'),\n(30119, 'contact', 360026, 'primary'),\n(30109, 'company', 1, 'primary'),\n(30102, 'company', 1, 'related'),\n(30123, 'company', 1, 'related');\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute \nINSERT INTO document_entity_links (delDocumentId, delEntityType, delEntityId, delLinkType) VALUES\n(30118, 'contact', 360026, 'primary'),\n(30119, 'contact', 360026, 'primary'),\n(30109, 'company', 1, 'primary'),\n(30102, 'company', 1, 'related'),\n(30123, 'company', 1, 'related');\n",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 356
-}

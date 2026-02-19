@@ -2008,31 +2008,6 @@ export async function listDocuments(filters?: {
     db.select().from(documents).where(where).orderBy(desc(documents.updatedAt)).limit(limit).offset(offset),
     db.select({ count: sql<number>`COUNT(*)` }).from(documents).where(where),
   ]);
-  // Batch fetch entity links
-  if (items.length > 0) {
-    const docIds = items.map(d => d.id);
-    const allLinks = await db.select().from(documentEntityLinks).where(inArray(documentEntityLinks.documentId, docIds));
-    const companyIds = [...new Set(allLinks.filter(l => l.entityType === 'company').map(l => l.entityId))];
-    const contactIds = [...new Set(allLinks.filter(l => l.entityType === 'contact').map(l => l.entityId))];
-    const companyNames: Record<number, string> = {};
-    const contactNames: Record<number, string> = {};
-    if (companyIds.length > 0) {
-      const comps = await db.select({ id: companies.id, name: companies.name }).from(companies).where(inArray(companies.id, companyIds));
-      comps.forEach(c => { companyNames[c.id] = c.name; });
-    }
-    if (contactIds.length > 0) {
-      const conts = await db.select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, contactIds));
-      conts.forEach(c => { contactNames[c.id] = c.name; });
-    }
-    const enrichedItems = items.map(doc => ({
-      ...doc,
-      entityLinks: allLinks.filter(l => l.documentId === doc.id).map(l => ({
-        ...l,
-        entityName: l.entityType === 'company' ? companyNames[l.entityId] : contactNames[l.entityId],
-      })),
-    }));
-    return { items: enrichedItems, total: countResult[0]?.count ?? 0 };
-  }
   return { items, total: countResult[0]?.count ?? 0 };
 }
 
@@ -2081,40 +2056,7 @@ export async function getDocumentsByEntity(entityType: string, entityId: number)
 export async function getRecentDocuments(userId: number, limit: number = 20) {
   const db = await getDb();
   if (!db) return [];
-  const docs = await db.select().from(documents).orderBy(desc(documents.updatedAt)).limit(limit);
-  if (docs.length === 0) return [];
-  // Batch fetch entity links for all docs
-  const docIds = docs.map(d => d.id);
-  const allLinks = await db.select().from(documentEntityLinks).where(inArray(documentEntityLinks.documentId, docIds));
-  // Resolve entity names
-  const companyIds = [...new Set(allLinks.filter(l => l.entityType === 'company').map(l => l.entityId))];
-  const contactIds = [...new Set(allLinks.filter(l => l.entityType === 'contact').map(l => l.entityId))];
-  const companyNames: Record<number, string> = {};
-  const contactNames: Record<number, string> = {};
-  if (companyIds.length > 0) {
-    const comps = await db.select({ id: companies.id, name: companies.name }).from(companies).where(inArray(companies.id, companyIds));
-    comps.forEach(c => { companyNames[c.id] = c.name; });
-  }
-  if (contactIds.length > 0) {
-    const conts = await db.select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, contactIds));
-    conts.forEach(c => { contactNames[c.id] = c.name; });
-  }
-  return docs.map(doc => ({
-    ...doc,
-    entityLinks: allLinks.filter(l => l.documentId === doc.id).map(l => ({
-      ...l,
-      entityName: l.entityType === 'company' ? companyNames[l.entityId] : contactNames[l.entityId],
-    })),
-  }));
-}
-
-export async function getCollectionCounts() {
-  const db = await getDb();
-  if (!db) return {};
-  const rows = await db.select({ collection: documents.collection, count: sql<number>`COUNT(*)` }).from(documents).groupBy(documents.collection);
-  const counts: Record<string, number> = {};
-  rows.forEach(r => { counts[r.collection] = r.count; });
-  return counts;
+  return db.select().from(documents).orderBy(desc(documents.updatedAt)).limit(limit);
 }
 
 export async function getFavoriteDocuments(userId: number) {

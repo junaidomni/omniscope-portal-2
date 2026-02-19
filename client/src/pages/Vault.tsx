@@ -133,7 +133,6 @@ export default function Vault() {
   const [, setLocation] = useLocation();
 
   // Vault Queries
-  const collectionCounts = trpc.vault.collectionCounts.useQuery(undefined, { enabled: mainTab === "vault" });
   const recentDocs = trpc.vault.getRecent.useQuery({ limit: 20 }, { enabled: mainTab === "vault" && viewMode === "recents" });
   const favoriteDocs = trpc.vault.getFavorites.useQuery(undefined, { enabled: mainTab === "vault" && viewMode === "favorites" });
   const collectionDocs = trpc.vault.listDocuments.useQuery(
@@ -396,22 +395,18 @@ export default function Vault() {
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Collections</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {Object.entries(COLLECTION_LABELS).map(([key, { label, icon: Icon, color }]) => {
-                      const count = (collectionCounts.data as any)?.[key] || 0;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => navigateToCollection(key)}
-                          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/60 hover:border-zinc-700 hover:bg-zinc-900 transition-all group"
-                        >
-                          <div className={`h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <span className="text-xs text-zinc-400 group-hover:text-white transition-colors text-center leading-tight">{label}</span>
-                          {count > 0 && <span className="text-[10px] text-zinc-600">{count}</span>}
-                        </button>
-                      );
-                    })}
+                    {Object.entries(COLLECTION_LABELS).map(([key, { label, icon: Icon, color }]) => (
+                      <button
+                        key={key}
+                        onClick={() => navigateToCollection(key)}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/60 hover:border-zinc-700 hover:bg-zinc-900 transition-all group"
+                      >
+                        <div className={`h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-xs text-zinc-400 group-hover:text-white transition-colors text-center leading-tight">{label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -711,9 +706,9 @@ function DriveBrowser({ onImport }: { onImport: () => void }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Import Current Folder Button */}
-          {(currentDriveId || currentFolderId) && (
-            <BatchImportButton driveId={currentDriveId} folderId={currentFolderId} folderName={folderPath[folderPath.length - 1]?.name || "Current Folder"} onComplete={onImport} />
+          {/* Batch Import Button */}
+          {currentDriveId && (
+            <BatchImportButton driveId={currentDriveId} driveName={folderPath[0]?.name || "Shared Drive"} onComplete={onImport} />
           )}
           {/* Search Drive */}
           <div className="relative">
@@ -1129,19 +1124,6 @@ function DocumentList({
                 </DropdownMenu>
               </div>
               <p className="text-sm font-medium text-white truncate mb-1">{doc.title}</p>
-              {doc.entityLinks?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-1.5">
-                  {doc.entityLinks.slice(0, 2).map((link: any, i: number) => (
-                    <span key={i} className={`text-[9px] px-1.5 py-0.5 rounded-full border ${
-                      link.entityType === 'company'
-                        ? 'border-yellow-600/20 text-yellow-500/70 bg-yellow-600/5'
-                        : 'border-blue-600/20 text-blue-400/70 bg-blue-600/5'
-                    }`}>
-                      {link.entityName || 'Unknown'}
-                    </span>
-                  ))}
-                </div>
-              )}
               <div className="flex items-center gap-2 mt-auto">
                 <Badge variant="outline" className={`text-[10px] ${status.color}`}>{status.label}</Badge>
                 <span className="text-[10px] text-zinc-600">{formatDate(doc.updatedAt)}</span>
@@ -1161,42 +1143,28 @@ function DocumentList({
         const status = STATUS_BADGES[doc.status] || STATUS_BADGES.active;
         const category = CATEGORY_LABELS[doc.category]?.label || doc.category;
         return (
-          <div
+          <button
             key={doc.id}
             onClick={() => onViewDetail(doc.id)}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-zinc-900/80 transition-all group text-left cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onViewDetail(doc.id); }}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-zinc-900/80 transition-all group text-left"
           >
             <div className="h-9 w-9 rounded-lg bg-zinc-800/80 flex items-center justify-center shrink-0">
               <FileIcon className="h-4.5 w-4.5 text-zinc-400" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{doc.title}</p>
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-zinc-600">{category}</span>
                 {doc.subcategory && (
                   <>
                     <span className="text-zinc-700">·</span>
-                    <span className="text-xs text-zinc-500">{doc.subcategory.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                    <span className="text-xs text-zinc-600 uppercase">{doc.subcategory}</span>
                   </>
                 )}
-                {doc.entityLinks?.length > 0 && (
+                {doc.sourceType?.startsWith("google_") && (
                   <>
                     <span className="text-zinc-700">·</span>
-                    {doc.entityLinks.slice(0, 2).map((link: any, i: number) => (
-                      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
-                        link.entityType === 'company'
-                          ? 'border-yellow-600/30 text-yellow-500/80 bg-yellow-600/5'
-                          : 'border-blue-600/30 text-blue-400/80 bg-blue-600/5'
-                      }`}>
-                        {link.entityType === 'company' ? '🏢' : '👤'} {link.entityName || 'Unknown'}
-                      </span>
-                    ))}
-                    {doc.entityLinks.length > 2 && (
-                      <span className="text-[10px] text-zinc-600">+{doc.entityLinks.length - 2}</span>
-                    )}
+                    <span className="text-xs text-blue-500/60">Google</span>
                   </>
                 )}
               </div>
@@ -1246,13 +1214,14 @@ function DocumentList({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
   );
 }
-// ─── Upload Dialog with AI Analysis ────
+
+// ─── Upload Dialog with AI Analysis ───
 function UploadDialog({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
   const [step, setStep] = useState<"upload" | "analyzing" | "review">("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -1752,14 +1721,14 @@ function DocumentDetailPanel({ documentId, onClose }: { documentId: number; onCl
 
 
 // ─── Batch Import Button ───
-function BatchImportButton({ driveId, folderId, folderName, onComplete }: { driveId?: string; folderId?: string; folderName: string; onComplete: () => void }) {
+function BatchImportButton({ driveId, driveName, onComplete }: { driveId: string; driveName: string; onComplete: () => void }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [importResults, setImportResults] = useState<any>(null);
 
   const batchImport = trpc.drive.batchImportSharedDrive.useMutation({
     onSuccess: (data) => {
       setImportResults(data);
-      toast.success(`Imported ${data.imported} files from ${folderName}`);
+      toast.success(`Imported ${data.imported} files from ${driveName}`);
       onComplete();
     },
     onError: (err) => {
@@ -1784,7 +1753,7 @@ function BatchImportButton({ driveId, folderId, folderName, onComplete }: { driv
         ) : (
           <>
             <Sparkles className="h-3 w-3 mr-1" />
-            Import Folder to Vault
+            Import All to Vault
           </>
         )}
       </Button>
@@ -1794,12 +1763,12 @@ function BatchImportButton({ driveId, folderId, folderName, onComplete }: { driv
         <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-yellow-500" /> Import This Folder
+              <Sparkles className="h-5 w-5 text-yellow-500" /> Import Shared Drive
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <p className="text-zinc-300">
-              This will import all files in <span className="text-yellow-500 font-medium">{folderName}</span> and:
+              This will scan all files in <span className="text-yellow-500 font-medium">{driveName}</span> and:
             </p>
             <ul className="space-y-1.5 text-zinc-400">
               <li className="flex items-start gap-2">
@@ -1825,7 +1794,7 @@ function BatchImportButton({ driveId, folderId, folderName, onComplete }: { driv
             <Button variant="ghost" onClick={() => setShowConfirm(false)} className="text-zinc-400">Cancel</Button>
             <Button
               onClick={() => {
-                batchImport.mutate({ driveId: driveId || undefined, folderId: folderId || undefined, driveName: folderName });
+                batchImport.mutate({ driveId, driveName });
                 setShowConfirm(false);
               }}
               className="bg-yellow-600 hover:bg-yellow-700 text-black"

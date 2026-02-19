@@ -1,9 +1,0 @@
-{
-  "query": "DELETE FROM documents WHERE \n  docTitle LIKE '%Population-Science%' OR\n  docTitle LIKE '%GigCare%' OR\n  docTitle LIKE '%Quick-Reference-Guide-Detego%' OR\n  docTitle LIKE '%Anthem Grid%' OR\n  docTitle LIKE '%Freedom Grid%' OR\n  docTitle LIKE '%Humana Grid%' OR\n  docTitle LIKE '%little Miracles%' OR\n  docTitle LIKE '%Little Miracles%' OR\n  docTitle LIKE '%PINNACLE%' OR\n  docTitle LIKE '%Mutual Of Omaha%' OR\n  docTitle LIKE '%my-nipr-order%' OR\n  docTitle LIKE '%Dr(1). Joanne%' OR\n  docTitle LIKE '%Dr. Joanne%' OR\n  docTitle LIKE '%IRS Apply for%';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute DELETE FROM documents WHERE \n  docTitle LIKE '%Population-Science%' OR\n  docTitle LIKE '%GigCare%' OR\n  docTitle LIKE '%Quick-Reference-Guide-Detego%' OR\n  docTitle LIKE '%Anthem Grid%' OR\n  docTitle LIKE '%Freedom Grid%' OR\n  docTitle LIKE '%Humana Grid%' OR\n  docTitle LIKE '%little Miracles%' OR\n  docTitle LIKE '%Little Miracles%' OR\n  docTitle LIKE '%PINNACLE%' OR\n  docTitle LIKE '%Mutual Of Omaha%' OR\n  docTitle LIKE '%my-nipr-order%' OR\n  docTitle LIKE '%Dr(1). Joanne%' OR\n  docTitle LIKE '%Dr. Joanne%' OR\n  docTitle LIKE '%IRS Apply for%';",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 392
-}

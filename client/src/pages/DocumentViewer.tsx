@@ -96,15 +96,6 @@ export default function DocumentViewer() {
     { enabled: !!doc.data?.googleFileId && doc.data?.sourceType === "google_sheet" }
   );
 
-  // PDF/binary file export from Google Drive for internal viewing
-  const fileBinary = trpc.drive.exportFileBinary.useQuery(
-    { fileId: doc.data?.googleFileId! },
-    {
-      enabled: !!doc.data?.googleFileId && (doc.data?.sourceType === "pdf" || doc.data?.sourceType === "uploaded") && !doc.data?.s3Url,
-      staleTime: 5 * 60 * 1000, // Cache for 5 minutes to avoid re-fetching
-    }
-  );
-
   // Entity search for linking
   const companyResults = trpc.companies.list.useQuery(
     { search: entitySearch, limit: 5 },
@@ -419,42 +410,13 @@ export default function DocumentViewer() {
           )}
 
           {/* PDF / Uploaded - embed or download */}
-          {isPdf && (
+          {isPdf && d.s3Url && (
             <div className="h-full">
-              {d.s3Url ? (
-                <iframe
-                  src={d.s3Url}
-                  className="w-full h-full"
-                  title={d.title}
-                />
-              ) : d.googleFileId && fileBinary.isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-yellow-600 mx-auto mb-3" />
-                    <p className="text-sm text-zinc-500">Loading document from Google Drive...</p>
-                    <p className="text-xs text-zinc-600 mt-1">This may take a moment for larger files</p>
-                  </div>
-                </div>
-              ) : fileBinary.data?.dataUrl ? (
-                <iframe
-                  src={fileBinary.data.dataUrl}
-                  className="w-full h-full"
-                  title={d.title}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <FileText className="h-12 w-12 text-zinc-700 mx-auto mb-3" />
-                    <p className="text-sm text-zinc-500 mb-2">Unable to load document preview</p>
-                    <p className="text-xs text-zinc-600 mb-4">{fileBinary.error?.message || "File may be too large or inaccessible"}</p>
-                    {googleLink && (
-                      <Button variant="outline" size="sm" onClick={() => window.open(googleLink, "_blank")} className="border-zinc-700 text-zinc-300">
-                        <ExternalLink className="h-4 w-4 mr-2" /> Open in Google Drive
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
+              <iframe
+                src={d.s3Url}
+                className="w-full h-full"
+                title={d.title}
+              />
             </div>
           )}
 

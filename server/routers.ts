@@ -3596,11 +3596,6 @@ const dedupRouter = router({
 // ============================================================================
 
 const vaultRouter = router({
-  // Collection counts for the Vault home
-  collectionCounts: protectedProcedure.query(async () => {
-    return db.getCollectionCounts();
-  }),
-
   // Document CRUD
   listDocuments: protectedProcedure
     .input(z.object({
@@ -4076,42 +4071,6 @@ const driveRouter = router({
       }
     }),
 
-  // Export PDF from Google Drive for internal viewing
-  exportFileBinary: protectedProcedure
-    .input(z.object({ fileId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const drive = await googleDrive.getDriveClient(ctx.user.id);
-      if (!drive) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Google Drive not connected." });
-      try {
-        // Get file metadata to determine mime type
-        const meta = await drive.files.get({ fileId: input.fileId, fields: "mimeType,name", supportsAllDrives: true });
-        const mimeType = meta.data.mimeType || "application/pdf";
-        
-        // For Google Workspace files, export as PDF
-        let response;
-        if (mimeType.startsWith("application/vnd.google-apps.")) {
-          response = await drive.files.export(
-            { fileId: input.fileId, mimeType: "application/pdf" },
-            { responseType: "arraybuffer" }
-          );
-        } else {
-          // For binary files (PDF, DOCX, etc.), download directly
-          response = await drive.files.get(
-            { fileId: input.fileId, alt: "media", supportsAllDrives: true },
-            { responseType: "arraybuffer" }
-          );
-        }
-        
-        // Convert to base64 data URL
-        const buffer = Buffer.from(response.data as ArrayBuffer);
-        const base64 = buffer.toString("base64");
-        return { dataUrl: `data:application/pdf;base64,${base64}`, mimeType: "application/pdf", name: meta.data.name };
-      } catch (error: any) {
-        console.error("[Google Drive] Export file error:", error.message);
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to load file from Google Drive." });
-      }
-    }),
-
   // Read Google Sheet data (for preview)
   readSheetData: protectedProcedure
     .input(z.object({ spreadsheetId: z.string(), range: z.string().default("Sheet1!A1:Z100") }))
@@ -4247,47 +4206,16 @@ const driveRouter = router({
   // Batch scan & import from shared drive
   batchImportSharedDrive: protectedProcedure
     .input(z.object({
-      driveId: z.string().optional(),
-      folderId: z.string().optional(),
-      driveName: z.string().default("Current Folder"),
+      driveId: z.string(),
+      driveName: z.string().default("OMNISCOPE"),
     }))
     .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("./_core/llm");
       
-      // Step 1: List files in the CURRENT folder only (not recursive)
-      console.log(`[Batch Import] Importing files from: ${input.driveName}`);
-      const drive = await googleDrive.getDriveClient(ctx.user.id);
-      if (!drive) throw new Error("Google Drive not connected");
-      
-      const allFiles: Array<{id: string; name: string; mimeType: string; size?: string; folderPath: string}> = [];
-      let pageToken: string | undefined;
-      do {
-        let q = "trashed = false";
-        const parentId = input.folderId || input.driveId;
-        if (parentId) q += ` and '${parentId}' in parents`;
-        q += " and mimeType != 'application/vnd.google-apps.folder'";
-        
-        const listParams: any = {
-          q,
-          pageSize: 100,
-          pageToken: pageToken || undefined,
-          fields: "nextPageToken, files(id, name, mimeType, modifiedTime, size, webViewLink)",
-          orderBy: "name",
-          includeItemsFromAllDrives: true,
-          supportsAllDrives: true,
-        };
-        if (input.driveId) {
-          listParams.driveId = input.driveId;
-          listParams.corpora = "drive";
-        }
-        const response = await drive.files.list(listParams);
-        for (const f of (response.data.files || [])) {
-          allFiles.push({ id: f.id!, name: f.name!, mimeType: f.mimeType!, size: f.size || undefined, folderPath: input.driveName });
-        }
-        pageToken = response.data.nextPageToken || undefined;
-      } while (pageToken);
-      
-      console.log(`[Batch Import] Found ${allFiles.length} files in folder`);
+      // Step 1: Recursively scan all files
+      console.log(`[Batch Import] Starting scan of shared drive: ${input.driveName}`);
+      const allFiles = await googleDrive.scanDriveRecursive(ctx.user.id, undefined, input.driveId);
+      console.log(`[Batch Import] Found ${allFiles.length} files`);
 
       // Step 2: Get existing contacts and companies for matching
       const existingCompanies = await db.getAllCompanies();
