@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as doc_count FROM documents;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT COUNT(*) as doc_count FROM documents;",
+  "rows": [
+    {
+      "doc_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "doc_count\n0\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}

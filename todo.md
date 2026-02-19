@@ -2011,3 +2011,8 @@
 - [x] Show import progress and results dialog with stats
 - [x] Skip already-imported files automatically
 - [x] All 938 tests passing across 37 files
+
+## v58 — Rollback & Vault Reset
+- [x] Rolled back code to v57 (internal document viewer, settings cards, smart import intact)
+- [x] Cleared all documents from Vault (fresh start for NCNDA use going forward)
+- [x] Cleared all entity links, notes, favorites, and signing envelopes
