@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -2094,6 +2094,33 @@ export async function removeDocumentEntityLink(id: number) {
   const db = await getDb();
   if (!db) return false;
   await db.delete(documentEntityLinks).where(eq(documentEntityLinks.id, id));
+  return true;
+}
+
+// Document Notes
+export async function getDocumentNotes(documentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const notes = await db.select().from(documentNotes).where(eq(documentNotes.documentId, documentId)).orderBy(desc(documentNotes.createdAt));
+  // Enrich with user names
+  const userIds = [...new Set(notes.map(n => n.userId))];
+  if (userIds.length === 0) return [];
+  const userList = await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, userIds));
+  const userMap = Object.fromEntries(userList.map(u => [u.id, u.name]));
+  return notes.map(n => ({ ...n, userName: userMap[n.userId] || "Unknown" }));
+}
+
+export async function addDocumentNote(documentId: number, userId: number, content: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(documentNotes).values({ documentId, userId, content });
+  return { id: result.insertId, documentId, userId, content };
+}
+
+export async function deleteDocumentNote(noteId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(documentNotes).where(and(eq(documentNotes.id, noteId), eq(documentNotes.userId, userId)));
   return true;
 }
 

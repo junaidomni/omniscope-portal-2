@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
@@ -129,6 +130,7 @@ export default function Vault() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createType, setCreateType] = useState<"doc" | "sheet">("doc");
   const [detailDocId, setDetailDocId] = useState<number | null>(null);
+  const [, setLocation] = useLocation();
 
   // Vault Queries
   const recentDocs = trpc.vault.getRecent.useQuery({ limit: 20 }, { enabled: mainTab === "vault" && viewMode === "recents" });
@@ -438,7 +440,7 @@ export default function Vault() {
                       displayMode={displayMode}
                       onToggleFavorite={(id) => toggleFavorite.mutate({ documentId: id })}
                       onDelete={(id) => deleteDoc.mutate({ id })}
-                      onViewDetail={(id) => setDetailDocId(id)}
+                      onViewDetail={(id) => setLocation(`/vault/doc/${id}`)}
                     />
                   )}
                 </div>
@@ -485,7 +487,7 @@ export default function Vault() {
                     displayMode={displayMode}
                     onToggleFavorite={(id) => toggleFavorite.mutate({ documentId: id })}
                     onDelete={(id) => deleteDoc.mutate({ id })}
-                    onViewDetail={(id) => setDetailDocId(id)}
+                    onViewDetail={(id) => setLocation(`/vault/doc/${id}`)}
                   />
                 )}
               </div>
@@ -704,6 +706,10 @@ function DriveBrowser({ onImport }: { onImport: () => void }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Batch Import Button */}
+          {currentDriveId && (
+            <BatchImportButton driveId={currentDriveId} driveName={folderPath[0]?.name || "Shared Drive"} onComplete={onImport} />
+          )}
           {/* Search Drive */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -841,14 +847,19 @@ function CreateGoogleDialog({
     { enabled: entitySearch.length >= 2 }
   );
 
+  const [, setLocation] = useLocation();
+
   const createDoc = trpc.drive.createDoc.useMutation({
     onSuccess: (data) => {
       toast.success(`Google Doc "${title}" created`);
-      if (data.webViewLink) {
-        window.open(data.webViewLink, "_blank");
-      }
       onSuccess();
       resetAndClose();
+      // Navigate to internal viewer if vault doc was created
+      if (data.vaultDocId) {
+        setLocation(`/vault/doc/${data.vaultDocId}`);
+      } else if (data.webViewLink) {
+        window.open(data.webViewLink, "_blank");
+      }
     },
     onError: (err) => toast.error(err.message),
   });
@@ -856,16 +867,19 @@ function CreateGoogleDialog({
   const createSheet = trpc.drive.createSheet.useMutation({
     onSuccess: (data) => {
       toast.success(`Google Sheet "${title}" created`);
-      if (data.webViewLink) {
-        window.open(data.webViewLink, "_blank");
-      }
       onSuccess();
       resetAndClose();
+      // Navigate to internal viewer if vault doc was created
+      if (data.vaultDocId) {
+        setLocation(`/vault/doc/${data.vaultDocId}`);
+      } else if (data.webViewLink) {
+        window.open(data.webViewLink, "_blank");
+      }
     },
     onError: (err) => toast.error(err.message),
   });
 
-  const linkEntity = trpc.vault.linkEntity.useMutation();
+  const linkEntity = trpc.vault.addEntityLink.useMutation();
 
   const resetAndClose = () => {
     setTitle("");
@@ -1702,5 +1716,141 @@ function DocumentDetailPanel({ documentId, onClose }: { documentId: number; onCl
         </div>
       </div>
     </div>
+  );
+}
+
+
+// ─── Batch Import Button ───
+function BatchImportButton({ driveId, driveName, onComplete }: { driveId: string; driveName: string; onComplete: () => void }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [importResults, setImportResults] = useState<any>(null);
+
+  const batchImport = trpc.drive.batchImportSharedDrive.useMutation({
+    onSuccess: (data) => {
+      setImportResults(data);
+      toast.success(`Imported ${data.imported} files from ${driveName}`);
+      onComplete();
+    },
+    onError: (err) => {
+      toast.error(`Import failed: ${err.message}`);
+    },
+  });
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setShowConfirm(true)}
+        disabled={batchImport.isPending}
+        className="border-yellow-600/30 text-yellow-500 hover:bg-yellow-600/10 text-xs"
+      >
+        {batchImport.isPending ? (
+          <>
+            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+            Importing...
+          </>
+        ) : (
+          <>
+            <Sparkles className="h-3 w-3 mr-1" />
+            Import All to Vault
+          </>
+        )}
+      </Button>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirm && !batchImport.isPending && !importResults} onOpenChange={setShowConfirm}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" /> Import Shared Drive
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="text-zinc-300">
+              This will scan all files in <span className="text-yellow-500 font-medium">{driveName}</span> and:
+            </p>
+            <ul className="space-y-1.5 text-zinc-400">
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-500 mt-0.5">•</span>
+                Read each document and use AI to categorize it
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-500 mt-0.5">•</span>
+                Match documents to existing contacts and companies
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-500 mt-0.5">•</span>
+                Create new contacts/companies if detected in documents
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-500 mt-0.5">•</span>
+                Import everything into the Vault with proper tags
+              </li>
+            </ul>
+            <p className="text-zinc-500 text-xs">Already-imported files will be skipped automatically.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowConfirm(false)} className="text-zinc-400">Cancel</Button>
+            <Button
+              onClick={() => {
+                batchImport.mutate({ driveId, driveName });
+                setShowConfirm(false);
+              }}
+              className="bg-yellow-600 hover:bg-yellow-700 text-black"
+            >
+              <Sparkles className="h-4 w-4 mr-2" /> Start Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Results Dialog */}
+      <Dialog open={!!importResults} onOpenChange={() => setImportResults(null)}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-yellow-500" /> Import Complete
+            </DialogTitle>
+          </DialogHeader>
+          {importResults && (
+            <div className="space-y-4 flex-1 overflow-hidden">
+              <div className="flex gap-4">
+                <div className="flex-1 p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-center">
+                  <p className="text-2xl font-bold text-yellow-500">{importResults.imported}</p>
+                  <p className="text-xs text-zinc-500">Imported</p>
+                </div>
+                <div className="flex-1 p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-center">
+                  <p className="text-2xl font-bold text-zinc-400">{importResults.skipped}</p>
+                  <p className="text-xs text-zinc-500">Skipped</p>
+                </div>
+                <div className="flex-1 p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-center">
+                  <p className="text-2xl font-bold text-zinc-500">{importResults.totalScanned}</p>
+                  <p className="text-xs text-zinc-500">Total Scanned</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto max-h-60 space-y-1">
+                {importResults.results?.map((r: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded text-xs">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                      r.status === "imported" ? "bg-green-500" :
+                      r.status === "already_imported" ? "bg-zinc-500" :
+                      r.status === "error" ? "bg-red-500" : "bg-zinc-600"
+                    }`} />
+                    <span className="text-zinc-300 truncate flex-1">{r.fileName}</span>
+                    <span className="text-zinc-600 shrink-0">{r.category || r.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setImportResults(null)} className="bg-yellow-600 hover:bg-yellow-700 text-black">
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

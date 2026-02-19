@@ -169,6 +169,13 @@
       "when": 1771520972921,
       "tag": "0023_military_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1771528623589,
+      "tag": "0024_whole_nextwave",
+      "breakpoints": true
     }
   ]
 }

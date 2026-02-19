@@ -520,6 +520,66 @@ export async function listSharedDrives(
 }
 
 /**
+ * Recursively scan all files in a drive/folder
+ */
+export async function scanDriveRecursive(
+  userId: number,
+  folderId?: string,
+  driveId?: string,
+  depth: number = 0,
+  maxDepth: number = 5,
+): Promise<Array<DriveFile & { folderPath: string }>> {
+  if (depth > maxDepth) return [];
+  const drive = await getDriveClient(userId);
+  if (!drive) return [];
+
+  const allFiles: Array<DriveFile & { folderPath: string }> = [];
+  let pageToken: string | undefined;
+
+  try {
+    do {
+      let q = "trashed = false";
+      if (folderId) q += ` and '${folderId}' in parents`;
+
+      const listParams: any = {
+        q,
+        pageSize: 100,
+        pageToken: pageToken || undefined,
+        fields: "nextPageToken, files(id, name, mimeType, modifiedTime, size, webViewLink, iconLink, parents, shared, owners)",
+        orderBy: "name",
+        includeItemsFromAllDrives: true,
+        supportsAllDrives: true,
+      };
+      if (driveId) {
+        listParams.driveId = driveId;
+        listParams.corpora = "drive";
+      }
+
+      const response = await drive.files.list(listParams);
+      const files = (response.data.files || []) as DriveFile[];
+
+      for (const file of files) {
+        if (file.mimeType === "application/vnd.google-apps.folder") {
+          // Recurse into subfolders
+          const subFiles = await scanDriveRecursive(userId, file.id, driveId, depth + 1, maxDepth);
+          for (const sf of subFiles) {
+            allFiles.push({ ...sf, folderPath: `${file.name}/${sf.folderPath}` });
+          }
+        } else {
+          allFiles.push({ ...file, folderPath: "" });
+        }
+      }
+
+      pageToken = response.data.nextPageToken || undefined;
+    } while (pageToken);
+  } catch (error: any) {
+    console.error(`[Google Drive] Scan recursive error at depth ${depth}:`, error.message);
+  }
+
+  return allFiles;
+}
+
+/**
  * Generate a document from a template:
  * 1. Copy the template doc
  * 2. Replace merge fields

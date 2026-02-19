@@ -1973,3 +1973,41 @@
 - [x] Verified Template registration dialog with Google Doc ID field
 - [x] Verified Pipeline Kanban view (Draft/Sent/Viewed/Signed/Declined)
 - [x] All 938 tests passing across 37 files
+
+## v57 — Internal Document Viewer + Settings Cards + Smart Drive Import
+
+### Settings Enhancement
+- [x] Add Google Drive status card to Settings Integrations page (like Gmail/Calendar/Fathom)
+- [x] Add Google Docs status card to Settings Integrations page
+- [x] Add Google Sheets status card to Settings Integrations page
+- [x] Show Active/Inactive status based on OAuth scopes granted
+- [x] Update Scopes display in Permissions & Security section
+
+### Internal Document Viewer
+- [x] Build embedded document viewer page (/vault/doc/:id) that opens documents inside the portal
+- [x] Render Google Docs as HTML internally (exported via Google Docs API, dark-themed)
+- [x] Render Google Sheets as interactive tables internally (via Sheets API data)
+- [x] Embed Google Slides via presentation embed iframe
+- [x] Build PDF viewer for uploaded PDF documents (iframe)
+- [x] Add document viewer toolbar with Info/Notes/Links panels
+- [x] Add "Link to Contact/Company" button in viewer toolbar with entity search
+- [x] Add "Notes" panel for leaving notes on documents (with Ctrl+Enter submit)
+- [x] Add document metadata display (category, collection, visibility, dates, AI summary, signing history)
+- [x] Update all document links to open internally instead of redirecting to Google
+- [x] Add document_notes table to database schema
+- [x] Add getNotes/addNote/deleteNote tRPC procedures
+- [x] Add exportDocHtml tRPC procedure for Google Docs HTML export
+- [x] Add fullscreen toggle and favorite button to viewer toolbar
+
+### Smart OMNISCOPE Drive Import
+- [x] Scan all files in OMNISCOPE shared drive recursively (scanDriveRecursive function)
+- [x] Read document contents using Google Docs/Drive API
+- [x] Use AI (LLM) to categorize each document (Agreement, Compliance, Intake Form, etc.)
+- [x] Match documents to existing contacts/companies based on content
+- [x] Create new contacts/companies if referenced entities don't exist
+- [x] Import all files into Vault with proper categories and entity links
+- [x] Organize into appropriate collections (Company Repository, Counterparty Files, etc.)
+- [x] Add "Import All to Vault" button in Drive browser (appears when viewing shared drive)
+- [x] Show import progress and results dialog with stats
+- [x] Skip already-imported files automatically
+- [x] All 938 tests passing across 37 files

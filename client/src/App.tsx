@@ -41,6 +41,7 @@ function Router() {
         <Route path="/meetings" component={Intelligence} />
         <Route path="/meeting/:id" component={Intelligence} />
         <Route path="/vault" component={Intelligence} />
+        <Route path="/vault/doc/:id" component={Intelligence} />
         <Route path="/templates" component={Intelligence} />
         <Route path="/pipeline" component={Intelligence} />
 

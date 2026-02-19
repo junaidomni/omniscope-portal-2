@@ -10,7 +10,8 @@ import { useSearch } from "wouter";
 import {
   Mail, Calendar, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
   ExternalLink, Shield, Clock, Loader2, Copy, Info, User, Settings,
-  Link2, Zap, ChevronRight, Sparkles, Eye, EyeOff, Monitor
+  Link2, Zap, ChevronRight, Sparkles, Eye, EyeOff, Monitor,
+  HardDrive, FileText, FileSpreadsheet
 } from "lucide-react";
 import OmniAvatar, { OmniMode, OmniState } from "@/components/OmniAvatar";
 
@@ -157,10 +158,15 @@ function IntegrationsTab() {
   const authUrlMutation = trpc.mail.getAuthUrl.useMutation();
   const [redirectUri, setRedirectUri] = useState<string | null>(null);
 
+  const { data: driveStatus } = trpc.drive.connectionStatus.useQuery();
+
   const googleConnected = mailStatus?.connected === true;
   const googleEmail = mailStatus?.email || null;
   const hasGmailScopes = mailStatus?.hasGmailScopes === true;
   const hasCalendarScopes = mailStatus?.hasCalendarScopes === true;
+  const hasDriveScopes = driveStatus?.hasDriveScopes === true;
+  const hasDocsScopes = driveStatus?.hasDocsScopes === true;
+  const hasSheetsScopes = driveStatus?.hasSheetsScopes === true;
   const needsReauth = googleConnected && !hasGmailScopes;
 
   useEffect(() => {
@@ -280,6 +286,89 @@ function IntegrationsTab() {
 
               {/* Service Status Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Google Drive */}
+                <div className={`p-4 rounded-lg border ${hasDriveScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-800/20 border-zinc-800/50"}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <HardDrive className="h-4 w-4 text-green-400" />
+                    <span className="text-sm font-medium text-white">Google Drive</span>
+                    {hasDriveScopes ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    ) : (
+                      <Badge className="bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[10px] px-1.5 py-0 ml-auto">Inactive</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Browse files
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Shared drives
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Import to Vault
+                    </div>
+                  </div>
+                </div>
+
+                {/* Google Docs */}
+                <div className={`p-4 rounded-lg border ${hasDocsScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-800/20 border-zinc-800/50"}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="h-4 w-4 text-blue-400" />
+                    <span className="text-sm font-medium text-white">Google Docs</span>
+                    {hasDocsScopes ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    ) : (
+                      <Badge className="bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[10px] px-1.5 py-0 ml-auto">Inactive</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Create documents
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Read & edit
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Template engine
+                    </div>
+                  </div>
+                </div>
+
+                {/* Google Sheets */}
+                <div className={`p-4 rounded-lg border ${hasSheetsScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-800/20 border-zinc-800/50"}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
+                    <span className="text-sm font-medium text-white">Google Sheets</span>
+                    {hasSheetsScopes ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                    ) : (
+                      <Badge className="bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[10px] px-1.5 py-0 ml-auto">Inactive</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Create spreadsheets
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Read data
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
+                      Import to Vault
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Gmail */}
                 <div className={`p-4 rounded-lg border ${hasGmailScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-yellow-600/5 border-yellow-600/20"}`}>
                   <div className="flex items-center gap-2 mb-3">
@@ -375,7 +464,7 @@ function IntegrationsTab() {
                     ) : (
                       <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
                     )}
-                    <span>Scopes: Calendar{hasGmailScopes ? ", Gmail (full)" : ", Gmail (send only)"}</span>
+                    <span>Scopes: Calendar{hasGmailScopes ? ", Gmail (full)" : ", Gmail (send only)"}{hasDriveScopes ? ", Drive" : ""}{hasDocsScopes ? ", Docs" : ""}{hasSheetsScopes ? ", Sheets" : ""}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />

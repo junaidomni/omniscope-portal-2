@@ -1237,3 +1237,23 @@ export const signingEnvelopesRelations = relations(signingEnvelopes, ({ one }) =
   provider: one(signingProviders, { fields: [signingEnvelopes.providerId], references: [signingProviders.id] }),
   creator: one(users, { fields: [signingEnvelopes.createdBy], references: [users.id] }),
 }));
+
+
+/**
+ * Document Notes — notes left on documents in the internal viewer
+ */
+export const documentNotes = mysqlTable("document_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  documentId: int("noteDocId").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  userId: int("noteUserId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("noteContent").notNull(),
+  createdAt: timestamp("noteCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("noteUpdatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  docIdx: index("note_doc_idx").on(table.documentId),
+}));
+
+export const documentNotesRelations = relations(documentNotes, ({ one }) => ({
+  document: one(documents, { fields: [documentNotes.documentId], references: [documents.id] }),
+  user: one(users, { fields: [documentNotes.userId], references: [users.id] }),
+}));
