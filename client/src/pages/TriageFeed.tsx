@@ -36,6 +36,7 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
+  MailOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -85,33 +86,33 @@ function getSituationalSummary(data: any, hour: number) {
   const parts: string[] = [];
 
   if (summary.totalOverdue > 0) {
-    parts.push(`You have ${summary.totalOverdue} overdue task${summary.totalOverdue > 1 ? "s" : ""} that need${summary.totalOverdue === 1 ? "s" : ""} immediate attention`);
+    parts.push(`${summary.totalOverdue} overdue task${summary.totalOverdue > 1 ? "s" : ""}`);
   }
   if (data.todayTasks?.length > 0) {
-    parts.push(`${data.todayTasks.length} task${data.todayTasks.length > 1 ? "s" : ""} due today`);
+    parts.push(`${data.todayTasks.length} due today`);
   }
   if (summary.totalHighPriority > 0 && summary.totalOverdue === 0) {
-    parts.push(`${summary.totalHighPriority} high-priority item${summary.totalHighPriority > 1 ? "s" : ""} in your pipeline`);
+    parts.push(`${summary.totalHighPriority} high-priority`);
   }
   if (summary.totalPendingApprovals > 0) {
-    parts.push(`${summary.totalPendingApprovals} approval${summary.totalPendingApprovals > 1 ? "s" : ""} awaiting your review`);
+    parts.push(`${summary.totalPendingApprovals} pending approval${summary.totalPendingApprovals > 1 ? "s" : ""}`);
   }
   if (data.recentMeetings?.length > 0) {
     const todayMeetings = data.recentMeetings.filter((m: any) => new Date(m.meetingDate).toDateString() === new Date().toDateString());
     if (todayMeetings.length > 0) {
-      parts.push(`${todayMeetings.length} meeting${todayMeetings.length > 1 ? "s" : ""} recorded today`);
+      parts.push(`${todayMeetings.length} meeting${todayMeetings.length > 1 ? "s" : ""} today`);
     }
   }
   if (data.tomorrowTasks?.length > 0) {
-    parts.push(`${data.tomorrowTasks.length} task${data.tomorrowTasks.length > 1 ? "s" : ""} coming up tomorrow`);
+    parts.push(`${data.tomorrowTasks.length} tomorrow`);
   }
 
   if (parts.length === 0) {
-    if (hour >= 22 || hour < 6) return "Everything is quiet. Rest well — tomorrow's slate is clear.";
-    return "All clear. No pending items require your attention right now.";
+    if (hour >= 22 || hour < 6) return "Everything is quiet. Rest well.";
+    return "All clear. Nothing requires your attention.";
   }
 
-  return parts.join(". ") + ".";
+  return parts.join(" · ");
 }
 
 // ─── Quotes system ────────────────────────────────────────────────────────
@@ -255,94 +256,93 @@ function TaskModal({
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-600 resize-none h-20"
+                  rows={3}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-600 resize-none"
                   placeholder="Add context or notes..."
                 />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSave}
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-medium text-sm py-2 rounded-lg transition-colors"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm py-2 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </>
           ) : (
             <>
-              <h3 className="text-base font-semibold text-white leading-snug">{cleanTitle}</h3>
-              <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
-                {dueDate && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                  </span>
-                )}
-                {task.assignedName && (
-                  <span className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {task.assignedName}
-                  </span>
-                )}
-                {task.category && (
-                  <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">{task.category}</span>
-                )}
+              <div>
+                <h3 className="text-base font-semibold text-white mb-1">{cleanTitle}</h3>
+                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                  {dueDate && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  )}
+                  {task.assignedName && (
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {task.assignedName}
+                    </span>
+                  )}
+                  {task.category && (
+                    <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px]">{task.category}</span>
+                  )}
+                </div>
               </div>
               {task.notes && (
-                <p className="text-sm text-zinc-400 leading-relaxed bg-zinc-800/50 rounded-lg p-3">{task.notes}</p>
+                <p className="text-sm text-zinc-400 leading-relaxed bg-zinc-800/50 rounded-lg px-3 py-2">{task.notes}</p>
               )}
             </>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="px-5 pb-5 flex flex-wrap gap-2">
-          {isEditing ? (
-            <>
-              <button
-                onClick={handleSave}
-                disabled={isActing}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-600 hover:bg-yellow-500 text-black font-medium text-sm transition-colors"
-              >
-                <Check className="h-4 w-4" /> Save
-              </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => onComplete(task.id)}
-                disabled={isActing}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-sm font-medium transition-colors border border-emerald-700/30"
-              >
-                <Check className="h-3.5 w-3.5" /> Complete
-              </button>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
-              >
-                <Edit3 className="h-3.5 w-3.5" /> Edit
-              </button>
-              <button
-                onClick={() => onSnooze(task.id, 1)}
-                disabled={isActing}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-yellow-400 text-sm transition-colors"
-              >
-                <Timer className="h-3.5 w-3.5" /> Snooze
-              </button>
-              <button
-                onClick={() => onDelete(task.id)}
-                disabled={isActing}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-950/30 hover:bg-red-950/50 text-red-400 text-sm transition-colors border border-red-900/30"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Delete
-              </button>
-            </>
-          )}
-        </div>
+        {/* Footer actions */}
+        {!isEditing && (
+          <div className="flex items-center gap-2 px-5 pb-5">
+            <button
+              onClick={() => onComplete(task.id)}
+              disabled={isActing}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
+            >
+              {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              Complete
+            </button>
+            <button
+              onClick={() => onSnooze(task.id, 1)}
+              className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm py-2.5 px-4 rounded-lg transition-colors"
+            >
+              <Timer className="h-3.5 w-3.5" />
+              Snooze
+            </button>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="p-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-colors"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(task.id)}
+              className="p-2.5 bg-zinc-800 hover:bg-red-950 text-zinc-500 hover:text-red-400 rounded-lg transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Approval Modal (Contact/Company) ─────────────────────────────────────
+// ─── Approval Modal ──────────────────────────────────────────────────────
 function ApprovalModal({
   item,
   type,
@@ -351,7 +351,7 @@ function ApprovalModal({
   onReject,
   isActing,
 }: {
-  item: { id: number; name: string; email?: string; organization?: string; sector?: string };
+  item: any;
   type: "contact" | "company";
   onClose: () => void;
   onApprove: (id: number) => void;
@@ -381,45 +381,40 @@ function ApprovalModal({
           </button>
         </div>
 
-        <div className="px-5 pb-4 space-y-3">
-          <h3 className="text-base font-semibold text-white">{item.name}</h3>
-          <div className="space-y-1 text-sm text-zinc-400">
-            {item.email && <p>{item.email}</p>}
-            {item.organization && <p>{item.organization}</p>}
-            {item.sector && <p>Sector: {item.sector}</p>}
-          </div>
+        <div className="px-5 pb-4">
+          <h3 className="text-base font-semibold text-white mb-1">{item.name}</h3>
+          {type === "contact" && item.organization && (
+            <p className="text-xs text-zinc-500">{item.organization}</p>
+          )}
+          {type === "company" && item.sector && (
+            <p className="text-xs text-zinc-500">{item.sector}</p>
+          )}
         </div>
 
-        <div className="px-5 pb-5 flex gap-2">
+        <div className="flex items-center gap-2 px-5 pb-5">
           <button
             onClick={() => onApprove(item.id)}
             disabled={isActing}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-sm font-medium transition-colors border border-emerald-700/30"
+            className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
           >
-            <Shield className="h-3.5 w-3.5" /> Approve
+            <Shield className="h-3.5 w-3.5" />
+            Approve
           </button>
           <button
             onClick={() => onReject(item.id)}
             disabled={isActing}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-950/30 hover:bg-red-950/50 text-red-400 text-sm font-medium transition-colors border border-red-900/30"
+            className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-red-950 text-zinc-300 hover:text-red-400 font-medium text-sm py-2.5 rounded-lg transition-colors"
           >
-            <ShieldX className="h-3.5 w-3.5" /> Reject
+            <ShieldX className="h-3.5 w-3.5" />
+            Reject
           </button>
-          <Link href={type === "contact" ? `/contact/${item.id}` : `/company/${item.id}`}>
-            <button
-              onClick={onClose}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
-            >
-              <Edit3 className="h-3.5 w-3.5" /> View
-            </button>
-          </Link>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Task card (grid item) — now clickable ────────────────────────────────
+// ─── Task card (for overdue + today) ──────────────────────────────────────
 function TaskCard({
   task,
   showOverdue,
@@ -427,74 +422,50 @@ function TaskCard({
   onQuickComplete,
   isActing,
 }: {
-  task: {
-    id: number;
-    title: string;
-    priority: string;
-    dueDate: any;
-    assignedName: string | null;
-    category: string | null;
-    status: string;
-  };
+  task: { id: number; title: string; priority: string; dueDate: any; assignedName: string | null; category: string | null };
   showOverdue?: boolean;
-  onClick: () => void;
-  onQuickComplete: (id: number) => void;
-  isActing: boolean;
+  onClick?: () => void;
+  onQuickComplete?: (id: number) => void;
+  isActing?: boolean;
 }) {
-  const dueDate = task.dueDate ? new Date(task.dueDate) : null;
-  const now = new Date();
-  const isOverdue = dueDate && dueDate < new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const daysOverdue = dueDate
-    ? Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
   const cleanTitle = task.title.replace(/\s*\(Assigned to:.*?\)\s*$/, "");
+  const dueDate = task.dueDate ? new Date(task.dueDate) : null;
 
   return (
     <div
       onClick={onClick}
-      className="group relative bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 hover:border-zinc-700/60 hover:bg-zinc-900/80 transition-all duration-200 cursor-pointer"
+      className="group bg-zinc-900/60 border border-zinc-800/40 rounded-xl p-3.5 hover:border-zinc-700/50 hover:bg-zinc-900/80 transition-all duration-200 cursor-pointer"
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <PriorityBadge priority={task.priority} />
-        {showOverdue && isOverdue && daysOverdue > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-950/50 text-red-400 font-medium">
-            {daysOverdue}d overdue
-          </span>
-        )}
-        {dueDate && !isOverdue && (
-          <span className="text-[10px] text-zinc-500">
-            {dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-          </span>
-        )}
-        {task.category && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 ml-auto">
-            {task.category}
-          </span>
+        {onQuickComplete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onQuickComplete(task.id); }}
+            disabled={isActing}
+            className="p-1 rounded hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
+            title="Complete"
+          >
+            {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+          </button>
         )}
       </div>
-      <p className="text-sm text-zinc-200 leading-relaxed line-clamp-2 hover:text-white transition-colors mb-3">
+      <p className="text-sm text-zinc-200 font-medium group-hover:text-white transition-colors line-clamp-2 mb-2">
         {cleanTitle}
       </p>
-      <div className="flex items-center justify-between">
-        {task.assignedName ? (
-          <span className="text-[11px] text-zinc-500 truncate max-w-[140px]">{task.assignedName}</span>
-        ) : (
-          <span className="text-[11px] text-zinc-600 italic">Unassigned</span>
+      <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+        {showOverdue && dueDate && (
+          <span className="text-red-400 font-medium">
+            {Math.ceil((Date.now() - dueDate.getTime()) / 86400000)}d overdue
+          </span>
         )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onQuickComplete(task.id); }}
-          disabled={isActing}
-          className="p-1.5 rounded-lg hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-all opacity-0 group-hover:opacity-100"
-          title="Quick complete"
-        >
-          <Check className="h-3.5 w-3.5" />
-        </button>
+        {task.assignedName && <span className="truncate">{task.assignedName}</span>}
+        {task.category && <span className="bg-zinc-800/60 px-1.5 py-0.5 rounded">{task.category}</span>}
       </div>
     </div>
   );
 }
 
-// ─── Compact task row (for tomorrow/week lists) ───────────────────────────
+// ─── Compact task row (for tomorrow + week) ──────────────────────────────
 function CompactTaskRow({
   task,
   showDate,
@@ -605,9 +576,9 @@ function Section({
 
   return (
     <div className={className}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <button
-          className="flex items-center gap-2.5"
+          className="flex items-center gap-2"
           onClick={collapsible ? () => setOpen(!open) : undefined}
         >
           <div className={`p-1.5 rounded-lg ${accentColor}`}>{icon}</div>
@@ -634,7 +605,7 @@ function Section({
   );
 }
 
-// ─── Stat card ─────────────────────────────────────────────────────────────
+// ─── Stat card (compact) ──────────────────────────────────────────────────
 function StatCard({
   icon,
   label,
@@ -651,65 +622,135 @@ function StatCard({
   highlight?: boolean;
 }) {
   const inner = (
-    <div className={`border rounded-xl px-4 py-3 flex items-center gap-3 hover:border-zinc-700/50 transition-colors cursor-pointer ${
+    <div className={`border rounded-xl px-3 py-2.5 flex items-center gap-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer ${
       highlight ? "bg-yellow-950/15 border-yellow-800/30" : "bg-zinc-900/40 border-zinc-800/40"
     }`}>
-      <div className={`p-2 rounded-lg ${color}`}>{icon}</div>
+      <div className={`p-1.5 rounded-lg ${color}`}>{icon}</div>
       <div>
-        <div className="text-lg font-bold font-mono text-white">{value}</div>
-        <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{label}</div>
+        <div className="text-base font-bold font-mono text-white">{value}</div>
+        <div className="text-[9px] text-zinc-500 uppercase tracking-wider leading-tight">{label}</div>
       </div>
     </div>
   );
   return linkTo ? <Link href={linkTo}>{inner}</Link> : inner;
 }
 
-// ─── AI Strategic Insights Panel ──────────────────────────────────────────
-function StrategicInsightsPanel() {
+// ─── Inline Strategic Insights (for greeting bar) ────────────────────────
+function InlineInsights() {
   const { data, isLoading } = trpc.triage.strategicInsights.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: false,
   });
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-r from-zinc-900/80 to-zinc-900/40 border border-zinc-800/50 rounded-2xl p-5">
-        <div className="flex items-center gap-2.5 mb-3">
-          <div className="p-1.5 rounded-lg bg-yellow-950/40">
-            <Brain className="h-4 w-4 text-yellow-500" />
-          </div>
-          <h3 className="text-sm font-semibold text-white">Strategic Insights</h3>
-          <Loader2 className="h-3 w-3 animate-spin text-yellow-600 ml-auto" />
-        </div>
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-5 bg-zinc-800/50 rounded animate-pulse" />
-          ))}
-        </div>
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-4 bg-zinc-800/40 rounded animate-pulse w-full" />
+        ))}
       </div>
     );
   }
 
-  if (!data?.insights?.length) return null;
+  if (!data?.insights?.length) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-zinc-500">
+        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500/60" />
+        <span>No critical risks detected.</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-gradient-to-r from-zinc-900/80 to-zinc-900/40 border border-yellow-900/20 rounded-2xl p-5">
-      <div className="flex items-center gap-2.5 mb-4">
-        <div className="p-1.5 rounded-lg bg-yellow-950/40">
-          <Brain className="h-4 w-4 text-yellow-500" />
+    <div className="space-y-2">
+      {data.insights.map((insight: string, i: number) => (
+        <div key={i} className="flex items-start gap-2">
+          <Zap className="h-3 w-3 text-yellow-500/70 mt-0.5 shrink-0" />
+          <p className="text-xs text-zinc-400 leading-relaxed">{insight}</p>
         </div>
-        <h3 className="text-sm font-semibold text-white">Strategic Insights</h3>
-        <span className="text-[10px] text-yellow-600/60 ml-auto">AI-powered</span>
-      </div>
-      <div className="space-y-3">
-        {data.insights.map((insight: string, i: number) => (
-          <div key={i} className="flex items-start gap-3">
-            <Zap className="h-3.5 w-3.5 text-yellow-500/70 mt-0.5 shrink-0" />
-            <p className="text-sm text-zinc-300 leading-relaxed">{insight}</p>
-          </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Unread Emails Section ───────────────────────────────────────────────
+function UnreadEmailsSection() {
+  const { data: threads, isLoading } = trpc.mail.listThreads.useQuery(
+    { folder: "inbox", page: 1, pageSize: 20 },
+    { retry: false }
+  );
+
+  if (isLoading) {
+    return (
+      <Section
+        icon={<MailOpen className="h-4 w-4 text-violet-400" />}
+        title="Unread Emails"
+        accentColor="bg-violet-950/40"
+        linkTo="/communications"
+        linkLabel="Open inbox"
+      >
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-12 bg-zinc-900/50 border border-zinc-800/40 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </Section>
+    );
+  }
+
+  if (!threads?.threads?.length) return null;
+
+  // Filter unread emails
+  const unreadEmails = threads.threads.filter((t: any) => t.unread);
+  // Also get today's emails for the "recent" view
+  const today = new Date();
+  const todayStr = today.toDateString();
+  const todayEmails = threads.threads.filter((t: any) => {
+    const d = t.lastMessageDate ? new Date(t.lastMessageDate) : null;
+    return d && d.toDateString() === todayStr;
+  });
+
+  // Show unread first, then today's emails if no unread
+  const displayEmails = unreadEmails.length > 0 ? unreadEmails : todayEmails;
+  const sectionTitle = unreadEmails.length > 0 ? "Unread Emails" : "Today's Emails";
+  const displayCount = displayEmails.length;
+
+  if (displayCount === 0) return null;
+
+  return (
+    <Section
+      icon={<MailOpen className="h-4 w-4 text-violet-400" />}
+      title={sectionTitle}
+      count={displayCount}
+      accentColor="bg-violet-950/40"
+      linkTo="/communications"
+      linkLabel="Open inbox"
+      collapsible
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {displayEmails.slice(0, 8).map((t: any) => (
+          <Link key={t.threadId} href="/communications">
+            <div className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer">
+              <Mail className="h-3.5 w-3.5 text-violet-400/60 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-zinc-200 truncate group-hover:text-white transition-colors">
+                  {t.subject || "(no subject)"}
+                </p>
+                <p className="text-[10px] text-zinc-500 truncate">
+                  {t.from || t.participants?.[0] || "Unknown sender"}
+                </p>
+              </div>
+              {t.unread && (
+                <span className="h-2 w-2 rounded-full bg-violet-500 shrink-0" />
+              )}
+              <span className="text-[10px] text-zinc-600 shrink-0">
+                {t.lastMessageDate ? new Date(t.lastMessageDate).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }) : ""}
+              </span>
+            </div>
+          </Link>
         ))}
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -852,7 +893,7 @@ export default function TriageFeed() {
   const allTodayDone = !hasOverdue && !hasTodayTasks && hasCompletedToday;
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-5 lg:p-6 max-w-[1400px] mx-auto space-y-4">
       {/* ── Task Modal ──────────────────────────────────────────────── */}
       {selectedTask && (
         <TaskModal
@@ -886,78 +927,107 @@ export default function TriageFeed() {
         />
       )}
 
-      {/* ── Personal greeting with situational summary ──────────────── */}
-      <div className="bg-gradient-to-br from-zinc-900/80 via-zinc-900/60 to-zinc-900/40 border border-zinc-800/40 rounded-2xl p-6 lg:p-8">
-        <div className="flex items-start justify-between mb-5">
-          <div className="flex items-start gap-4">
-            <div className="hidden sm:flex p-3 rounded-2xl bg-zinc-800/60 border border-zinc-700/30">
-              {timeIcon}
+      {/* ── Greeting bar with integrated insights ──────────────────── */}
+      <div className="bg-gradient-to-br from-zinc-900/80 via-zinc-900/60 to-zinc-900/40 border border-zinc-800/40 rounded-2xl p-5 lg:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:gap-8">
+          {/* Left: Greeting + Summary */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="hidden sm:flex p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700/30 shrink-0">
+                {timeIcon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-4">
+                  <h1 className="text-2xl lg:text-3xl font-semibold text-white tracking-tight">
+                    {greeting}, <span className="text-yellow-500">{data.userName}</span>
+                  </h1>
+                  <div className="text-right hidden sm:block lg:hidden shrink-0">
+                    <div className="text-lg font-mono text-white tracking-wider tabular-nums">{timeString}</div>
+                    <p className="text-[10px] text-zinc-500">{dateString}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-zinc-400 mt-1 font-medium">{statusLine}</p>
+                <div className="flex items-center gap-2 mt-2 text-xs text-zinc-500 font-mono">
+                  <span>{situationalSummary}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-semibold text-white tracking-tight">
-                {greeting}, <span className="text-yellow-500">{data.userName}</span>
-              </h1>
-              <p className="text-sm text-zinc-400 mt-1.5 font-medium">{statusLine}</p>
-            </div>
+
+            {/* Quote (toggleable, compact) */}
+            {showQuote && (
+              <div className="flex items-center gap-2 mt-2 pl-0 sm:pl-[52px]">
+                <Quote className="h-3 w-3 text-yellow-600/30 shrink-0" />
+                <p className="text-[11px] text-zinc-600 italic truncate">
+                  "{quote.text}" <span className="text-zinc-700 not-italic">— {quote.author}</span>
+                </p>
+                <button
+                  onClick={() => setShowQuote(false)}
+                  className="p-0.5 rounded hover:bg-zinc-800 text-zinc-700 hover:text-zinc-500 transition-colors shrink-0"
+                >
+                  <EyeOff className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            {!showQuote && (
+              <button
+                onClick={() => setShowQuote(true)}
+                className="mt-2 pl-0 sm:pl-[52px] flex items-center gap-1.5 text-[10px] text-zinc-700 hover:text-zinc-500 transition-colors"
+              >
+                <Eye className="h-3 w-3" /> Show quote
+              </button>
+            )}
           </div>
-          <div className="text-right hidden sm:block">
-            <div className="text-xl font-mono text-white tracking-wider tabular-nums">
-              {timeString}
+
+          {/* Right: Clock + Strategic Insights */}
+          <div className="hidden lg:flex flex-col items-end gap-3 shrink-0 w-[280px]">
+            <div className="text-right">
+              <div className="text-xl font-mono text-white tracking-wider tabular-nums">{timeString}</div>
+              <p className="text-[10px] text-zinc-500 mt-0.5">{dateString}</p>
+              <p className="text-[9px] text-zinc-600">{tzAbbr}</p>
             </div>
-            <p className="text-xs text-zinc-500 mt-0.5">{dateString}</p>
-            <p className="text-[10px] text-zinc-600 mt-0.5">{tzAbbr}</p>
+            <div className="w-full border-t border-zinc-800/40 pt-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Brain className="h-3 w-3 text-yellow-500/60" />
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Strategic Insights</span>
+                <span className="text-[9px] text-yellow-600/40 ml-auto">AI</span>
+              </div>
+              <InlineInsights />
+            </div>
           </div>
         </div>
 
-        {/* Situational summary */}
-        <div className="bg-zinc-800/30 border border-zinc-700/20 rounded-xl px-5 py-3.5 mb-5">
-          <p className="text-sm text-zinc-300 leading-relaxed">{situationalSummary}</p>
-        </div>
-
-        {/* Quote (toggleable) */}
-        <div className="flex items-center justify-between">
-          {showQuote && (
-            <div className="flex items-start gap-3 flex-1 mr-4">
-              <Quote className="h-4 w-4 text-yellow-600/40 mt-0.5 shrink-0" />
-              <p className="text-xs text-zinc-500 italic leading-relaxed">
-                "{quote.text}" <span className="text-zinc-600 not-italic">— {quote.author}</span>
-              </p>
-            </div>
-          )}
-          <button
-            onClick={() => setShowQuote(!showQuote)}
-            className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-600 hover:text-zinc-400 transition-colors shrink-0"
-            title={showQuote ? "Hide quote" : "Show quote"}
-          >
-            {showQuote ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </button>
+        {/* Mobile: Strategic Insights below greeting */}
+        <div className="lg:hidden mt-4 pt-3 border-t border-zinc-800/30">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Brain className="h-3 w-3 text-yellow-500/60" />
+            <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Strategic Insights</span>
+            <span className="text-[9px] text-yellow-600/40 ml-auto">AI</span>
+          </div>
+          <InlineInsights />
         </div>
       </div>
 
       {/* ── Quick stats row ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard icon={<ListTodo className="h-4 w-4 text-zinc-300" />} label="Open Tasks" value={summary.totalOpen} color="bg-zinc-800/60" linkTo="/operations" />
-        <StatCard icon={<AlertTriangle className="h-4 w-4 text-red-400" />} label="Overdue" value={summary.totalOverdue} color="bg-red-950/40" linkTo="/operations" highlight={summary.totalOverdue > 0} />
-        <StatCard icon={<Flame className="h-4 w-4 text-yellow-400" />} label="High Priority" value={summary.totalHighPriority} color="bg-yellow-950/40" linkTo="/operations" />
-        <StatCard icon={<CheckCircle2 className="h-4 w-4 text-emerald-400" />} label="Done Today" value={summary.completedToday} color="bg-emerald-950/40" />
-        <StatCard icon={<Star className="h-4 w-4 text-yellow-400" />} label="Starred Mail" value={summary.totalStarred} color="bg-yellow-950/40" linkTo="/communications" />
-        <StatCard icon={<Users className="h-4 w-4 text-blue-400" />} label="Pending" value={summary.totalPendingApprovals} color="bg-blue-950/40" linkTo="/relationships" />
+      <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <StatCard icon={<ListTodo className="h-3.5 w-3.5 text-zinc-300" />} label="Open Tasks" value={summary.totalOpen} color="bg-zinc-800/60" linkTo="/operations" />
+        <StatCard icon={<AlertTriangle className="h-3.5 w-3.5 text-red-400" />} label="Overdue" value={summary.totalOverdue} color="bg-red-950/40" linkTo="/operations" highlight={summary.totalOverdue > 0} />
+        <StatCard icon={<Flame className="h-3.5 w-3.5 text-yellow-400" />} label="High Priority" value={summary.totalHighPriority} color="bg-yellow-950/40" linkTo="/operations" />
+        <StatCard icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />} label="Done Today" value={summary.completedToday} color="bg-emerald-950/40" />
+        <StatCard icon={<Star className="h-3.5 w-3.5 text-yellow-400" />} label="Starred Mail" value={summary.totalStarred} color="bg-yellow-950/40" linkTo="/communications" />
+        <StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="Pending" value={summary.totalPendingApprovals} color="bg-blue-950/40" linkTo="/relationships" />
       </div>
-
-      {/* ── AI Strategic Insights ─────────────────────────────────────── */}
-      <StrategicInsightsPanel />
 
       {/* ── All today's tasks done celebration ────────────────────────── */}
       {allTodayDone && (
-        <div className="flex items-center gap-4 bg-emerald-950/15 border border-emerald-800/25 rounded-2xl p-5">
-          <div className="p-3 rounded-full bg-emerald-950/40">
-            <Trophy className="h-6 w-6 text-emerald-400" />
+        <div className="flex items-center gap-3 bg-emerald-950/15 border border-emerald-800/25 rounded-xl p-4">
+          <div className="p-2 rounded-full bg-emerald-950/40">
+            <Trophy className="h-5 w-5 text-emerald-400" />
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-emerald-400">All tasks completed for today</h3>
             <p className="text-xs text-zinc-500 mt-0.5">
-              You've completed {data.completedTodayTasks?.length || 0} task{(data.completedTodayTasks?.length || 0) !== 1 ? "s" : ""} today.
-              {hasTomorrowTasks ? ` ${data.tomorrowTasks?.length} task${(data.tomorrowTasks?.length ?? 0) !== 1 ? "s" : ""} coming up tomorrow.` : " Nothing scheduled for tomorrow."}
+              {data.completedTodayTasks?.length || 0} completed.
+              {hasTomorrowTasks ? ` ${data.tomorrowTasks?.length} coming tomorrow.` : ""}
             </p>
           </div>
           <Link href="/operations">
@@ -970,13 +1040,13 @@ export default function TriageFeed() {
 
       {/* ── All clear state ───────────────────────────────────────────── */}
       {nothingToTriage && !allTodayDone && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="p-4 rounded-full bg-emerald-950/30 border border-emerald-800/30 mb-4">
-            <Sparkles className="h-8 w-8 text-emerald-500" />
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="p-3 rounded-full bg-emerald-950/30 border border-emerald-800/30 mb-3">
+            <Sparkles className="h-6 w-6 text-emerald-500" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-1">All Clear</h3>
+          <h3 className="text-base font-semibold text-white mb-1">All Clear</h3>
           <p className="text-sm text-zinc-500 max-w-sm">
-            Nothing requires your immediate attention. Check back later or review the overview for a broader picture.
+            Nothing requires your immediate attention.
           </p>
         </div>
       )}
@@ -989,9 +1059,9 @@ export default function TriageFeed() {
           count={data.overdueTasks.length}
           accentColor="bg-red-950/40"
           linkTo="/operations"
-          className="bg-red-950/5 border border-red-900/15 rounded-2xl p-5"
+          className="bg-red-950/5 border border-red-900/15 rounded-xl p-4"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {data.overdueTasks.map((t) => (
               <TaskCard
                 key={t.id}
@@ -1015,7 +1085,7 @@ export default function TriageFeed() {
           accentColor="bg-yellow-950/40"
           linkTo="/operations"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {data.todayTasks.map((t) => (
               <TaskCard
                 key={t.id}
@@ -1029,127 +1099,125 @@ export default function TriageFeed() {
         </Section>
       )}
 
-      {/* ── Two-column: High Priority + Approvals ────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {hasHighPriority && (
-          <Section
-            icon={<Flame className="h-4 w-4 text-orange-400" />}
-            title="High Priority"
-            count={data.highPriorityTasks.length}
-            accentColor="bg-orange-950/40"
-            linkTo="/operations"
-          >
-            <div className="space-y-2">
-              {data.highPriorityTasks.slice(0, 6).map((t) => {
-                const cleanTitle = t.title.replace(/\s*\(Assigned to:.*?\)\s*$/, "");
-                return (
-                  <div
-                    key={t.id}
-                    onClick={() => setSelectedTask(t)}
-                    className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                  >
-                    <PriorityBadge priority={t.priority} />
-                    <span className="text-sm text-zinc-200 truncate flex-1 group-hover:text-white transition-colors">
-                      {cleanTitle}
-                    </span>
-                    {t.assignedName && (
-                      <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">{t.assignedName}</span>
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); completeMutation.mutate({ taskId: t.id }); }}
-                      disabled={actingIds.has(t.id)}
-                      className="p-1 rounded hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                      title="Complete"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </Section>
-        )}
-
-        <div className="space-y-6">
-          {hasStarredEmails && (
+      {/* ── Two-column: High Priority + Approvals/Starred ────────────── */}
+      {(hasHighPriority || hasStarredEmails || hasPendingContacts || hasPendingCompanies) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {hasHighPriority && (
             <Section
-              icon={<Star className="h-4 w-4 text-yellow-500" />}
-              title="Starred Emails"
-              count={data.starredEmails.length}
-              accentColor="bg-yellow-950/40"
-              linkTo="/communications"
+              icon={<Flame className="h-4 w-4 text-orange-400" />}
+              title="High Priority"
+              count={data.highPriorityTasks.length}
+              accentColor="bg-orange-950/40"
+              linkTo="/operations"
             >
-              <div className="space-y-2">
-                {data.starredEmails.map((s) => {
-                  const starLabels: Record<number, string> = { 1: "Reply Today", 2: "Delegate", 3: "Critical" };
-                  const starColors: Record<number, string> = { 1: "text-yellow-500", 2: "text-orange-400", 3: "text-red-400" };
+              <div className="space-y-1.5">
+                {data.highPriorityTasks.slice(0, 6).map((t) => {
+                  const cleanTitle = t.title.replace(/\s*\(Assigned to:.*?\)\s*$/, "");
                   return (
-                    <Link key={s.threadId} href="/communications">
-                      <div className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer">
-                        <Mail className="h-3.5 w-3.5 text-zinc-500" />
-                        <span className="text-sm text-zinc-300 truncate flex-1 font-mono">
-                          {s.threadId.slice(0, 16)}...
-                        </span>
-                        <span className={`text-xs ${starColors[s.starLevel] || "text-zinc-400"}`}>
-                          {"★".repeat(s.starLevel)} {starLabels[s.starLevel] || ""}
-                        </span>
-                      </div>
-                    </Link>
+                    <div
+                      key={t.id}
+                      onClick={() => setSelectedTask(t)}
+                      className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
+                    >
+                      <PriorityBadge priority={t.priority} />
+                      <span className="text-sm text-zinc-200 truncate flex-1 group-hover:text-white transition-colors">
+                        {cleanTitle}
+                      </span>
+                      {t.assignedName && (
+                        <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">{t.assignedName}</span>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); completeMutation.mutate({ taskId: t.id }); }}
+                        disabled={actingIds.has(t.id)}
+                        className="p-1 rounded hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                        title="Complete"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
             </Section>
           )}
 
-          {(hasPendingContacts || hasPendingCompanies) && (
-            <Section
-              icon={<UserPlus className="h-4 w-4 text-blue-400" />}
-              title="Pending Approvals"
-              count={data.pendingContacts.length + data.pendingCompanies.length}
-              accentColor="bg-blue-950/40"
-              linkTo="/relationships"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {data.pendingContacts.map((c) => (
-                  <div
-                    key={`c-${c.id}`}
-                    onClick={() => setSelectedApproval({ item: c, type: "contact" })}
-                    className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                  >
-                    <UserPlus className="h-3.5 w-3.5 text-blue-400/60" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-zinc-200 truncate">{c.name}</p>
-                      {c.organization && <p className="text-[10px] text-zinc-500 truncate">{c.organization}</p>}
-                    </div>
-                    <ChevronRight className="h-3 w-3 text-zinc-700" />
-                  </div>
-                ))}
-                {data.pendingCompanies.map((c) => (
-                  <div
-                    key={`co-${c.id}`}
-                    onClick={() => setSelectedApproval({ item: c, type: "company" })}
-                    className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                  >
-                    <Building2 className="h-3.5 w-3.5 text-purple-400/60" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-zinc-200 truncate">{c.name}</p>
-                      {c.sector && <p className="text-[10px] text-zinc-500 truncate">{c.sector}</p>}
-                    </div>
-                    <ChevronRight className="h-3 w-3 text-zinc-700" />
-                  </div>
-                ))}
-              </div>
-            </Section>
-          )}
+          <div className="space-y-4">
+            {hasStarredEmails && (
+              <Section
+                icon={<Star className="h-4 w-4 text-yellow-500" />}
+                title="Starred Emails"
+                count={data.starredEmails.length}
+                accentColor="bg-yellow-950/40"
+                linkTo="/communications"
+              >
+                <div className="space-y-1.5">
+                  {data.starredEmails.map((s) => {
+                    const starLabels: Record<number, string> = { 1: "Reply Today", 2: "Delegate", 3: "Critical" };
+                    const starColors: Record<number, string> = { 1: "text-yellow-500", 2: "text-orange-400", 3: "text-red-400" };
+                    return (
+                      <Link key={s.threadId} href="/communications">
+                        <div className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer">
+                          <Mail className="h-3.5 w-3.5 text-zinc-500" />
+                          <span className="text-sm text-zinc-300 truncate flex-1 font-mono">
+                            {s.threadId.slice(0, 16)}...
+                          </span>
+                          <span className={`text-xs ${starColors[s.starLevel] || "text-zinc-400"}`}>
+                            {"★".repeat(s.starLevel)} {starLabels[s.starLevel] || ""}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </Section>
+            )}
 
-          {!hasStarredEmails && !hasPendingContacts && !hasPendingCompanies && hasHighPriority && (
-            <div className="bg-zinc-900/30 border border-zinc-800/30 rounded-xl p-6 flex flex-col items-center justify-center text-center">
-              <CheckCircle2 className="h-6 w-6 text-zinc-600 mb-2" />
-              <p className="text-xs text-zinc-500">No starred emails or pending approvals</p>
-            </div>
-          )}
+            {(hasPendingContacts || hasPendingCompanies) && (
+              <Section
+                icon={<UserPlus className="h-4 w-4 text-blue-400" />}
+                title="Pending Approvals"
+                count={data.pendingContacts.length + data.pendingCompanies.length}
+                accentColor="bg-blue-950/40"
+                linkTo="/relationships"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {data.pendingContacts.map((c) => (
+                    <div
+                      key={`c-${c.id}`}
+                      onClick={() => setSelectedApproval({ item: c, type: "contact" })}
+                      className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
+                    >
+                      <UserPlus className="h-3.5 w-3.5 text-blue-400/60" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-zinc-200 truncate">{c.name}</p>
+                        {c.organization && <p className="text-[10px] text-zinc-500 truncate">{c.organization}</p>}
+                      </div>
+                      <ChevronRight className="h-3 w-3 text-zinc-700" />
+                    </div>
+                  ))}
+                  {data.pendingCompanies.map((c) => (
+                    <div
+                      key={`co-${c.id}`}
+                      onClick={() => setSelectedApproval({ item: c, type: "company" })}
+                      className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
+                    >
+                      <Building2 className="h-3.5 w-3.5 text-purple-400/60" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-zinc-200 truncate">{c.name}</p>
+                        {c.sector && <p className="text-[10px] text-zinc-500 truncate">{c.sector}</p>}
+                      </div>
+                      <ChevronRight className="h-3 w-3 text-zinc-700" />
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Unread Emails ────────────────────────────────────────────── */}
+      <UnreadEmailsSection />
 
       {/* ── Completed today ──────────────────────────────────────────── */}
       {hasCompletedToday && (
@@ -1170,44 +1238,43 @@ export default function TriageFeed() {
       )}
 
       {/* ── Tomorrow's tasks + This week ─────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {hasTomorrowTasks && (
-          <Section
-            icon={<Sunrise className="h-4 w-4 text-amber-400" />}
-            title="Tomorrow"
-            count={data.tomorrowTasks?.length}
-            accentColor="bg-amber-950/40"
-            linkTo="/operations"
-            collapsible
-          >
-            <div className="space-y-1.5">
-              {data.tomorrowTasks?.map((t) => (
-                <CompactTaskRow key={t.id} task={t} onClick={() => setSelectedTask({ ...t, notes: "" })} />
-              ))}
-            </div>
-          </Section>
-        )}
+      {(hasTomorrowTasks || hasWeekTasks) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {hasTomorrowTasks && (
+            <Section
+              icon={<Sunrise className="h-4 w-4 text-amber-400" />}
+              title="Tomorrow"
+              count={data.tomorrowTasks?.length}
+              accentColor="bg-amber-950/40"
+              linkTo="/operations"
+              collapsible
+            >
+              <div className="space-y-1.5">
+                {data.tomorrowTasks?.map((t) => (
+                  <CompactTaskRow key={t.id} task={t} onClick={() => setSelectedTask({ ...t, notes: "" })} />
+                ))}
+              </div>
+            </Section>
+          )}
 
-        {hasWeekTasks && (
-          <Section
-            icon={<CalendarDays className="h-4 w-4 text-blue-400" />}
-            title="This Week"
-            count={data.weekTasks?.length}
-            accentColor="bg-blue-950/40"
-            linkTo="/operations"
-            collapsible
-          >
-            <div className="space-y-1.5">
-              {data.weekTasks?.map((t) => (
-                <CompactTaskRow key={t.id} task={t} showDate onClick={() => setSelectedTask({ ...t, notes: "" })} />
-              ))}
-            </div>
-          </Section>
-        )}
-      </div>
-
-      {/* ── Today's emails widget ────────────────────────────────────── */}
-      <TodaysEmailsWidget />
+          {hasWeekTasks && (
+            <Section
+              icon={<CalendarDays className="h-4 w-4 text-blue-400" />}
+              title="This Week"
+              count={data.weekTasks?.length}
+              accentColor="bg-blue-950/40"
+              linkTo="/operations"
+              collapsible
+            >
+              <div className="space-y-1.5">
+                {data.weekTasks?.map((t) => (
+                  <CompactTaskRow key={t.id} task={t} showDate onClick={() => setSelectedTask({ ...t, notes: "" })} />
+                ))}
+              </div>
+            </Section>
+          )}
+        </div>
+      )}
 
       {/* ── Recent meetings ──────────────────────────────────────────── */}
       {hasRecentMeetings && (
@@ -1219,7 +1286,7 @@ export default function TriageFeed() {
           linkTo="/intelligence"
           linkLabel="All meetings"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {data.recentMeetings.map((m) => (
               <MeetingCard key={m.id} meeting={m} />
             ))}
@@ -1227,61 +1294,5 @@ export default function TriageFeed() {
         </Section>
       )}
     </div>
-  );
-}
-
-// ─── Today's Emails Widget ────────────────────────────────────────────────
-function TodaysEmailsWidget() {
-  const { data: threads, isLoading } = trpc.mail.listThreads.useQuery(
-    { folder: "inbox", page: 1, pageSize: 5 },
-    { retry: false }
-  );
-
-  if (isLoading) return null;
-  if (!threads?.threads?.length) return null;
-
-  const today = new Date();
-  const todayStr = today.toDateString();
-  const todayEmails = threads.threads.filter((t: any) => {
-    const d = t.lastMessageDate ? new Date(t.lastMessageDate) : null;
-    return d && d.toDateString() === todayStr;
-  });
-
-  if (todayEmails.length === 0) return null;
-
-  return (
-    <Section
-      icon={<Inbox className="h-4 w-4 text-violet-400" />}
-      title="Today's Emails"
-      count={todayEmails.length}
-      accentColor="bg-violet-950/40"
-      linkTo="/communications"
-      linkLabel="Open inbox"
-      collapsible
-    >
-      <div className="space-y-2">
-        {todayEmails.slice(0, 8).map((t: any) => (
-          <Link key={t.threadId} href="/communications">
-            <div className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer">
-              <Mail className="h-3.5 w-3.5 text-violet-400/60 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-zinc-200 truncate group-hover:text-white transition-colors">
-                  {t.subject || "(no subject)"}
-                </p>
-                <p className="text-[10px] text-zinc-500 truncate">
-                  {t.from || t.participants?.[0] || "Unknown sender"}
-                </p>
-              </div>
-              {t.unread && (
-                <span className="h-2 w-2 rounded-full bg-violet-500 shrink-0" />
-              )}
-              <span className="text-[10px] text-zinc-600 shrink-0">
-                {t.lastMessageDate ? new Date(t.lastMessageDate).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }) : ""}
-              </span>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </Section>
   );
 }

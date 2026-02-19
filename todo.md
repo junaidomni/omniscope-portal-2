@@ -1579,3 +1579,20 @@
 - [x] Wire settings changes to PortalLayout OmniAvatar and sidebar via StorageEvent listener
 - [x] Changes apply in real-time without page reload
 - [x] Settings page accessible from sidebar Settings entry → Omni Assistant tab
+
+## v44 — Triage Layout Optimization + Unread Emails
+
+### Consolidate Strategic Insights
+- [x] Move Strategic Insights into the greeting bar (right side of the greeting box)
+- [x] Remove the separate Strategic Insights card — now InlineInsights component
+- [x] Keep the AI-powered label and insights content, repositioned with Brain icon
+
+### Reduce Triage Vertical Space
+- [x] Tighter layout — greeting bar is one consolidated card with two-column layout
+- [x] Reduced spacing between sections (space-y-4 instead of space-y-6)
+
+### Unread Emails Section
+- [x] Add UnreadEmailsSection component to Triage feed
+- [x] Show sender, subject, and time for unread emails in 2-column grid
+- [x] Click to navigate to full inbox
+- [x] Unread indicator dot (violet) + falls back to today's emails if no unread

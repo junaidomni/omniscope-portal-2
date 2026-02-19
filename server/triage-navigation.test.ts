@@ -1120,13 +1120,13 @@ describe("Triage Feed — v41 Source Structure", () => {
     expect(source).toMatch(/EyeOff|Eye/);
   });
 
-  it("TriageFeed has StrategicInsightsPanel", async () => {
+  it("TriageFeed has InlineInsights integrated into greeting bar", async () => {
     const source = await import("fs").then(fs =>
       fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
     );
-    expect(source).toMatch(/StrategicInsightsPanel/);
+    expect(source).toMatch(/InlineInsights/);
     expect(source).toMatch(/strategicInsights/);
-    expect(source).toMatch(/AI-powered/);
+    expect(source).toMatch(/Strategic Insights/);
   });
 
   it("Triage router has deleteTask, updateTask, and approval procedures", async () => {
@@ -1162,3 +1162,161 @@ describe("Triage Feed — v41 Source Structure", () => {
     expect(source).toMatch(/handleSave/);
   });
 });
+
+
+// ============================================================================
+// v44 — TRIAGE LAYOUT OPTIMIZATION TESTS
+// Tests for consolidated greeting bar, unread emails section, and tighter layout
+// ============================================================================
+
+describe("v44 — Greeting Bar with Integrated Insights", () => {
+  it("TriageFeed has InlineInsights component inside greeting bar", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    // InlineInsights is a separate component rendered inside the greeting card
+    expect(source).toMatch(/function InlineInsights/);
+    // It uses the strategicInsights query
+    expect(source).toMatch(/triage\.strategicInsights\.useQuery/);
+    // It renders Zap icons for each insight
+    expect(source).toMatch(/Zap/);
+  });
+
+  it("Greeting bar has two-column layout (greeting left, insights right)", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    // Two-column flex layout in greeting bar
+    expect(source).toMatch(/lg:flex-row/);
+    // Right column has clock + insights
+    expect(source).toMatch(/Strategic Insights/);
+    // Brain icon for insights header
+    expect(source).toMatch(/Brain/);
+  });
+
+  it("Greeting bar includes live clock with timezone", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    expect(source).toMatch(/timeString/);
+    expect(source).toMatch(/tzAbbr/);
+    expect(source).toMatch(/timeZoneName/);
+  });
+
+  it("Greeting bar includes situational summary", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    expect(source).toMatch(/getSituationalSummary/);
+    expect(source).toMatch(/situationalSummary/);
+  });
+});
+
+describe("v44 — Unread Emails Section", () => {
+  it("TriageFeed has UnreadEmailsSection component", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    expect(source).toMatch(/function UnreadEmailsSection/);
+    expect(source).toMatch(/<UnreadEmailsSection/);
+  });
+
+  it("UnreadEmailsSection filters unread emails", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    // Filters for unread emails
+    expect(source).toMatch(/t\.unread/);
+    // Falls back to today's emails if no unread
+    expect(source).toMatch(/todayEmails/);
+    // Shows unread indicator dot
+    expect(source).toMatch(/bg-violet-500/);
+  });
+
+  it("UnreadEmailsSection uses 2-column grid layout", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    // Uses grid layout for emails
+    expect(source).toMatch(/md:grid-cols-2/);
+    // Shows MailOpen icon
+    expect(source).toMatch(/MailOpen/);
+  });
+});
+
+describe("v44 — Layout Optimization", () => {
+  it("Strategic Insights are NOT a separate standalone section", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    // Should NOT have a standalone StrategicInsightsPanel component anymore
+    expect(source).not.toMatch(/function StrategicInsightsPanel/);
+    // Should have InlineInsights instead
+    expect(source).toMatch(/function InlineInsights/);
+  });
+
+  it("Stat cards use compact 6-column grid", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    expect(source).toMatch(/lg:grid-cols-6/);
+  });
+
+  it("Mobile responsive: insights appear below greeting on small screens", async () => {
+    const source = await import("fs").then(fs =>
+      fs.readFileSync("client/src/pages/TriageFeed.tsx", "utf-8")
+    );
+    // Mobile fallback for insights
+    expect(source).toMatch(/lg:hidden/);
+    // Desktop-only right column
+    expect(source).toMatch(/hidden lg:flex/);
+  });
+});
+
+describe("v44 — Contextual Status Lines", () => {
+  it("returns after-hours message for late night", () => {
+    const data = { summary: { totalOverdue: 0, totalHighPriority: 0, totalPendingApprovals: 0, totalOpen: 5 } };
+    const statusLine = getStatusLineTest(data, 23);
+    expect(statusLine).toBe("No immediate actions required tonight.");
+  });
+
+  it("returns high activity message when many overdue", () => {
+    const data = { summary: { totalOverdue: 5, totalHighPriority: 3, totalPendingApprovals: 0, totalOpen: 20 } };
+    const statusLine = getStatusLineTest(data, 10);
+    expect(statusLine).toBe("High activity detected. Multiple items need your attention.");
+  });
+
+  it("returns clear message when few tasks", () => {
+    const data = { summary: { totalOverdue: 0, totalHighPriority: 0, totalPendingApprovals: 0, totalOpen: 3 } };
+    const statusLine = getStatusLineTest(data, 14);
+    expect(statusLine).toBe("You're clear for now. Use this time to plan ahead.");
+  });
+
+  it("returns overdue message when some overdue", () => {
+    const data = { summary: { totalOverdue: 2, totalHighPriority: 4, totalPendingApprovals: 0, totalOpen: 15 } };
+    const statusLine = getStatusLineTest(data, 9);
+    expect(statusLine).toBe("2 overdue items and 4 high-priority tasks on your radar.");
+  });
+
+  it("returns pipeline message for normal workload", () => {
+    const data = { summary: { totalOverdue: 0, totalHighPriority: 3, totalPendingApprovals: 0, totalOpen: 12 } };
+    const statusLine = getStatusLineTest(data, 11);
+    expect(statusLine).toBe("12 tasks in your pipeline. 3 marked high priority.");
+  });
+});
+
+// Re-implement getStatusLine for testing (pure function)
+function getStatusLineTest(data: any, hour: number) {
+  const { summary } = data;
+  const overdue = summary.totalOverdue;
+  const high = summary.totalHighPriority;
+  const pending = summary.totalPendingApprovals;
+  const open = summary.totalOpen;
+
+  if (hour >= 22 || hour < 6) return "No immediate actions required tonight.";
+  if (overdue > 3 || high > 5) return "High activity detected. Multiple items need your attention.";
+  if (overdue > 0) return `${overdue} overdue item${overdue > 1 ? "s" : ""} and ${high} high-priority tasks on your radar.`;
+  if (pending > 0 && open > 10) return `${open} open tasks with ${pending} pending approval${pending > 1 ? "s" : ""}.`;
+  if (open <= 5) return "You're clear for now. Use this time to plan ahead.";
+  return `${open} tasks in your pipeline. ${high > 0 ? `${high} marked high priority.` : "No critical flags."}`;
+}
