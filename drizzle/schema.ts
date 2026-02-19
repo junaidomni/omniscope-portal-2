@@ -879,3 +879,34 @@ export const pendingSuggestionsRelations = relations(pendingSuggestions, ({ one 
     references: [users.id],
   }),
 }));
+
+
+/**
+ * Activity Log / Audit Trail — records every CRM action for compliance
+ */
+export const activityLog = mysqlTable("activity_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  action: varchar("action", { length: 100 }).notNull(), // approve_contact, reject_contact, merge_contacts, approve_company, reject_company, approve_suggestion, reject_suggestion, enrich_contact, enrich_company, bulk_approve, bulk_reject, dedup_merge, dedup_dismiss
+  entityType: varchar("entityType", { length: 50 }).notNull(), // contact, company, suggestion, task
+  entityId: varchar("entityId", { length: 255 }).notNull(), // ID of the affected entity
+  entityName: varchar("entityName", { length: 500 }), // Human-readable name for display
+  details: text("details"), // JSON string with action-specific details
+  metadata: text("metadata"), // Additional context (e.g., merge source/target, old/new values)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("activity_user_idx").on(table.userId),
+  actionIdx: index("activity_action_idx").on(table.action),
+  entityIdx: index("activity_entity_idx").on(table.entityType, table.entityId),
+  createdAtIdx: index("activity_created_idx").on(table.createdAt),
+}));
+
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type InsertActivityLog = typeof activityLog.$inferInsert;
+
+export const activityLogRelations = relations(activityLog, ({ one }) => ({
+  user: one(users, {
+    fields: [activityLog.userId],
+    references: [users.id],
+  }),
+}));

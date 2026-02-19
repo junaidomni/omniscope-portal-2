@@ -383,7 +383,7 @@ const contactsRouter = router({
 
   mergeContacts: protectedProcedure
     .input(z.object({ keepId: z.number(), mergeId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const keep = await db.getContactById(input.keepId);
       const merge = await db.getContactById(input.mergeId);
       if (!keep || !merge) throw new TRPCError({ code: "NOT_FOUND" });
@@ -403,40 +403,46 @@ const contactsRouter = router({
       if (!keep.website && merge.website) updates.website = merge.website;
       if (!keep.linkedin && merge.linkedin) updates.linkedin = merge.linkedin;
       if (Object.keys(updates).length > 0) await db.updateContact(input.keepId, updates);
-      // Delete the merged contact
       await db.deleteContact(input.mergeId);
+      await db.logActivity({ userId: ctx.user.id, action: "merge_contacts", entityType: "contact", entityId: String(input.keepId), entityName: keep.name, details: `Merged "${merge.name}" into "${keep.name}"`, metadata: JSON.stringify({ keepId: input.keepId, mergeId: input.mergeId, mergeName: merge.name, fieldsTransferred: Object.keys(updates) }) });
       return { success: true };
     }),
 
   approve: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const contact = await db.getContactById(input.id);
       await db.updateContact(input.id, { approvalStatus: "approved" });
+      await db.logActivity({ userId: ctx.user.id, action: "approve_contact", entityType: "contact", entityId: String(input.id), entityName: contact?.name || "Unknown" });
       return { success: true };
     }),
 
   reject: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const contact = await db.getContactById(input.id);
       await db.updateContact(input.id, { approvalStatus: "rejected" });
+      await db.logActivity({ userId: ctx.user.id, action: "reject_contact", entityType: "contact", entityId: String(input.id), entityName: contact?.name || "Unknown" });
       return { success: true };
     }),
 
   bulkApprove: protectedProcedure
     .input(z.object({ ids: z.array(z.number()) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       for (const id of input.ids) {
         await db.updateContact(id, { approvalStatus: "approved" });
       }
+      await db.logActivity({ userId: ctx.user.id, action: "bulk_approve_contacts", entityType: "contact", entityId: input.ids.join(","), details: `Bulk approved ${input.ids.length} contacts` });
       return { success: true, count: input.ids.length };
     }),
 
   bulkReject: protectedProcedure
     .input(z.object({ ids: z.array(z.number()) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       for (const id of input.ids) {
         await db.updateContact(id, { approvalStatus: "rejected" });
       }
+      await db.logActivity({ userId: ctx.user.id, action: "bulk_reject_contacts", entityType: "contact", entityId: input.ids.join(","), details: `Bulk rejected ${input.ids.length} contacts` });
       return { success: true, count: input.ids.length };
     }),
 
@@ -501,6 +507,7 @@ const contactsRouter = router({
         reviewedAt: new Date(),
         reviewedBy: ctx.user.id,
       });
+      await db.logActivity({ userId: ctx.user.id, action: "approve_suggestion", entityType: "suggestion", entityId: String(input.id), entityName: suggestion.type, details: `Approved ${suggestion.type} suggestion`, metadata: suggestion.suggestedData || undefined });
       return { success: true };
     }),
 
@@ -515,6 +522,7 @@ const contactsRouter = router({
         reviewedAt: new Date(),
         reviewedBy: ctx.user.id,
       });
+      await db.logActivity({ userId: ctx.user.id, action: "reject_suggestion", entityType: "suggestion", entityId: String(input.id), entityName: suggestion.type, details: `Dismissed ${suggestion.type} suggestion` });
       return { success: true };
     }),
 
@@ -537,6 +545,7 @@ const contactsRouter = router({
           approved++;
         } catch {}
       }
+      await db.logActivity({ userId: ctx.user.id, action: "bulk_approve_suggestions", entityType: "suggestion", entityId: input.ids.join(","), details: `Bulk approved ${approved} suggestions` });
       return { success: true, count: approved };
     }),
 
@@ -550,6 +559,7 @@ const contactsRouter = router({
           rejected++;
         } catch {}
       }
+      await db.logActivity({ userId: ctx.user.id, action: "bulk_reject_suggestions", entityType: "suggestion", entityId: input.ids.join(","), details: `Bulk rejected ${rejected} suggestions` });
       return { success: true, count: rejected };
     }),
 
@@ -1999,15 +2009,19 @@ const companiesRouter = router({
 
   approve: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const company = await db.getCompanyById(input.id);
       await db.updateCompany(input.id, { approvalStatus: "approved" });
+      await db.logActivity({ userId: ctx.user.id, action: "approve_company", entityType: "company", entityId: String(input.id), entityName: company?.name || "Unknown" });
       return { success: true };
     }),
 
   reject: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const company = await db.getCompanyById(input.id);
       await db.updateCompany(input.id, { approvalStatus: "rejected" });
+      await db.logActivity({ userId: ctx.user.id, action: "reject_company", entityType: "company", entityId: String(input.id), entityName: company?.name || "Unknown" });
       return { success: true };
     }),
 
@@ -3154,19 +3168,21 @@ const triageRouter = router({
 
   bulkApproveCompanies: protectedProcedure
     .input(z.object({ ids: z.array(z.number()) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       for (const id of input.ids) {
         await db.updateCompany(id, { approvalStatus: 'approved' });
       }
+      await db.logActivity({ userId: ctx.user.id, action: "bulk_approve_companies", entityType: "company", entityId: input.ids.join(","), details: `Bulk approved ${input.ids.length} companies` });
       return { approved: input.ids.length };
     }),
 
   bulkRejectCompanies: protectedProcedure
     .input(z.object({ ids: z.array(z.number()) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       for (const id of input.ids) {
         await db.updateCompany(id, { approvalStatus: 'rejected' });
       }
+      await db.logActivity({ userId: ctx.user.id, action: "bulk_reject_companies", entityType: "company", entityId: input.ids.join(","), details: `Bulk rejected ${input.ids.length} companies` });
       return { rejected: input.ids.length };
     }),
 
@@ -3299,6 +3315,161 @@ Example output:
 });
 
 // ============================================================================
+// ACTIVITY LOG ROUTER
+// ============================================================================
+
+const activityLogRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().min(0).default(0),
+      action: z.string().optional(),
+      entityType: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return await db.getActivityLog({
+        limit: input?.limit || 50,
+        offset: input?.offset || 0,
+        action: input?.action,
+        entityType: input?.entityType,
+        startDate: input?.startDate ? new Date(input.startDate) : undefined,
+        endDate: input?.endDate ? new Date(input.endDate) : undefined,
+      });
+    }),
+
+  actions: protectedProcedure.query(async () => {
+    // Return distinct action types for filter dropdown
+    return [
+      "approve_contact", "reject_contact", "merge_contacts",
+      "bulk_approve_contacts", "bulk_reject_contacts",
+      "approve_company", "reject_company",
+      "bulk_approve_companies", "bulk_reject_companies",
+      "approve_suggestion", "reject_suggestion",
+      "bulk_approve_suggestions", "bulk_reject_suggestions",
+      "dedup_merge", "dedup_dismiss",
+    ];
+  }),
+});
+
+// ============================================================================
+// DEDUPLICATION SWEEP ROUTER
+// ============================================================================
+
+const dedupRouter = router({
+  scan: protectedProcedure.mutation(async () => {
+    const allContacts = await db.getAllContacts();
+    const approved = allContacts.filter((c: any) => c.approvalStatus === "approved");
+    const clusters: Array<{ contacts: typeof approved; confidence: number; reason: string }> = [];
+
+    for (let i = 0; i < approved.length; i++) {
+      for (let j = i + 1; j < approved.length; j++) {
+        const a = approved[i];
+        const b = approved[j];
+        if (!a.name || !b.name) continue;
+
+        // Exact email match
+        if (a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase()) {
+          clusters.push({ contacts: [a, b], confidence: 95, reason: "Same email address" });
+          continue;
+        }
+
+        // Name similarity
+        const nameA = a.name.toLowerCase().trim();
+        const nameB = b.name.toLowerCase().trim();
+        if (nameA === nameB) {
+          clusters.push({ contacts: [a, b], confidence: 90, reason: "Exact name match" });
+          continue;
+        }
+
+        // Name parts swap ("Jake Ryan" vs "Ryan Jake")
+        const partsA = nameA.split(/\s+/).sort();
+        const partsB = nameB.split(/\s+/).sort();
+        if (partsA.length > 1 && partsB.length > 1 && partsA.join(" ") === partsB.join(" ")) {
+          clusters.push({ contacts: [a, b], confidence: 85, reason: "Name parts match (reordered)" });
+          continue;
+        }
+
+        // First name + same org
+        if (partsA[0] === partsB[0] && a.organization && b.organization &&
+            a.organization.toLowerCase() === b.organization.toLowerCase()) {
+          clusters.push({ contacts: [a, b], confidence: 70, reason: "Same first name + same organization" });
+          continue;
+        }
+
+        // Levenshtein-like similarity for short names
+        if (nameA.length > 3 && nameB.length > 3) {
+          const maxLen = Math.max(nameA.length, nameB.length);
+          let matches = 0;
+          const shorter = nameA.length <= nameB.length ? nameA : nameB;
+          const longer = nameA.length <= nameB.length ? nameB : nameA;
+          for (let k = 0; k < shorter.length; k++) {
+            if (longer.includes(shorter[k])) matches++;
+          }
+          const similarity = matches / maxLen;
+          if (similarity > 0.85 && Math.abs(nameA.length - nameB.length) <= 2) {
+            clusters.push({ contacts: [a, b], confidence: 60, reason: "High name similarity" });
+          }
+        }
+      }
+    }
+
+    // Sort by confidence descending
+    clusters.sort((a, b) => b.confidence - a.confidence);
+    return { clusters: clusters.slice(0, 50), totalScanned: approved.length };
+  }),
+
+  merge: protectedProcedure
+    .input(z.object({ keepId: z.number(), mergeId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const keep = await db.getContactById(input.keepId);
+      const merge = await db.getContactById(input.mergeId);
+      if (!keep || !merge) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const mergeMeetings = await db.getMeetingsForContact(input.mergeId);
+      for (const mm of mergeMeetings) {
+        try { await db.linkContactToMeeting(mm.meeting.id, input.keepId); } catch {}
+      }
+      const updates: any = {};
+      if (!keep.email && merge.email) updates.email = merge.email;
+      if (!keep.phone && merge.phone) updates.phone = merge.phone;
+      if (!keep.organization && merge.organization) updates.organization = merge.organization;
+      if (!keep.title && merge.title) updates.title = merge.title;
+      if (!keep.dateOfBirth && merge.dateOfBirth) updates.dateOfBirth = merge.dateOfBirth;
+      if (!keep.address && merge.address) updates.address = merge.address;
+      if (!keep.website && merge.website) updates.website = merge.website;
+      if (!keep.linkedin && merge.linkedin) updates.linkedin = merge.linkedin;
+      if (Object.keys(updates).length > 0) await db.updateContact(input.keepId, updates);
+      await db.deleteContact(input.mergeId);
+
+      await db.logActivity({
+        userId: ctx.user.id,
+        action: "dedup_merge",
+        entityType: "contact",
+        entityId: String(input.keepId),
+        entityName: keep.name,
+        details: `Dedup merged "${merge.name}" into "${keep.name}"`,
+        metadata: JSON.stringify({ keepId: input.keepId, mergeId: input.mergeId, mergeName: merge.name }),
+      });
+      return { success: true };
+    }),
+
+  dismiss: protectedProcedure
+    .input(z.object({ contactAId: z.number(), contactBId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.logActivity({
+        userId: ctx.user.id,
+        action: "dedup_dismiss",
+        entityType: "contact",
+        entityId: `${input.contactAId},${input.contactBId}`,
+        details: "Dismissed duplicate suggestion as false positive",
+      });
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // MAIN APP ROUTER
 // ============================================================================
 
@@ -3336,6 +3507,8 @@ export const appRouter = router({
   profile: profileRouter,
   directory: directoryRouter,
   triage: triageRouter,
+  activityLog: activityLogRouter,
+  dedup: dedupRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1802,4 +1802,86 @@ export async function checkDuplicateSuggestion(type: string, contactId?: number,
   if (suggestedCompanyId) conditions.push(eq(pendingSuggestions.suggestedCompanyId, suggestedCompanyId));
   const result = await db.select().from(pendingSuggestions).where(and(...conditions)).limit(1);
   return result.length > 0;
+}
+
+
+// ─── Activity Log / Audit Trail ──────────────────────────────────────────────
+
+export async function logActivity(entry: {
+  userId: number;
+  action: string;
+  entityType: string;
+  entityId: string;
+  entityName?: string;
+  details?: string;
+  metadata?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const [result] = await db.insert(activityLog).values({
+      userId: entry.userId,
+      action: entry.action,
+      entityType: entry.entityType,
+      entityId: String(entry.entityId),
+      entityName: entry.entityName || null,
+      details: entry.details || null,
+      metadata: entry.metadata || null,
+    });
+    return result.insertId;
+  } catch (e) {
+    console.error("[ActivityLog] Failed to log activity:", e);
+    return null;
+  }
+}
+
+export async function getActivityLog(opts: {
+  limit?: number;
+  offset?: number;
+  action?: string;
+  entityType?: string;
+  startDate?: Date;
+  endDate?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+
+  const conditions: any[] = [];
+  if (opts.action) conditions.push(eq(activityLog.action, opts.action));
+  if (opts.entityType) conditions.push(eq(activityLog.entityType, opts.entityType));
+  if (opts.startDate) conditions.push(gte(activityLog.createdAt, opts.startDate));
+  if (opts.endDate) conditions.push(lte(activityLog.createdAt, opts.endDate));
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [items, countResult] = await Promise.all([
+    db
+      .select({
+        id: activityLog.id,
+        userId: activityLog.userId,
+        action: activityLog.action,
+        entityType: activityLog.entityType,
+        entityId: activityLog.entityId,
+        entityName: activityLog.entityName,
+        details: activityLog.details,
+        metadata: activityLog.metadata,
+        createdAt: activityLog.createdAt,
+        userName: users.name,
+      })
+      .from(activityLog)
+      .leftJoin(users, eq(activityLog.userId, users.id))
+      .where(where)
+      .orderBy(desc(activityLog.createdAt))
+      .limit(opts.limit || 50)
+      .offset(opts.offset || 0),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(activityLog)
+      .where(where),
+  ]);
+
+  return {
+    items,
+    total: countResult[0]?.count || 0,
+  };
 }

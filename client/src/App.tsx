@@ -23,6 +23,8 @@ import HRHub from "./pages/HRHub";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import PayrollHub from "./pages/PayrollHub";
 import Setup from "./pages/Setup";
+import ActivityLog from "./pages/ActivityLog";
+import DedupSweep from "./pages/DedupSweep";
 
 function Router() {
   return (
@@ -67,6 +69,8 @@ function Router() {
         <Route path="/hr/payroll" component={PayrollHub} />
         <Route path="/admin" component={AdminPanel} />
         <Route path="/admin/users" component={UserManagement} />
+        <Route path="/admin/activity-log" component={ActivityLog} />
+        <Route path="/admin/dedup" component={DedupSweep} />
         <Route path="/access-denied" component={AccessDenied} />
 
         <Route path={"/404"} component={NotFound} />

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, UserPlus, Trash2, Crown, Zap, Download, Webhook, Loader2, CheckCircle, AlertCircle, Mail, Clock, X, Users } from "lucide-react";
+import { Shield, UserPlus, Trash2, Crown, Zap, Download, Webhook, Loader2, CheckCircle, AlertCircle, Mail, Clock, X, Users, ScrollText, Search } from "lucide-react";
+import { Link } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -139,9 +140,23 @@ export default function AdminPanel() {
   return (
     <div className="p-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>
-          <p className="text-zinc-400">Manage users, integrations, and system settings</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>
+            <p className="text-zinc-400">Manage users, integrations, and system settings</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/admin/activity-log">
+              <button className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors">
+                <ScrollText className="w-4 h-4" /> Activity Log
+              </button>
+            </Link>
+            <Link href="/admin/dedup">
+              <button className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors">
+                <Search className="w-4 h-4" /> Dedup Sweep
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Invite New User */}

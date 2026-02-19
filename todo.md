@@ -1765,3 +1765,29 @@
 - [x] Toast includes "Undo" button to reverse the action
 - [x] Undo reverts the contact/company/suggestion back to pending
 - [x] Toast auto-dismisses after 5 seconds if not undone
+
+## v52 — Activity Log & Deduplication Sweep
+
+### Activity Log / Audit Trail
+- [x] Create activityLog table (id, userId, action, entityType, entityId, details, metadata, createdAt)
+- [x] Add audit logging helper function (logActivity)
+- [x] Log all contact approvals/rejections
+- [x] Log all company approvals/rejections
+- [x] Log all contact merges
+- [x] Log all suggestion approvals/dismissals
+- [x] Log all enrichment actions
+- [x] Log bulk approve/reject actions
+- [x] Build activity log UI page accessible from Admin
+- [x] Filterable by action type, entity type, date range
+- [x] Show actor, action, target entity, timestamp, and details
+- [x] Paginated list with newest first
+
+### Contact Deduplication Sweep
+- [x] Create bulk deduplication scan procedure
+- [x] Scan all approved contacts for potential duplicates (name similarity, email match)
+- [x] Group duplicates into clusters with confidence scores
+- [x] Build deduplication review UI
+- [x] Show side-by-side comparison for each duplicate pair
+- [x] Quick merge action for confirmed duplicates
+- [x] Dismiss action for false positives
+- [x] Show total duplicates found and resolved count
