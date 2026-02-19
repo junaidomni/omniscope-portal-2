@@ -1499,3 +1499,57 @@
 - [x] Tesla/Apple-grade interactions — modals with backdrop blur, zoom-in animations
 - [x] Smooth transitions, no jarring state changes (animate-in, fade-in, duration-200)
 - [x] Consistent hover states and micro-interactions (group-hover opacity reveals)
+
+## v42 — Ask Omni Persistent AI Assistant
+
+### Visual Modes
+- [x] OmniScope Sigil mode — concentric gold ring with breathing pulse animation
+- [x] Animated Companion mode — minimal geometric character with eyes that track cursor
+- [x] Idle: subtle breathing/pulsing animation
+- [x] Hover: sigil brightens / character eyes follow cursor
+- [x] Thinking: rings rotate or ripple / character focused expression
+- [x] Success: brief gold flash / character subtle smile
+- [x] Error: pulse dims / character slightly concerned
+- [x] Settings toggle to switch between Sigil, Character, or Hidden
+- [x] Dark-theme native, premium aesthetic
+
+### Persistent Floating Trigger
+- [x] Bottom-right corner floating element
+- [x] Does not obstruct content
+- [x] Click expands into slide-up chat panel
+- [x] Subtle notification badge (gold dot) for proactive insights
+- [x] Minimizable (expand/collapse toggle)
+
+### Chat Panel
+- [x] Slide-up panel from bottom-right (not full page navigation)
+- [x] Free-form query input (Ask mode)
+- [x] Context-aware suggestions displayed as cards (Suggest mode)
+- [x] Conversation memory within session
+- [x] Markdown rendering for responses (Streamdown)
+- [x] Loading/thinking state with animation (pulsing dots)
+
+### Context Awareness
+- [x] Detects current page (triage, contact, company, meeting, email, task)
+- [x] Surfaces relevant suggestions based on current context
+- [x] On email: offer to draft reply
+- [x] On contact: show relationship history, last contact, pending tasks
+- [x] On company: pull sector context, KYB status, related contacts
+- [x] On meeting: offer recap generation, action item extraction
+- [x] On triage: suggest priorities, flag stale relationships
+
+### Backend LLM Integration
+- [x] Chat procedure with full database context injection (meetings, tasks, contacts, companies)
+- [x] System prompt with OmniScope institutional tone (JARVIS-style)
+- [x] Access to tasks, contacts, companies, meetings data for answering queries
+- [x] Email response drafting capability
+- [x] Conversation history support (multi-turn, last 8 messages)
+
+### Sidebar Integration
+- [x] Keep Ask Omni in sidebar as secondary entry point with ⌘K badge
+- [x] Settings toggle to show/hide sidebar entry (omniSidebarVisible)
+- [x] Sidebar click opens the same slide-up panel (not separate page)
+
+### Customization Settings
+- [x] Omni appearance: Sigil / Character / Hidden
+- [x] Sidebar visibility: Show / Hide
+- [x] All preferences persisted in localStorage (omniscope-omni-mode, omniscope-omni-sidebar-visible)

@@ -143,3 +143,55 @@
     }
   }
 }
+/* ─── OmniAvatar Animations ──────────────────────────────────────────────── */
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.9; }
+}
+
+@keyframes glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(202, 138, 4, 0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(202, 138, 4, 0.6)); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.4)); }
+  50% { filter: drop-shadow(0 0 16px rgba(234, 179, 8, 0.8)); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes ping-once {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes bounce-dot {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes slide-up-panel {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-breathe { animation: breathe 4s ease-in-out infinite; }
+.animate-glow { animation: glow 2s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 3s linear infinite; }
+.animate-pulse-gold { animation: pulse-gold 1.5s ease-in-out infinite; }
+.animate-pulse-subtle { animation: pulse-subtle 2s ease-in-out infinite; }
+.animate-ping-once { animation: ping-once 0.6s ease-out forwards; }
+.animate-bounce-dot-1 { animation: bounce-dot 0.6s ease-in-out infinite; }
+.animate-bounce-dot-2 { animation: bounce-dot 0.6s ease-in-out infinite 0.15s; }
+.animate-bounce-dot-3 { animation: bounce-dot 0.6s ease-in-out infinite 0.3s; }
+.animate-slide-up-panel { animation: slide-up-panel 0.3s ease-out; }

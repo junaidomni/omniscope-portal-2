@@ -1582,6 +1582,26 @@ const askRouter = router({
     .mutation(async ({ input }) => {
       return await askOmniScope.askOmniScope(input.query);
     }),
+
+  // Full chat procedure with multi-turn conversation and full database context
+  chat: protectedProcedure
+    .input(z.object({
+      query: z.string(),
+      context: z.string().optional(), // current page context
+      entityId: z.string().optional(), // current entity being viewed
+      history: z.array(z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      })).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return await askOmniScope.chat(
+        input.query,
+        input.history || [],
+        input.context,
+        input.entityId
+      );
+    }),
   
   findByParticipant: protectedProcedure
     .input(z.object({ name: z.string() }))

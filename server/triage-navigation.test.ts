@@ -760,12 +760,12 @@ describe("Ask OmniScope Spotlight — Source Structure", () => {
     expect(source).toMatch(/Ask OmniScope/);
   });
 
-  it("PortalLayout renders AskSpotlight with keyboard shortcut", async () => {
+  it("PortalLayout renders OmniChatPanel with keyboard shortcut", async () => {
     const source = await import("fs").then(fs =>
       fs.readFileSync("client/src/components/PortalLayout.tsx", "utf-8")
     );
-    expect(source).toMatch(/spotlightOpen/);
-    expect(source).toMatch(/AskSpotlight/);
+    expect(source).toMatch(/omniChatOpen/);
+    expect(source).toMatch(/OmniChatPanel/);
     expect(source).toMatch(/\u2318K|Cmd.*K|ctrlKey.*k/);
   });
 

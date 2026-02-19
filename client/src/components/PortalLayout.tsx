@@ -5,29 +5,23 @@ import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
   Sparkles, 
-  FileText, 
-  CheckSquare,
-  Calendar,
   LogOut,
   Loader2,
   Shield,
   Settings,
   Users,
-  Building2,
-  Briefcase,
   ChevronLeft,
   ChevronRight,
   Mail,
   Radio,
   Target,
-  MessageSquare,
-  Zap,
   UserCog
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
-import AskSpotlight from "./AskSpotlight";
+import { useState, useEffect, createContext, useContext } from "react";
+import OmniAvatar, { OmniMode } from "./OmniAvatar";
+import OmniChatPanel from "./OmniChatPanel";
 
 // Context so child pages can read sidebar state
 interface SidebarContextType {
@@ -42,6 +36,8 @@ interface PortalLayoutProps {
 }
 
 const SIDEBAR_KEY = "omniscope-sidebar-collapsed";
+const OMNI_MODE_KEY = "omniscope-omni-mode";
+const OMNI_SIDEBAR_KEY = "omniscope-omni-sidebar-visible";
 
 // Domain definitions — each domain groups related modules
 interface DomainItem {
@@ -90,9 +86,6 @@ const domains: DomainItem[] = [
   },
 ];
 
-// Ask OmniScope is now a spotlight overlay, not a route-based nav item
-// But we keep it in the sidebar as a trigger button
-
 function isDomainActive(domain: DomainItem, location: string): boolean {
   return domain.matchPaths.some(p => {
     if (p === "/") return location === "/";
@@ -113,15 +106,29 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     try { localStorage.setItem(SIDEBAR_KEY, String(v)); } catch {};
   };
 
-  // Spotlight state (must be before early returns to keep hooks order stable)
-  const [spotlightOpen, setSpotlightOpen] = useState(false);
+  // Omni state — all hooks must be before early returns
+  const [omniChatOpen, setOmniChatOpen] = useState(false);
+  const [omniMode, setOmniMode] = useState<OmniMode>(() => {
+    try { return (localStorage.getItem(OMNI_MODE_KEY) as OmniMode) || "sigil"; } catch { return "sigil"; }
+  });
+  const [omniSidebarVisible, setOmniSidebarVisible] = useState(() => {
+    try { return localStorage.getItem(OMNI_SIDEBAR_KEY) !== "false"; } catch { return true; }
+  });
 
-  // ⌘K keyboard shortcut for spotlight
+  // Persist Omni preferences
+  useEffect(() => {
+    try { localStorage.setItem(OMNI_MODE_KEY, omniMode); } catch {}
+  }, [omniMode]);
+  useEffect(() => {
+    try { localStorage.setItem(OMNI_SIDEBAR_KEY, String(omniSidebarVisible)); } catch {}
+  }, [omniSidebarVisible]);
+
+  // ⌘K keyboard shortcut for Omni chat
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setSpotlightOpen(prev => !prev);
+        setOmniChatOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handler);
@@ -138,7 +145,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     }
   };
 
-  // Redirect first-time users to onboarding (skip if already on /onboarding)
+  // Redirect first-time users to onboarding
   useEffect(() => {
     if (isAuthenticated && user && !user.onboardingCompleted && location !== '/onboarding') {
       setLocation('/onboarding');
@@ -156,7 +163,6 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
-        {/* Sovereign-themed background */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: `
@@ -168,8 +174,6 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
           <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-yellow-900/10 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 h-96 bg-gradient-to-t from-yellow-900/10 to-transparent" />
         </div>
-        
-        {/* Content */}
         <div className="text-center relative z-10">
           <img src="/omniscope-only.png" alt="OmniScope" className="h-48 mx-auto mb-12" />
           <h1 className="text-3xl font-bold text-white mb-3">Intelligence Portal</h1>
@@ -210,7 +214,6 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
                 style={{ maxWidth: '160px', height: 'auto' }}
               />
             )}
-            {/* Collapse toggle button */}
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="absolute -right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors z-10"
@@ -222,7 +225,6 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
           {/* Primary Domains */}
           <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-            {/* Section label */}
             {!collapsed && (
               <div className="px-3 pt-2 pb-1.5">
                 <span className="text-[10px] font-semibold tracking-widest text-zinc-600 uppercase">Workspace</span>
@@ -243,7 +245,6 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
                     }`}
                     title={collapsed ? domain.label : undefined}
                   >
-                    {/* Active indicator bar */}
                     {active && (
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-yellow-500 rounded-r-full" />
                     )}
@@ -257,34 +258,36 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
             {/* Divider */}
             <div className="!my-3 mx-3 border-t border-zinc-800/60" />
 
-            {/* Ask OmniScope — spotlight trigger */}
-            {!collapsed && (
-              <div className="px-3 pb-1.5">
-                <span className="text-[10px] font-semibold tracking-widest text-zinc-600 uppercase">Tools</span>
-              </div>
-            )}
+            {/* Ask OmniScope — sidebar trigger (toggleable) */}
+            {omniSidebarVisible && (
+              <>
+                {!collapsed && (
+                  <div className="px-3 pb-1.5">
+                    <span className="text-[10px] font-semibold tracking-widest text-zinc-600 uppercase">Tools</span>
+                  </div>
+                )}
 
-            <button
-              onClick={() => setSpotlightOpen(true)}
-              className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} gap-3 ${collapsed ? 'px-2 py-2.5' : 'px-3 py-2.5'} rounded-lg transition-all group relative text-zinc-400 hover:text-white hover:bg-zinc-800/60`}
-              title={collapsed ? "Ask OmniScope (⌘K)" : undefined}
-            >
-              <Sparkles className="h-[18px] w-[18px] shrink-0 text-zinc-500 group-hover:text-yellow-500 transition-colors" />
-              {!collapsed && (
-                <>
-                  <span className="text-sm truncate flex-1 text-left">Ask OmniScope</span>
-                  <kbd className="text-[9px] text-zinc-600 font-mono bg-zinc-800 border border-zinc-700/60 px-1 py-0.5 rounded">⌘K</kbd>
-                </>
-              )}
-            </button>
+                <button
+                  onClick={() => setOmniChatOpen(true)}
+                  className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} gap-3 ${collapsed ? 'px-2 py-2.5' : 'px-3 py-2.5'} rounded-lg transition-all group relative text-zinc-400 hover:text-white hover:bg-zinc-800/60`}
+                  title={collapsed ? "Ask Omni (⌘K)" : undefined}
+                >
+                  <Sparkles className="h-[18px] w-[18px] shrink-0 text-zinc-500 group-hover:text-yellow-500 transition-colors" />
+                  {!collapsed && (
+                    <>
+                      <span className="text-sm truncate flex-1 text-left">Ask Omni</span>
+                      <kbd className="text-[9px] text-zinc-600 font-mono bg-zinc-800 border border-zinc-700/60 px-1 py-0.5 rounded">⌘K</kbd>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </nav>
 
           {/* Footer: Settings + Admin */}
           <div className="px-2 pb-1 space-y-0.5">
-            {/* Divider */}
             <div className="mx-1 mb-1 border-t border-zinc-800/60" />
 
-            {/* Settings group */}
             {[
               { path: "/setup", icon: Settings, label: "Settings" },
               { path: "/hr", icon: UserCog, label: "HR Hub" },
@@ -359,14 +362,36 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
           </div>
         </div>
 
-        {/* Main Content - With left margin to account for fixed sidebar */}
+        {/* Main Content */}
         <main className={`flex-1 overflow-auto ${mainMargin} transition-all duration-300 ease-in-out`}>
           {children}
         </main>
 
-        {/* Ask OmniScope Spotlight Overlay */}
-        {spotlightOpen && <AskSpotlight onClose={() => setSpotlightOpen(false)} />}
+        {/* Floating Omni Avatar — bottom-right */}
+        {omniMode !== "hidden" && !omniChatOpen && (
+          <div className="fixed bottom-6 right-6 z-[80]">
+            <OmniAvatar
+              mode={omniMode}
+              state="idle"
+              size={56}
+              onClick={() => setOmniChatOpen(true)}
+              badge={false}
+            />
+          </div>
+        )}
+
+        {/* Omni Chat Panel */}
+        <OmniChatPanel
+          open={omniChatOpen}
+          onClose={() => setOmniChatOpen(false)}
+          omniMode={omniMode === "hidden" ? "sigil" : omniMode}
+          currentPage={location}
+        />
       </div>
     </SidebarContext.Provider>
   );
 }
+
+// Export Omni settings for use in Settings page
+export type { OmniMode };
+export { OMNI_MODE_KEY, OMNI_SIDEBAR_KEY };
