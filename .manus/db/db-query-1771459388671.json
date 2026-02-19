@@ -1,0 +1,58 @@
+{
+  "query": "SELECT id, title FROM tasks WHERE title IN ('Task to update notes', 'Priority change test', 'Kanban test - to in_progress', 'Updated title', 'High priority task') ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, title FROM tasks WHERE title IN ('Task to update notes', 'Priority change test', 'Kanban test - to in_progress', 'Updated title', 'High priority task') ORDER BY id",
+  "rows": [
+    {
+      "id": "300343",
+      "title": "Kanban test - to in_progress"
+    },
+    {
+      "id": "300346",
+      "title": "High priority task"
+    },
+    {
+      "id": "300349",
+      "title": "Priority change test"
+    },
+    {
+      "id": "300354",
+      "title": "Task to update notes"
+    },
+    {
+      "id": "300355",
+      "title": "Task to update notes"
+    },
+    {
+      "id": "300356",
+      "title": "Updated title"
+    },
+    {
+      "id": "300374",
+      "title": "Kanban test - to in_progress"
+    },
+    {
+      "id": "300377",
+      "title": "High priority task"
+    },
+    {
+      "id": "300381",
+      "title": "Priority change test"
+    },
+    {
+      "id": "300383",
+      "title": "Task to update notes"
+    },
+    {
+      "id": "300386",
+      "title": "Task to update notes"
+    },
+    {
+      "id": "300387",
+      "title": "Updated title"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\n300343\tKanban test - to in_progress\n300346\tHigh priority task\n300349\tPriority change test\n300354\tTask to update notes\n300355\tTask to update notes\n300356\tUpdated title\n300374\tKanban test - to in_progress\n300377\tHigh priority task\n300381\tPriority change test\n300383\tTask to update notes\n300386\tTask to update notes\n300387\tUpdated title\n",
+  "stderr": "",
+  "execution_time_ms": 380
+}

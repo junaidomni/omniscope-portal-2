@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM tasks WHERE title IN ('Task to update notes', 'Priority change test', 'Kanban test - to in_progress', 'Updated title', 'High priority task')",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute DELETE FROM tasks WHERE title IN ('Task to update notes', 'Priority change test', 'Kanban test - to in_progress', 'Updated title', 'High priority task')",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 372
+}

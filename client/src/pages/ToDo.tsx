@@ -1,202 +1,661 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Search, CheckSquare, Clock, Tag, Trash2, Calendar,
-  ListFilter, Columns3, Target, TrendingUp, Zap, Award,
-  ChevronRight, Edit3, MessageSquare, User, Flag, FolderOpen,
-  ArrowUp, ArrowRight, ArrowDown, GripVertical, MoreHorizontal
+  Plus, Search, CheckSquare, Clock, Trash2, Calendar,
+  Columns3, ListFilter, ChevronRight, Edit3, MessageSquare,
+  User, Flag, FolderOpen, ArrowUp, ArrowRight, ArrowDown,
+  GripVertical, AlertTriangle, Eye, EyeOff, Keyboard,
+  MoreHorizontal, CheckCircle2, Circle, Timer, Zap,
+  ChevronDown, X, Sparkles, Link2
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { ContactAutocomplete } from "@/components/ContactAutocomplete";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Team members
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
 const TEAM_MEMBERS = ["Junaid", "Kyle", "Jake", "Sania"];
 
-// Default categories
 const DEFAULT_CATEGORIES = [
   "Little Miracles", "Gold", "BTC", "Private Placement",
   "Real Estate", "Stablecoins", "Commodities", "Payment Rails", "General"
 ];
 
-// Priority colors
 const PRIORITY_CONFIG = {
   high: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: ArrowUp, label: "High", dotColor: "bg-red-500" },
-  medium: { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/20", icon: ArrowRight, label: "Medium", dotColor: "bg-yellow-500" },
+  medium: { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: ArrowRight, label: "Med", dotColor: "bg-amber-500" },
   low: { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", icon: ArrowDown, label: "Low", dotColor: "bg-blue-500" },
 };
 
-// Status config for Kanban columns
+const STATUS_CONFIG = {
+  open: { label: "To Do", icon: Circle, color: "text-zinc-400", bg: "bg-zinc-500/10", dotColor: "bg-zinc-400" },
+  in_progress: { label: "In Progress", icon: Timer, color: "text-amber-400", bg: "bg-amber-500/10", dotColor: "bg-amber-500" },
+  completed: { label: "Done", icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10", dotColor: "bg-emerald-500" },
+};
+
 const KANBAN_COLUMNS = [
-  { id: "open", label: "To Do", color: "text-zinc-400", bg: "bg-zinc-500/10", borderColor: "border-zinc-700", headerBg: "bg-zinc-800/50", dotColor: "bg-zinc-400" },
-  { id: "in_progress", label: "In Progress", color: "text-yellow-400", bg: "bg-yellow-500/10", borderColor: "border-yellow-600/30", headerBg: "bg-yellow-900/20", dotColor: "bg-yellow-500" },
-  { id: "completed", label: "Completed", color: "text-emerald-400", bg: "bg-emerald-500/10", borderColor: "border-emerald-600/30", headerBg: "bg-emerald-900/20", dotColor: "bg-emerald-500" },
+  { id: "open", label: "To Do", color: "text-zinc-400", dotColor: "bg-zinc-400", headerBg: "bg-zinc-800/30" },
+  { id: "in_progress", label: "In Progress", color: "text-amber-400", dotColor: "bg-amber-500", headerBg: "bg-amber-900/10" },
+  { id: "completed", label: "Done", color: "text-emerald-400", dotColor: "bg-emerald-500", headerBg: "bg-emerald-900/10" },
 ];
 
 // ============================================================================
-// ANIMATED PROGRESS BAR (XP-style)
+// COMMAND BAR — single compact row replacing the old stats + progress
 // ============================================================================
 
-function XPProgressBar({ value, label, sublabel }: { value: number; label: string; sublabel?: string }) {
-  const [animatedValue, setAnimatedValue] = useState(0);
+function CommandBar({
+  stats,
+  focusView,
+  setFocusView,
+  viewMode,
+  setViewMode,
+  showCompleted,
+  setShowCompleted,
+  selectMode,
+  setSelectMode,
+  selectedCount,
+  onSelectAll,
+  onBulkDelete,
+  bulkDeleting,
+  filteredCount,
+  onNewTask,
+}: {
+  stats: { total: number; open: number; inProgress: number; completed: number; highPriority: number; overdue: number };
+  focusView: string;
+  setFocusView: (v: string) => void;
+  viewMode: string;
+  setViewMode: (v: string) => void;
+  showCompleted: boolean;
+  setShowCompleted: (v: boolean) => void;
+  selectMode: boolean;
+  setSelectMode: (v: boolean) => void;
+  selectedCount: number;
+  onSelectAll: () => void;
+  onBulkDelete: () => void;
+  bulkDeleting: boolean;
+  filteredCount: number;
+  onNewTask: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 mb-4">
+      {/* Left: Focus toggles */}
+      <div className="flex items-center bg-zinc-900/80 border border-zinc-800 rounded-lg p-0.5">
+        {[
+          { id: "today", label: "Today" },
+          { id: "week", label: "This Week" },
+          { id: "all", label: "All" },
+        ].map(v => (
+          <button
+            key={v.id}
+            onClick={() => setFocusView(v.id)}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              focusView === v.id
+                ? "bg-yellow-600/20 text-yellow-500 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Micro-stats */}
+      <div className="flex items-center gap-3 ml-2 text-xs tabular-nums">
+        <span className="text-zinc-500">
+          <span className="text-white font-semibold">{stats.open + stats.inProgress}</span> open
+        </span>
+        {stats.overdue > 0 && (
+          <span className="text-red-400 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            <span className="font-semibold">{stats.overdue}</span> overdue
+          </span>
+        )}
+        {stats.highPriority > 0 && (
+          <span className="text-red-400/70">
+            <span className="font-semibold">{stats.highPriority}</span> high
+          </span>
+        )}
+        <span className="text-emerald-500/70">
+          <span className="font-semibold">{stats.completed}</span>/{stats.total}
+        </span>
+      </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Bulk actions */}
+      <AnimatePresence>
+        {selectMode && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="flex items-center gap-1.5"
+          >
+            <span className="text-xs text-zinc-400">{selectedCount} selected</span>
+            <Button size="sm" variant="ghost" onClick={onSelectAll} className="text-zinc-400 text-xs h-7 px-2">
+              All ({filteredCount})
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onBulkDelete}
+              disabled={selectedCount === 0 || bulkDeleting}
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs h-7 px-2"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Delete
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelectMode(false)} className="text-zinc-500 text-xs h-7 px-2">
+              <X className="h-3 w-3" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toggle completed visibility */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => setShowCompleted(!showCompleted)}
+              className={`p-1.5 rounded-md transition-colors ${showCompleted ? "text-zinc-400 hover:text-white" : "text-zinc-600 hover:text-zinc-400"}`}
+            >
+              {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-zinc-800 border-zinc-700 text-xs">
+            {showCompleted ? "Hide completed" : "Show completed"}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Select mode toggle */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => setSelectMode(!selectMode)}
+              className={`p-1.5 rounded-md transition-colors ${selectMode ? "text-yellow-500 bg-yellow-600/10" : "text-zinc-600 hover:text-zinc-400"}`}
+            >
+              <CheckSquare className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-zinc-800 border-zinc-700 text-xs">
+            Select mode (S)
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* View toggle */}
+      <div className="flex bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+        <button
+          onClick={() => setViewMode("list")}
+          className={`p-1.5 transition-colors ${viewMode === "list" ? "bg-yellow-600/15 text-yellow-500" : "text-zinc-600 hover:text-white"}`}
+        >
+          <ListFilter className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => setViewMode("kanban")}
+          className={`p-1.5 transition-colors ${viewMode === "kanban" ? "bg-yellow-600/15 text-yellow-500" : "text-zinc-600 hover:text-white"}`}
+        >
+          <Columns3 className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* New Task */}
+      <Button onClick={onNewTask} size="sm" className="bg-yellow-600 hover:bg-yellow-500 text-black font-medium h-8 px-3 text-xs">
+        <Plus className="h-3.5 w-3.5 mr-1" />
+        Task
+      </Button>
+    </div>
+  );
+}
+
+// ============================================================================
+// SMART FILTER BAR — single compact row for all filters
+// ============================================================================
+
+function FilterBar({
+  filterPerson,
+  setFilterPerson,
+  filterCategory,
+  setFilterCategory,
+  filterDue,
+  setFilterDue,
+  filterPriority,
+  setFilterPriority,
+  searchTerm,
+  setSearchTerm,
+  allCategories,
+  allTasks,
+  overdue,
+}: {
+  filterPerson: string;
+  setFilterPerson: (v: string) => void;
+  filterCategory: string;
+  setFilterCategory: (v: string) => void;
+  filterDue: string;
+  setFilterDue: (v: string) => void;
+  filterPriority: string;
+  setFilterPriority: (v: string) => void;
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+  allCategories: string[];
+  allTasks: any[];
+  overdue: number;
+}) {
+  const hasFilters = filterPerson !== "all" || filterCategory !== "all" || filterDue !== "all" || filterPriority !== "all";
+
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      {/* Search */}
+      <div className="relative w-52">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-600" />
+        <Input
+          placeholder="Search... (/)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-8 h-8 bg-zinc-900/80 border-zinc-800 text-white placeholder:text-zinc-600 text-xs"
+        />
+      </div>
+
+      {/* Team filter */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all ${
+            filterPerson !== "all"
+              ? "bg-yellow-600/10 text-yellow-500 border-yellow-600/30"
+              : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:border-zinc-700"
+          }`}>
+            <User className="h-3 w-3" />
+            {filterPerson === "all" ? "Team" : filterPerson}
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="bg-zinc-900 border-zinc-800" align="start">
+          <DropdownMenuItem onClick={() => setFilterPerson("all")} className="text-xs text-zinc-300">
+            All Team
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-zinc-800" />
+          {TEAM_MEMBERS.map(name => {
+            const count = allTasks.filter(t => t.assignedName?.toLowerCase().startsWith(name.toLowerCase()) && t.status !== "completed").length;
+            return (
+              <DropdownMenuItem key={name} onClick={() => setFilterPerson(name)} className="text-xs text-zinc-300 flex justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-yellow-600">{name[0]}</span>
+                  {name}
+                </span>
+                {count > 0 && <span className="text-zinc-600">{count}</span>}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Due date filter */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all ${
+            filterDue !== "all"
+              ? filterDue === "overdue" ? "bg-red-500/10 text-red-400 border-red-500/30" : "bg-yellow-600/10 text-yellow-500 border-yellow-600/30"
+              : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:border-zinc-700"
+          }`}>
+            <Calendar className="h-3 w-3" />
+            {filterDue === "all" ? "Due" : filterDue === "overdue" ? `Overdue (${overdue})` : filterDue === "today" ? "Today" : filterDue === "tomorrow" ? "Tomorrow" : filterDue === "week" ? "This Week" : filterDue === "no_date" ? "No Date" : "Due"}
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="bg-zinc-900 border-zinc-800" align="start">
+          <DropdownMenuItem onClick={() => setFilterDue("all")} className="text-xs text-zinc-300">All Dates</DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-zinc-800" />
+          {overdue > 0 && <DropdownMenuItem onClick={() => setFilterDue("overdue")} className="text-xs text-red-400">Overdue ({overdue})</DropdownMenuItem>}
+          <DropdownMenuItem onClick={() => setFilterDue("today")} className="text-xs text-zinc-300">Due Today</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setFilterDue("tomorrow")} className="text-xs text-zinc-300">Tomorrow</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setFilterDue("week")} className="text-xs text-zinc-300">This Week</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setFilterDue("no_date")} className="text-xs text-zinc-300">No Date</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Priority filter */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all ${
+            filterPriority !== "all"
+              ? "bg-yellow-600/10 text-yellow-500 border-yellow-600/30"
+              : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:border-zinc-700"
+          }`}>
+            <Flag className="h-3 w-3" />
+            {filterPriority === "all" ? "Priority" : filterPriority.charAt(0).toUpperCase() + filterPriority.slice(1)}
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="bg-zinc-900 border-zinc-800" align="start">
+          <DropdownMenuItem onClick={() => setFilterPriority("all")} className="text-xs text-zinc-300">All Priorities</DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-zinc-800" />
+          <DropdownMenuItem onClick={() => setFilterPriority("high")} className="text-xs text-red-400 flex items-center gap-2"><ArrowUp className="h-3 w-3" /> High</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setFilterPriority("medium")} className="text-xs text-amber-400 flex items-center gap-2"><ArrowRight className="h-3 w-3" /> Medium</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setFilterPriority("low")} className="text-xs text-blue-400 flex items-center gap-2"><ArrowDown className="h-3 w-3" /> Low</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Category filter */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all ${
+            filterCategory !== "all"
+              ? "bg-yellow-600/10 text-yellow-500 border-yellow-600/30"
+              : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:border-zinc-700"
+          }`}>
+            <FolderOpen className="h-3 w-3" />
+            {filterCategory === "all" ? "Category" : filterCategory}
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="bg-zinc-900 border-zinc-800 max-h-64 overflow-y-auto" align="start">
+          <DropdownMenuItem onClick={() => setFilterCategory("all")} className="text-xs text-zinc-300">All Categories</DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-zinc-800" />
+          {allCategories.map(cat => (
+            <DropdownMenuItem key={cat} onClick={() => setFilterCategory(cat)} className="text-xs text-zinc-300">{cat}</DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Clear filters */}
+      {hasFilters && (
+        <button
+          onClick={() => { setFilterPerson("all"); setFilterCategory("all"); setFilterDue("all"); setFilterPriority("all"); }}
+          className="text-xs text-zinc-600 hover:text-zinc-400 flex items-center gap-1 transition-colors"
+        >
+          <X className="h-3 w-3" />
+          Clear
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// INLINE QUICK-ADD — appears at top of list when activated
+// ============================================================================
+
+function InlineQuickAdd({
+  onClose,
+  categories,
+}: {
+  onClose: () => void;
+  categories: string[];
+}) {
+  const [title, setTitle] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [assignedName, setAssignedName] = useState("");
+  const [category, setCategory] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const utils = trpc.useUtils();
+
+  const createTask = trpc.tasks.create.useMutation({
+    onSuccess: () => {
+      toast.success("Task created");
+      utils.tasks.list.invalidate();
+      setTitle("");
+      setPriority("medium");
+      setAssignedName("");
+      setCategory("");
+      setDueDate("");
+      inputRef.current?.focus();
+    },
+    onError: () => toast.error("Failed to create task"),
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimatedValue(value), 100);
-    return () => clearTimeout(timer);
-  }, [value]);
+    inputRef.current?.focus();
+  }, []);
 
-  const getBarColor = () => {
-    if (animatedValue >= 80) return "from-emerald-500 to-emerald-400";
-    if (animatedValue >= 50) return "from-yellow-600 to-yellow-500";
-    if (animatedValue >= 25) return "from-orange-500 to-orange-400";
-    return "from-red-500 to-red-400";
-  };
-
-  const getGlowColor = () => {
-    if (animatedValue >= 80) return "shadow-emerald-500/30";
-    if (animatedValue >= 50) return "shadow-yellow-500/30";
-    return "shadow-orange-500/30";
+  const handleSubmit = () => {
+    if (!title.trim()) return;
+    createTask.mutate({
+      title: title.trim(),
+      priority,
+      assignedName: assignedName || undefined,
+      category: category || undefined,
+      dueDate: dueDate || undefined,
+    });
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-white">{label}</span>
-        <div className="flex items-center gap-2">
-          {sublabel && <span className="text-xs text-zinc-500">{sublabel}</span>}
-          <span className={`text-sm font-bold tabular-nums ${
-            animatedValue >= 80 ? "text-emerald-400" :
-            animatedValue >= 50 ? "text-yellow-500" : "text-orange-400"
-          }`}>
-            {Math.round(animatedValue)}%
-          </span>
-        </div>
-      </div>
-      <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
-        <div
-          className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${getBarColor()} transition-all duration-1000 ease-out ${getGlowColor()} shadow-lg`}
-          style={{ width: `${animatedValue}%` }}
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      className="overflow-hidden"
+    >
+      <div className="flex items-center gap-2 p-2 bg-zinc-900/80 border border-yellow-600/30 rounded-lg mb-1">
+        <div className="h-5 w-5 rounded-full border-2 border-yellow-600/40 flex-shrink-0" />
+        <Input
+          ref={inputRef}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && title.trim()) handleSubmit();
+            if (e.key === "Escape") onClose();
+          }}
+          placeholder="What needs to be done?"
+          className="h-7 bg-transparent border-none text-white text-sm placeholder:text-zinc-600 focus-visible:ring-0 p-0"
         />
-        {animatedValue > 0 && animatedValue < 100 && (
-          <div
-            className="absolute inset-y-0 left-0 rounded-full overflow-hidden"
-            style={{ width: `${animatedValue}%` }}
+
+        {/* Inline mini-selectors */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Priority cycle */}
+          <button
+            onClick={() => setPriority(p => p === "low" ? "medium" : p === "medium" ? "high" : "low")}
+            className={`p-1 rounded ${PRIORITY_CONFIG[priority].bg} ${PRIORITY_CONFIG[priority].color}`}
+            title={`Priority: ${priority}`}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+            {priority === "high" ? <ArrowUp className="h-3 w-3" /> : priority === "medium" ? <ArrowRight className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+          </button>
 
-// ============================================================================
-// STATS DASHBOARD
-// ============================================================================
+          {/* Assignee */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`p-1 rounded ${assignedName ? "bg-yellow-600/10 text-yellow-500" : "text-zinc-600 hover:text-zinc-400"}`}>
+                <User className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-zinc-900 border-zinc-800" align="end">
+              <DropdownMenuItem onClick={() => setAssignedName("")} className="text-xs text-zinc-400">Unassigned</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-zinc-800" />
+              {TEAM_MEMBERS.map(n => (
+                <DropdownMenuItem key={n} onClick={() => setAssignedName(n)} className="text-xs text-zinc-300">{n}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-function TaskDashboard({
-  stats,
-  personFilter,
-}: {
-  stats: {
-    total: number;
-    open: number;
-    inProgress: number;
-    completed: number;
-    completedToday: number;
-    highPriority: number;
-    overdue: number;
-  };
-  personFilter: string;
-}) {
-  const completionRate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
-  const activeRate = stats.total > 0 ? ((stats.open + stats.inProgress) / stats.total) * 100 : 0;
-  const personLabel = personFilter === "all" ? "Team" : personFilter;
+          {/* Category */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`p-1 rounded ${category ? "bg-zinc-700 text-white" : "text-zinc-600 hover:text-zinc-400"}`}>
+                <FolderOpen className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-zinc-900 border-zinc-800 max-h-48 overflow-y-auto" align="end">
+              <DropdownMenuItem onClick={() => setCategory("")} className="text-xs text-zinc-400">No Category</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-zinc-800" />
+              {categories.map(c => (
+                <DropdownMenuItem key={c} onClick={() => setCategory(c)} className="text-xs text-zinc-300">{c}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-  return (
-    <div className="space-y-4 mb-6">
-      {/* Main XP Progress Bar */}
-      <Card className="bg-zinc-900/80 border-zinc-800 overflow-hidden">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-              <Target className="h-5 w-5 text-yellow-500" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-white">{personLabel} Progress</h3>
-              <p className="text-xs text-zinc-500">
-                {stats.completed} of {stats.total} tasks completed
-              </p>
-            </div>
-            {completionRate >= 100 && (
-              <Badge className="ml-auto bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                <Award className="h-3 w-3 mr-1" />
-                All Done!
-              </Badge>
-            )}
-          </div>
-          <XPProgressBar
-            value={completionRate}
-            label="Completion Rate"
-            sublabel={`${stats.completed}/${stats.total} tasks`}
+          {/* Due date */}
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="h-6 w-6 bg-transparent text-zinc-600 text-xs opacity-0 hover:opacity-100 focus:opacity-100 cursor-pointer"
+            style={{ colorScheme: "dark" }}
           />
-        </CardContent>
-      </Card>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard icon={<CheckSquare className="h-4 w-4" />} label="Completed" value={stats.completed} sublabel={`${stats.completedToday} today`} color="emerald" />
-        <StatCard icon={<Clock className="h-4 w-4" />} label="In Progress" value={stats.inProgress} sublabel={`${Math.round(activeRate)}% active`} color="yellow" />
-        <StatCard icon={<Zap className="h-4 w-4" />} label="To Do" value={stats.open} sublabel="queued" color="blue" />
-        <StatCard icon={<Flag className="h-4 w-4" />} label="High Priority" value={stats.highPriority} sublabel={stats.overdue > 0 ? `${stats.overdue} overdue` : "on track"} color={stats.highPriority > 0 ? "red" : "zinc"} />
-        <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Total" value={stats.total} sublabel="all tasks" color="zinc" />
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!title.trim() || createTask.isPending}
+            className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs h-6 px-2 font-medium"
+          >
+            {createTask.isPending ? "..." : "Add"}
+          </Button>
+          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 p-1">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-function StatCard({ icon, label, value, sublabel, color }: { icon: React.ReactNode; label: string; value: number; sublabel: string; color: string }) {
-  const colorMap: Record<string, string> = {
-    emerald: "text-emerald-400 bg-emerald-500/10",
-    yellow: "text-yellow-400 bg-yellow-500/10",
-    blue: "text-blue-400 bg-blue-500/10",
-    red: "text-red-400 bg-red-500/10",
-    zinc: "text-zinc-400 bg-zinc-500/10",
-  };
-  const [iconColor, iconBg] = (colorMap[color] || colorMap.zinc).split(" ");
+// ============================================================================
+// COMPACT TASK ROW — single-line, everything visible at a glance
+// ============================================================================
+
+function CompactTaskRow({
+  task,
+  onToggle,
+  onClick,
+  selectMode,
+  selected,
+  onSelect,
+}: {
+  task: any;
+  onToggle: () => void;
+  onClick: () => void;
+  selectMode: boolean;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const isCompleted = task.status === "completed";
+  const isInProgress = task.status === "in_progress";
+  const priorityConf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
 
   return (
-    <Card className="bg-zinc-900/50 border-zinc-800">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className={`h-7 w-7 rounded-md ${iconBg} flex items-center justify-center ${iconColor}`}>
-            {icon}
-          </div>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4, height: 0 }}
+      transition={{ duration: 0.15 }}
+      onClick={() => selectMode ? onSelect() : onClick()}
+      className={`group flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all cursor-pointer ${
+        selected ? "bg-yellow-600/10 border border-yellow-600/30" :
+        isCompleted ? "opacity-50 hover:opacity-70" :
+        "hover:bg-zinc-800/50"
+      }`}
+    >
+      {/* Checkbox / Select */}
+      {selectMode ? (
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onSelect}
+          onClick={(e) => e.stopPropagation()}
+          className="border-zinc-600 data-[state=checked]:bg-yellow-600 data-[state=checked]:border-yellow-600 flex-shrink-0"
+        />
+      ) : (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          className={`flex-shrink-0 h-[18px] w-[18px] rounded-full border-2 flex items-center justify-center transition-all ${
+            isCompleted
+              ? "bg-emerald-500 border-emerald-500"
+              : isInProgress
+                ? "border-amber-500/50 hover:border-amber-500"
+                : "border-zinc-600 hover:border-yellow-600"
+          }`}
+        >
+          {isCompleted && (
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 30 }}>
+              <CheckCircle2 className="h-3 w-3 text-white" />
+            </motion.div>
+          )}
+          {isInProgress && <div className="h-2 w-2 rounded-full bg-amber-500" />}
+        </button>
+      )}
+
+      {/* Priority dot */}
+      <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${priorityConf.dotColor}`} />
+
+      {/* Title */}
+      <span className={`flex-1 text-sm truncate ${
+        isCompleted ? "text-zinc-500 line-through" : "text-white"
+      }`}>
+        {task.title}
+      </span>
+
+      {/* Source indicators */}
+      {task.sourceThreadId && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Link2 className="h-3 w-3 text-zinc-600 flex-shrink-0" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="bg-zinc-800 border-zinc-700 text-xs">From email</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+      {task.meetingId && (
+        <Link href={`/meeting/${task.meetingId}`} onClick={(e: any) => e.stopPropagation()}>
+          <Calendar className="h-3 w-3 text-zinc-600 hover:text-yellow-500 flex-shrink-0" />
+        </Link>
+      )}
+
+      {/* Category pill */}
+      {task.category && (
+        <span className="text-[10px] text-zinc-600 bg-zinc-800/80 px-1.5 py-0.5 rounded hidden sm:block flex-shrink-0">
+          {task.category}
+        </span>
+      )}
+
+      {/* Assignee avatar */}
+      {task.assignedName && (
+        <div className="h-5 w-5 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0" title={task.assignedName}>
+          <span className="text-[9px] font-bold text-yellow-600">{task.assignedName.charAt(0)}</span>
         </div>
-        <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
-        <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
-        <p className="text-[10px] text-zinc-600 mt-0.5">{sublabel}</p>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Due date */}
+      {task.dueDate && (
+        <span className={`text-[11px] flex-shrink-0 tabular-nums hidden md:block ${
+          isOverdue ? "text-red-400 font-medium" : isCompleted ? "text-zinc-600" : "text-zinc-500"
+        }`}>
+          {isOverdue && "⚠ "}
+          {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </span>
+      )}
+
+      {/* Expand arrow */}
+      <ChevronRight className="h-3.5 w-3.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+    </motion.div>
   );
 }
 
 // ============================================================================
-// KANBAN CARD (Draggable)
+// COMPACT KANBAN CARD
 // ============================================================================
 
-function KanbanCard({
+function CompactKanbanCard({
   task,
   onClick,
   onDragStart,
@@ -207,92 +666,55 @@ function KanbanCard({
 }) {
   const isCompleted = task.status === "completed";
   const priorityConf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
-  const PriorityIcon = priorityConf.icon;
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
   const [isDragging, setIsDragging] = useState(false);
 
   return (
     <div
-      draggable={true}
-      onDragStart={(e) => {
-        setIsDragging(true);
-        onDragStart(e);
-      }}
+      draggable
+      onDragStart={(e) => { setIsDragging(true); onDragStart(e); }}
       onDragEnd={() => setIsDragging(false)}
-      onClick={(e) => {
-        if (!isDragging) onClick();
-      }}
-      className={`group p-3 rounded-lg border transition-all cursor-grab active:cursor-grabbing select-none ${
-        isDragging ? "opacity-40 scale-95 ring-2 ring-yellow-600" :
-        isCompleted
-          ? "bg-zinc-800/20 border-zinc-800/40 opacity-70"
-          : "bg-zinc-800/50 border-zinc-800 hover:border-yellow-600/30 hover:bg-zinc-800/80"
+      onClick={() => !isDragging && onClick()}
+      className={`group px-3 py-2 rounded-lg border transition-all cursor-grab active:cursor-grabbing ${
+        isDragging ? "opacity-30 scale-95" :
+        isCompleted ? "bg-zinc-900/20 border-zinc-800/30 opacity-60" :
+        "bg-zinc-800/40 border-zinc-800/60 hover:border-yellow-600/20 hover:bg-zinc-800/60"
       }`}
     >
-      {/* Priority + Title */}
-      <div className="flex items-start gap-2 mb-2">
-        <GripVertical className="h-4 w-4 text-zinc-700 group-hover:text-zinc-500 mt-0.5 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+      <div className="flex items-start gap-2">
+        <div className={`h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0 ${priorityConf.dotColor}`} />
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium leading-snug ${isCompleted ? "text-zinc-500 line-through" : "text-white"}`}>
+          <p className={`text-xs font-medium leading-snug ${isCompleted ? "text-zinc-600 line-through" : "text-white"}`}>
             {task.title}
           </p>
-          {task.description && (
-            <p className="text-xs text-zinc-600 line-clamp-2 mt-1">{task.description}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Meta Row */}
-      <div className="flex items-center gap-2 flex-wrap mt-2">
-        {/* Priority Badge */}
-        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${priorityConf.bg} ${priorityConf.color}`}>
-          <PriorityIcon className="h-2.5 w-2.5" />
-          {priorityConf.label}
-        </div>
-
-        {/* Category */}
-        {task.category && (
-          <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px] py-0 px-1.5">
-            {task.category}
-          </Badge>
-        )}
-
-        {/* Due Date */}
-        {task.dueDate && (
-          <span className={`text-[10px] ${isOverdue ? "text-red-400 font-medium" : "text-zinc-600"}`}>
-            {isOverdue ? "⚠ " : ""}
-            {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
-        )}
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Assignee */}
-        {task.assignedName && (
-          <div className="flex items-center gap-1">
-            <div className="h-5 w-5 rounded-full bg-zinc-700 flex items-center justify-center">
-              <span className="text-[9px] font-bold text-yellow-600">
-                {task.assignedName.charAt(0)}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {task.category && (
+              <span className="text-[9px] text-zinc-600 bg-zinc-800 px-1 py-0.5 rounded">{task.category}</span>
+            )}
+            {task.dueDate && (
+              <span className={`text-[9px] ${isOverdue ? "text-red-400" : "text-zinc-600"}`}>
+                {isOverdue && "⚠ "}
+                {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
-            </div>
+            )}
+            <div className="flex-1" />
+            {task.assignedName && (
+              <div className="h-4 w-4 rounded-full bg-zinc-700 flex items-center justify-center">
+                <span className="text-[8px] font-bold text-yellow-600">{task.assignedName.charAt(0)}</span>
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Meeting link */}
-        {task.meetingId && (
-          <Calendar className="h-3 w-3 text-zinc-600" />
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
 // ============================================================================
-// KANBAN COLUMN (Drop Target)
+// COMPACT KANBAN COLUMN
 // ============================================================================
 
-function KanbanColumn({
+function CompactKanbanColumn({
   column,
   tasks,
   onDrop,
@@ -313,95 +735,43 @@ function KanbanColumn({
 }) {
   const isDragOver = dragOverColumn === column.id;
 
-  // Group tasks by priority
-  const highTasks = tasks.filter(t => t.priority === "high");
-  const mediumTasks = tasks.filter(t => t.priority === "medium");
-  const lowTasks = tasks.filter(t => t.priority === "low");
-
-  const priorityGroups = [
-    { key: "high", label: "High Priority", tasks: highTasks, config: PRIORITY_CONFIG.high },
-    { key: "medium", label: "Medium Priority", tasks: mediumTasks, config: PRIORITY_CONFIG.medium },
-    { key: "low", label: "Low Priority", tasks: lowTasks, config: PRIORITY_CONFIG.low },
-  ].filter(g => g.tasks.length > 0);
-
   return (
     <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.dataTransfer.dropEffect = "move";
-        onDragOver(e);
-      }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; onDragOver(e); }}
       onDragLeave={(e) => {
-        // Only trigger leave if we're actually leaving the column, not entering a child
         const rect = e.currentTarget.getBoundingClientRect();
-        const { clientX, clientY } = e;
-        if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
-          onDragLeave();
-        }
+        if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) onDragLeave();
       }}
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onDrop(e);
-      }}
-      className={`flex flex-col rounded-xl border-2 transition-all duration-200 ${
-        isDragOver
-          ? "border-yellow-500 bg-yellow-500/5 shadow-lg shadow-yellow-500/10 scale-[1.01]"
-          : "border-zinc-800/60 bg-zinc-900/40"
+      onDrop={(e) => { e.preventDefault(); onDrop(e); }}
+      className={`flex flex-col rounded-xl border transition-all ${
+        isDragOver ? "border-yellow-500/50 bg-yellow-500/5" : "border-zinc-800/40 bg-zinc-900/20"
       }`}
     >
-      {/* Column Header */}
-      <div className={`px-4 py-3 rounded-t-xl ${column.headerBg} border-b border-zinc-800/50 pointer-events-none`}>
+      {/* Header */}
+      <div className={`px-3 py-2 rounded-t-xl ${column.headerBg} border-b border-zinc-800/30`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`h-2.5 w-2.5 rounded-full ${column.dotColor}`} />
-            <h3 className={`text-sm font-semibold ${column.color}`}>{column.label}</h3>
+            <div className={`h-2 w-2 rounded-full ${column.dotColor}`} />
+            <span className={`text-xs font-semibold ${column.color}`}>{column.label}</span>
           </div>
-          <Badge variant="outline" className={`${column.borderColor} ${column.color} text-xs`}>
-            {tasks.length}
-          </Badge>
+          <span className={`text-[10px] font-medium ${column.color} opacity-60`}>{tasks.length}</span>
         </div>
-        {isDragOver && (
-          <p className="text-[10px] text-yellow-500 mt-1 animate-pulse">Drop task here</p>
-        )}
       </div>
 
-      {/* Column Body - entire area is a drop zone */}
-      <div className="flex-1 p-3 space-y-4 min-h-[200px] max-h-[calc(100vh-380px)] overflow-y-auto">
+      {/* Body */}
+      <div className="flex-1 p-2 space-y-1.5 min-h-[120px] max-h-[calc(100vh-280px)] overflow-y-auto">
         {tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className={`h-10 w-10 rounded-full ${column.bg} flex items-center justify-center mb-2`}>
-              <CheckSquare className={`h-5 w-5 ${column.color} opacity-50`} />
-            </div>
-            <p className="text-xs text-zinc-600">
-              {isDragOver ? "Drop here" : "No tasks"}
-            </p>
+          <div className="flex items-center justify-center py-6">
+            <p className="text-[10px] text-zinc-700">{isDragOver ? "Drop here" : "Empty"}</p>
           </div>
         ) : (
-          priorityGroups.map(group => (
-            <div key={group.key}>
-              {/* Priority Group Header */}
-              {priorityGroups.length > 1 && (
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <div className={`h-1.5 w-1.5 rounded-full ${group.config.dotColor}`} />
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${group.config.color}`}>
-                    {group.label}
-                  </span>
-                  <span className="text-[10px] text-zinc-600">({group.tasks.length})</span>
-                </div>
-              )}
-              <div className="space-y-2">
-                {group.tasks.map(task => (
-                  <KanbanCard
-                    key={task.id}
-                    task={task}
-                    onClick={() => onTaskClick(task)}
-                    onDragStart={(e) => onDragStart(e, task)}
-                  />
-                ))}
-              </div>
-            </div>
+          tasks.map(task => (
+            <CompactKanbanCard
+              key={task.id}
+              task={task}
+              onClick={() => onTaskClick(task)}
+              onDragStart={(e) => onDragStart(e, task)}
+            />
           ))
         )}
       </div>
@@ -410,7 +780,7 @@ function KanbanColumn({
 }
 
 // ============================================================================
-// TASK DETAIL SHEET (Airtable-style expandable view)
+// TASK DETAIL SHEET — slide-out panel with all properties
 // ============================================================================
 
 function TaskDetailSheet({
@@ -429,9 +799,9 @@ function TaskDetailSheet({
   onDelete: (id: number) => void;
 }) {
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState(task?.title || "");
-  const [editDescription, setEditDescription] = useState(task?.description || "");
-  const [editNotes, setEditNotes] = useState(task?.notes || "");
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   useEffect(() => {
     if (task) {
@@ -444,8 +814,8 @@ function TaskDetailSheet({
 
   if (!task) return null;
 
+  const isCompleted = task.status === "completed";
   const priorityConf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
-  const PriorityIcon = priorityConf.icon;
 
   const saveField = (field: string, value: any) => {
     onUpdate(task.id, { [field]: value });
@@ -454,227 +824,223 @@ function TaskDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-xl bg-zinc-950 border-zinc-800 overflow-y-auto">
-        <SheetHeader className="pb-0">
-          <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
-            <CheckSquare className="h-3 w-3" />
-            <span>Task #{task.id}</span>
-            {task.isAutoGenerated && (
-              <Badge variant="outline" className="border-zinc-800 text-zinc-600 text-[10px]">Auto-generated</Badge>
-            )}
-            {task.meetingId && (
-              <Link href={`/meeting/${task.meetingId}`}>
-                <Badge variant="outline" className="border-zinc-800 text-yellow-600 text-[10px] cursor-pointer hover:border-yellow-600/30">
-                  From Meeting
-                </Badge>
-              </Link>
-            )}
-          </div>
-        </SheetHeader>
-
-        <div className="px-4 pb-8 space-y-6">
-          {/* Title - Click to edit */}
-          <div>
-            {editingField === "title" ? (
-              <div className="space-y-2">
-                <Input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-white text-lg font-semibold"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") saveField("title", editTitle);
-                    if (e.key === "Escape") setEditingField(null);
-                  }}
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => saveField("title", editTitle)} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs h-7">Save</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingField(null)} className="text-zinc-400 text-xs h-7">Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <h2
-                onClick={() => setEditingField("title")}
-                className="text-xl font-bold text-white cursor-pointer hover:text-yellow-500 transition-colors group"
-              >
-                {task.title}
-                <Edit3 className="h-3.5 w-3.5 inline ml-2 opacity-0 group-hover:opacity-100 text-zinc-500" />
-              </h2>
-            )}
-          </div>
-
-          <Separator className="bg-zinc-800" />
-
-          {/* Properties Grid */}
-          <div className="space-y-4">
-            <PropertyRow label="Status" icon={<Clock className="h-3.5 w-3.5" />}>
-              <Select value={task.status} onValueChange={(v) => onUpdate(task.id, { status: v })}>
-                <SelectTrigger className="h-8 bg-zinc-800 border-zinc-700 text-zinc-300 text-sm w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="open">To Do</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </PropertyRow>
-
-            <PropertyRow label="Priority" icon={<Flag className="h-3.5 w-3.5" />}>
-              <Select value={task.priority} onValueChange={(v) => onUpdate(task.id, { priority: v })}>
-                <SelectTrigger className="h-8 bg-zinc-800 border-zinc-700 text-zinc-300 text-sm w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="high"><span className="flex items-center gap-2"><ArrowUp className="h-3 w-3 text-red-400" /> High</span></SelectItem>
-                  <SelectItem value="medium"><span className="flex items-center gap-2"><ArrowRight className="h-3 w-3 text-yellow-400" /> Medium</span></SelectItem>
-                  <SelectItem value="low"><span className="flex items-center gap-2"><ArrowDown className="h-3 w-3 text-blue-400" /> Low</span></SelectItem>
-                </SelectContent>
-              </Select>
-            </PropertyRow>
-
-            <PropertyRow label="Assignee" icon={<User className="h-3.5 w-3.5" />}>
-              <div className="w-48">
-                <ContactAutocomplete
-                  value={task.assignedName || ""}
-                  onChange={(v) => onUpdate(task.id, { assignedName: v || null })}
-                  onSelect={(c) => onUpdate(task.id, { assignedName: c.name })}
-                  placeholder="Assign to..."
-                  allowFreeText
-                  className="h-8 text-sm"
-                />
-              </div>
-            </PropertyRow>
-
-            <PropertyRow label="Category" icon={<FolderOpen className="h-3.5 w-3.5" />}>
-              <Select value={task.category || "none"} onValueChange={(v) => onUpdate(task.id, { category: v === "none" ? null : v })}>
-                <SelectTrigger className="h-8 bg-zinc-800 border-zinc-700 text-zinc-300 text-sm w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="none">No Category</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </PropertyRow>
-
-            <PropertyRow label="Due Date" icon={<Calendar className="h-3.5 w-3.5" />}>
-              <Input
-                type="date"
-                value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""}
-                onChange={(e) => onUpdate(task.id, { dueDate: e.target.value || null })}
-                className="h-8 bg-zinc-800 border-zinc-700 text-zinc-300 text-sm w-40"
-              />
-            </PropertyRow>
-
-            <PropertyRow label="Created" icon={<Clock className="h-3.5 w-3.5" />}>
-              <span className="text-sm text-zinc-400">
-                {new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </span>
-            </PropertyRow>
-          </div>
-
-          <Separator className="bg-zinc-800" />
-
-          {/* Description */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Edit3 className="h-3.5 w-3.5 text-zinc-500" />
-              <span className="text-sm font-medium text-zinc-400">Description</span>
-            </div>
-            {editingField === "description" ? (
-              <div className="space-y-2">
-                <Textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-white min-h-24"
-                  autoFocus
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => saveField("description", editDescription || null)} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs h-7">Save</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingField(null)} className="text-zinc-400 text-xs h-7">Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                onClick={() => setEditingField("description")}
-                className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors min-h-16"
-              >
-                {task.description ? (
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">{task.description}</p>
-                ) : (
-                  <p className="text-sm text-zinc-600 italic">Click to add a description...</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Notes */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="h-3.5 w-3.5 text-zinc-500" />
-              <span className="text-sm font-medium text-zinc-400">Notes</span>
-            </div>
-            {editingField === "notes" ? (
-              <div className="space-y-2">
-                <Textarea
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-white min-h-32"
-                  placeholder="Add notes, updates, or context..."
-                  autoFocus
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => saveField("notes", editNotes || null)} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs h-7">Save</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingField(null)} className="text-zinc-400 text-xs h-7">Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                onClick={() => setEditingField("notes")}
-                className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors min-h-16"
-              >
-                {task.notes ? (
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">{task.notes}</p>
-                ) : (
-                  <p className="text-sm text-zinc-600 italic">Click to add notes...</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <Separator className="bg-zinc-800" />
-
-          {/* Danger Zone */}
-          <div className="pt-2">
-            <Button
-              variant="outline"
-              className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 w-full"
-              onClick={() => {
-                if (confirm("Are you sure you want to delete this task?")) {
-                  onDelete(task.id);
-                  onOpenChange(false);
-                }
-              }}
+      <SheetContent className="bg-zinc-950 border-zinc-800 w-[420px] sm:max-w-[420px] overflow-y-auto p-0">
+        {/* Header */}
+        <div className="px-5 pt-5 pb-3">
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={() => onUpdate(task.id, { status: isCompleted ? "open" : "completed" })}
+              className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                isCompleted ? "bg-emerald-500 border-emerald-500" : "border-zinc-600 hover:border-yellow-600"
+              }`}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Task
-            </Button>
+              {isCompleted && <CheckCircle2 className="h-3 w-3 text-white" />}
+            </button>
+            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${priorityConf.bg} ${priorityConf.color}`}>
+              {priorityConf.label}
+            </div>
+            {task.category && (
+              <span className="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">{task.category}</span>
+            )}
           </div>
+
+          {/* Title */}
+          {editingField === "title" ? (
+            <div className="space-y-2">
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-white text-lg font-semibold"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === "Enter") saveField("title", editTitle); if (e.key === "Escape") setEditingField(null); }}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => saveField("title", editTitle)} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs h-7">Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingField(null)} className="text-zinc-400 text-xs h-7">Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <h2
+              onClick={() => { setEditTitle(task.title); setEditingField("title"); }}
+              className={`text-lg font-semibold cursor-pointer hover:text-yellow-500 transition-colors ${isCompleted ? "text-zinc-500 line-through" : "text-white"}`}
+            >
+              {task.title}
+            </h2>
+          )}
+        </div>
+
+        <Separator className="bg-zinc-800/50" />
+
+        {/* Properties */}
+        <div className="px-5 py-4 space-y-3">
+          <PropRow label="Status" icon={<Clock className="h-3.5 w-3.5" />}>
+            <Select value={task.status} onValueChange={(v) => onUpdate(task.id, { status: v })}>
+              <SelectTrigger className="h-7 bg-zinc-900 border-zinc-800 text-zinc-300 text-xs w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800">
+                <SelectItem value="open">To Do</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </PropRow>
+
+          <PropRow label="Priority" icon={<Flag className="h-3.5 w-3.5" />}>
+            <Select value={task.priority} onValueChange={(v) => onUpdate(task.id, { priority: v })}>
+              <SelectTrigger className="h-7 bg-zinc-900 border-zinc-800 text-zinc-300 text-xs w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800">
+                <SelectItem value="high"><span className="flex items-center gap-2"><ArrowUp className="h-3 w-3 text-red-400" /> High</span></SelectItem>
+                <SelectItem value="medium"><span className="flex items-center gap-2"><ArrowRight className="h-3 w-3 text-amber-400" /> Medium</span></SelectItem>
+                <SelectItem value="low"><span className="flex items-center gap-2"><ArrowDown className="h-3 w-3 text-blue-400" /> Low</span></SelectItem>
+              </SelectContent>
+            </Select>
+          </PropRow>
+
+          <PropRow label="Assignee" icon={<User className="h-3.5 w-3.5" />}>
+            <div className="w-40">
+              <ContactAutocomplete
+                value={task.assignedName || ""}
+                onChange={(v) => onUpdate(task.id, { assignedName: v || null })}
+                onSelect={(c) => onUpdate(task.id, { assignedName: c.name })}
+                placeholder="Assign..."
+                allowFreeText
+                className="h-7 text-xs"
+              />
+            </div>
+          </PropRow>
+
+          <PropRow label="Category" icon={<FolderOpen className="h-3.5 w-3.5" />}>
+            <Select value={task.category || "none"} onValueChange={(v) => onUpdate(task.id, { category: v === "none" ? null : v })}>
+              <SelectTrigger className="h-7 bg-zinc-900 border-zinc-800 text-zinc-300 text-xs w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800">
+                <SelectItem value="none">No Category</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </PropRow>
+
+          <PropRow label="Due Date" icon={<Calendar className="h-3.5 w-3.5" />}>
+            <Input
+              type="date"
+              value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""}
+              onChange={(e) => onUpdate(task.id, { dueDate: e.target.value || null })}
+              className="h-7 bg-zinc-900 border-zinc-800 text-zinc-300 text-xs w-36"
+              style={{ colorScheme: "dark" }}
+            />
+          </PropRow>
+
+          <PropRow label="Created" icon={<Clock className="h-3.5 w-3.5" />}>
+            <span className="text-xs text-zinc-500">
+              {new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+          </PropRow>
+        </div>
+
+        <Separator className="bg-zinc-800/50" />
+
+        {/* Description */}
+        <div className="px-5 py-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Edit3 className="h-3 w-3 text-zinc-600" />
+            <span className="text-xs font-medium text-zinc-500">Description</span>
+          </div>
+          {editingField === "description" ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 text-white text-sm min-h-20"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => saveField("description", editDescription || null)} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs h-6">Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingField(null)} className="text-zinc-400 text-xs h-6">Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => { setEditDescription(task.description || ""); setEditingField("description"); }}
+              className="p-2.5 rounded-lg bg-zinc-900/50 border border-zinc-800/50 cursor-pointer hover:border-zinc-700 transition-colors min-h-12"
+            >
+              {task.description ? (
+                <p className="text-xs text-zinc-300 whitespace-pre-wrap">{task.description}</p>
+              ) : (
+                <p className="text-xs text-zinc-700 italic">Add description...</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Notes */}
+        <div className="px-5 pb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="h-3 w-3 text-zinc-600" />
+            <span className="text-xs font-medium text-zinc-500">Notes</span>
+          </div>
+          {editingField === "notes" ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 text-white text-sm min-h-24"
+                placeholder="Add notes..."
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => saveField("notes", editNotes || null)} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs h-6">Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingField(null)} className="text-zinc-400 text-xs h-6">Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => { setEditNotes(task.notes || ""); setEditingField("notes"); }}
+              className="p-2.5 rounded-lg bg-zinc-900/50 border border-zinc-800/50 cursor-pointer hover:border-zinc-700 transition-colors min-h-12"
+            >
+              {task.notes ? (
+                <p className="text-xs text-zinc-300 whitespace-pre-wrap">{task.notes}</p>
+              ) : (
+                <p className="text-xs text-zinc-700 italic">Add notes...</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Separator className="bg-zinc-800/50" />
+
+        {/* Delete */}
+        <div className="px-5 py-4">
+          <Button
+            variant="ghost"
+            className="text-red-400/60 hover:text-red-400 hover:bg-red-500/10 w-full text-xs h-8"
+            onClick={() => {
+              if (confirm("Delete this task?")) {
+                onDelete(task.id);
+                onOpenChange(false);
+              }
+            }}
+          >
+            <Trash2 className="h-3 w-3 mr-1.5" />
+            Delete Task
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-function PropertyRow({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+function PropRow({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2 text-zinc-500">
+      <div className="flex items-center gap-2 text-zinc-600">
         {icon}
-        <span className="text-sm">{label}</span>
+        <span className="text-xs">{label}</span>
       </div>
       {children}
     </div>
@@ -682,175 +1048,105 @@ function PropertyRow({ label, icon, children }: { label: string; icon: React.Rea
 }
 
 // ============================================================================
-// TASK ROW - Individual task in list view (clickable)
+// NEW TASK DIALOG (full form for complex task creation)
 // ============================================================================
 
-function TaskRow({
-  task,
-  onToggle,
-  onClick,
-}: {
-  task: any;
-  onToggle: () => void;
-  onClick: () => void;
-}) {
-  const isCompleted = task.status === "completed";
-  const priorityConf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
-  const PriorityIcon = priorityConf.icon;
-
-  return (
-    <div
-      onClick={onClick}
-      className={`group flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
-        isCompleted
-          ? "bg-zinc-900/20 border border-zinc-800/40"
-          : "bg-zinc-900/50 border border-zinc-800/60 hover:border-yellow-600/30 hover:bg-zinc-900/80"
-      }`}
-    >
-      <Checkbox
-        checked={isCompleted}
-        onCheckedChange={onToggle}
-        onClick={(e) => e.stopPropagation()}
-        className="border-zinc-600 data-[state=checked]:bg-yellow-600 data-[state=checked]:border-yellow-600"
-      />
-      <PriorityIcon className={`h-3.5 w-3.5 flex-shrink-0 ${priorityConf.color}`} />
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${isCompleted ? "text-zinc-500 line-through" : "text-white"}`}>
-          {task.title}
-        </p>
-        {task.description && (
-          <p className="text-xs text-zinc-600 line-clamp-1 mt-0.5">{task.description}</p>
-        )}
-      </div>
-      {task.category && (
-        <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-xs hidden sm:flex">
-          {task.category}
-        </Badge>
-      )}
-      {task.assignedName && (
-        <div className="flex items-center gap-1.5 flex-shrink-0 hidden sm:flex">
-          <div className="h-5 w-5 rounded-full bg-zinc-800 flex items-center justify-center">
-            <span className="text-[10px] font-semibold text-yellow-600">{task.assignedName.charAt(0)}</span>
-          </div>
-          <span className="text-xs text-zinc-500">{task.assignedName}</span>
-        </div>
-      )}
-      {task.dueDate && (
-        <span className={`text-xs flex-shrink-0 hidden md:block ${
-          new Date(task.dueDate) < new Date() && task.status !== "completed" ? "text-red-400" : "text-zinc-600"
-        }`}>
-          {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-        </span>
-      )}
-      {task.meetingId && (
-        <Link href={`/meeting/${task.meetingId}`} onClick={(e: any) => e.stopPropagation()}>
-          <Badge variant="outline" className="border-zinc-800 text-zinc-600 text-xs cursor-pointer hover:text-yellow-500 hover:border-yellow-600/30">
-            <Calendar className="h-3 w-3 mr-1" />
-            Meeting
-          </Badge>
-        </Link>
-      )}
-      <ChevronRight className="h-4 w-4 text-zinc-700 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
-    </div>
-  );
-}
-
-// ============================================================================
-// NEW TASK FORM
-// ============================================================================
-
-function NewTaskForm({ categories, onSuccess }: { categories: string[]; onSuccess: () => void }) {
+function NewTaskDialog({ categories, open, onOpenChange }: { categories: string[]; open: boolean; onOpenChange: (v: boolean) => void }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
-  const [assignedName, setAssignedName] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
+  const [assignedName, setAssignedName] = useState("");
+  const [category, setCategory] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const utils = trpc.useUtils();
 
   const createTask = trpc.tasks.create.useMutation({
     onSuccess: () => {
       toast.success("Task created");
-      onSuccess();
+      utils.tasks.list.invalidate();
+      onOpenChange(false);
+      setTitle(""); setDescription(""); setPriority("medium"); setAssignedName(""); setCategory(""); setDueDate("");
     },
     onError: () => toast.error("Failed to create task"),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    createTask.mutate({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      priority,
-      assignedName: assignedName || undefined,
-      category: category || undefined,
-      dueDate: dueDate || undefined,
-    });
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        placeholder="Task title..."
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-        autoFocus
-      />
-      <Textarea
-        placeholder="Description (optional)..."
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 min-h-20"
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
-          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-300">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            <SelectItem value="low">Low Priority</SelectItem>
-            <SelectItem value="medium">Medium Priority</SelectItem>
-            <SelectItem value="high">High Priority</SelectItem>
-          </SelectContent>
-        </Select>
-        <ContactAutocomplete
-          value={assignedName}
-          onChange={setAssignedName}
-          onSelect={(c) => setAssignedName(c.name)}
-          placeholder="Assign to..."
-          allowFreeText
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-300">
-            <SelectValue placeholder="Category..." />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            <SelectItem value="none">No Category</SelectItem>
-            {categories.map(cat => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          className="bg-zinc-800 border-zinc-700 text-zinc-300"
-        />
-      </div>
-      <div className="flex justify-end gap-3 pt-2">
-        <Button
-          type="submit"
-          disabled={!title.trim() || createTask.isPending}
-          className="bg-yellow-600 hover:bg-yellow-500 text-black font-medium"
-        >
-          {createTask.isPending ? "Creating..." : "Create Task"}
-        </Button>
-      </div>
-    </form>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-white text-base">New Task</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (!title.trim()) return;
+          createTask.mutate({
+            title: title.trim(),
+            description: description.trim() || undefined,
+            priority,
+            assignedName: assignedName || undefined,
+            category: category || undefined,
+            dueDate: dueDate || undefined,
+          });
+        }} className="space-y-3">
+          <Input
+            placeholder="Task title..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="bg-zinc-900 border-zinc-800 text-white text-sm"
+            autoFocus
+          />
+          <Textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="bg-zinc-900 border-zinc-800 text-white text-sm min-h-16"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
+              <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-300 text-xs h-8">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800">
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
+            <ContactAutocomplete
+              value={assignedName}
+              onChange={setAssignedName}
+              onSelect={(c) => setAssignedName(c.name)}
+              placeholder="Assign to..."
+              allowFreeText
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Select value={category || "none"} onValueChange={(v) => setCategory(v === "none" ? "" : v)}>
+              <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-300 text-xs h-8">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800">
+                <SelectItem value="none">No Category</SelectItem>
+                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="bg-zinc-900 border-zinc-800 text-zinc-300 text-xs h-8"
+              style={{ colorScheme: "dark" }}
+            />
+          </div>
+          <div className="flex justify-end pt-1">
+            <Button type="submit" disabled={!title.trim() || createTask.isPending} className="bg-yellow-600 hover:bg-yellow-500 text-black font-medium text-xs h-8">
+              {createTask.isPending ? "Creating..." : "Create Task"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -867,8 +1163,12 @@ export default function ToDo() {
   const [filterPerson, setFilterPerson] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterDue, setFilterDue] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [focusView, setFocusView] = useState<string>("today");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [showCompleted, setShowCompleted] = useState(false);
   const [showNewTask, setShowNewTask] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
@@ -882,10 +1182,7 @@ export default function ToDo() {
     onError: () => toast.error("Failed to update task"),
   });
   const deleteTask = trpc.tasks.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Task deleted");
-      utils.tasks.list.invalidate();
-    },
+    onSuccess: () => { toast.success("Task deleted"); utils.tasks.list.invalidate(); },
     onError: () => toast.error("Failed to delete task"),
   });
   const bulkDeleteTask = trpc.tasks.bulkDelete.useMutation({
@@ -898,24 +1195,42 @@ export default function ToDo() {
     onError: () => toast.error("Failed to delete tasks"),
   });
 
-  const toggleSelectId = (id: number) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
 
-  const selectAllFiltered = () => {
-    setSelectedIds(new Set(filteredTasks.map(t => t.id)));
-  };
+      if (e.key === "n" || e.key === "N") { e.preventDefault(); setShowQuickAdd(true); }
+      if (e.key === "/") { e.preventDefault(); document.querySelector<HTMLInputElement>('[placeholder*="Search"]')?.focus(); }
+      if (e.key === "s" || e.key === "S") { e.preventDefault(); setSelectMode(p => !p); }
+      if (e.key === "Escape") { setShowQuickAdd(false); setSelectMode(false); setSelectedIds(new Set()); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
-  const handleBulkDelete = () => {
-    if (selectedIds.size === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedIds.size} task(s)?`)) {
-      bulkDeleteTask.mutate({ ids: Array.from(selectedIds) });
-    }
-  };
+  // All categories
+  const allCategories = useMemo(() => {
+    const set = new Set(DEFAULT_CATEGORIES);
+    categories?.forEach(c => { if (c.category) set.add(c.category); });
+    allTasks?.forEach(t => { if (t.category) set.add(t.category); });
+    return Array.from(set).sort();
+  }, [categories, allTasks]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const tasks = filterPerson === "all" ? (allTasks || []) : (allTasks || []).filter(t => t.assignedName?.toLowerCase().startsWith(filterPerson.toLowerCase()));
+    const now = new Date();
+    return {
+      total: tasks.length,
+      open: tasks.filter(t => t.status === "open").length,
+      inProgress: tasks.filter(t => t.status === "in_progress").length,
+      completed: tasks.filter(t => t.status === "completed").length,
+      highPriority: tasks.filter(t => t.priority === "high" && t.status !== "completed").length,
+      overdue: tasks.filter(t => t.dueDate && new Date(t.dueDate) < now && t.status !== "completed").length,
+    };
+  }, [allTasks, filterPerson]);
 
   // Filter tasks
   const filteredTasks = useMemo(() => {
@@ -923,41 +1238,67 @@ export default function ToDo() {
     const now = new Date();
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
     const tomorrowEnd = new Date(todayEnd.getTime() + 86400000);
-    const twoDaysEnd = new Date(todayEnd.getTime() + 2 * 86400000);
     const weekEnd = new Date(todayEnd.getTime() + 7 * 86400000);
 
     return allTasks.filter(t => {
+      // Hide completed unless toggled
+      if (!showCompleted && t.status === "completed") return false;
+
+      // Search
       if (searchTerm) {
         const lower = searchTerm.toLowerCase();
         if (!t.title.toLowerCase().includes(lower) && !t.description?.toLowerCase().includes(lower)) return false;
       }
-      if (filterPerson !== "all" && !(t.assignedName && t.assignedName.toLowerCase().startsWith(filterPerson.toLowerCase()))) return false;
-      if (filterCategory !== "all" && t.category !== filterCategory) return false;
-      
-      // Due date filter
-      if (filterDue !== "all" && t.status !== "completed") {
-        const dueDate = t.dueDate ? new Date(t.dueDate) : null;
-        if (filterDue === "overdue") {
-          if (!dueDate || dueDate >= now) return false;
-        } else if (filterDue === "today") {
-          if (!dueDate || dueDate > todayEnd || dueDate < now) return false;
-        } else if (filterDue === "tomorrow") {
-          if (!dueDate || dueDate > tomorrowEnd || dueDate <= todayEnd) return false;
-        } else if (filterDue === "2days") {
-          if (!dueDate || dueDate > twoDaysEnd) return false;
-        } else if (filterDue === "week") {
-          if (!dueDate || dueDate > weekEnd) return false;
-        } else if (filterDue === "no_date") {
-          if (dueDate) return false;
-        }
-      } else if (filterDue !== "all" && t.status === "completed") {
-        return false; // Hide completed tasks when filtering by due date
-      }
-      return true;
-    });
-  }, [allTasks, searchTerm, filterPerson, filterCategory, filterDue]);
 
-  // Group by status for Kanban
+      // Person filter
+      if (filterPerson !== "all" && !(t.assignedName?.toLowerCase().startsWith(filterPerson.toLowerCase()))) return false;
+
+      // Priority filter
+      if (filterPriority !== "all" && t.priority !== filterPriority) return false;
+
+      // Category filter
+      if (filterCategory !== "all" && t.category !== filterCategory) return false;
+
+      // Due date filter
+      if (filterDue !== "all") {
+        const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+        if (filterDue === "overdue") { if (!dueDate || dueDate >= now) return false; }
+        else if (filterDue === "today") { if (!dueDate || dueDate > todayEnd || dueDate < now) return false; }
+        else if (filterDue === "tomorrow") { if (!dueDate || dueDate > tomorrowEnd || dueDate <= todayEnd) return false; }
+        else if (filterDue === "week") { if (!dueDate || dueDate > weekEnd) return false; }
+        else if (filterDue === "no_date") { if (dueDate) return false; }
+      }
+
+      // Focus view
+      if (focusView === "today") {
+        // Show: overdue + due today + high priority
+        const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+        const isOverdue = dueDate && dueDate < now;
+        const isDueToday = dueDate && dueDate >= now && dueDate <= todayEnd;
+        const isHighPriority = t.priority === "high";
+        if (!isOverdue && !isDueToday && !isHighPriority) return false;
+      } else if (focusView === "week") {
+        const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+        const isWithinWeek = dueDate && dueDate <= weekEnd;
+        const isHighPriority = t.priority === "high";
+        if (!isWithinWeek && !isHighPriority) return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      // Sort: high priority first, then overdue, then by due date
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const pa = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1;
+      const pb = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1;
+      if (pa !== pb) return pa - pb;
+      if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return 0;
+    });
+  }, [allTasks, searchTerm, filterPerson, filterCategory, filterDue, filterPriority, focusView, showCompleted]);
+
+  // Kanban groups
   const tasksByStatus = useMemo(() => {
     const groups: Record<string, any[]> = { open: [], in_progress: [], completed: [] };
     for (const t of filteredTasks) {
@@ -968,36 +1309,8 @@ export default function ToDo() {
     return groups;
   }, [filteredTasks]);
 
-  // All known categories
-  const allCategories = useMemo(() => {
-    const set = new Set(DEFAULT_CATEGORIES);
-    categories?.forEach(c => { if (c.category) set.add(c.category); });
-    allTasks?.forEach(t => { if (t.category) set.add(t.category); });
-    return Array.from(set).sort();
-  }, [categories, allTasks]);
-
-  // Compute stats
-  const stats = useMemo(() => {
-    const tasks = filterPerson === "all" ? (allTasks || []) : (allTasks || []).filter(t => t.assignedName && t.assignedName.toLowerCase().startsWith(filterPerson.toLowerCase()));
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-    return {
-      total: tasks.length,
-      open: tasks.filter(t => t.status === "open").length,
-      inProgress: tasks.filter(t => t.status === "in_progress").length,
-      completed: tasks.filter(t => t.status === "completed").length,
-      completedToday: tasks.filter(t => t.status === "completed" && t.completedAt && new Date(t.completedAt).toLocaleDateString('en-CA') === todayStr).length,
-      highPriority: tasks.filter(t => t.priority === "high" && t.status !== "completed").length,
-      overdue: tasks.filter(t => t.dueDate && new Date(t.dueDate) < now && t.status !== "completed").length,
-    };
-  }, [allTasks, filterPerson]);
-
   const toggleComplete = (task: any) => {
-    updateTask.mutate({
-      id: task.id,
-      status: task.status === "completed" ? "open" : "completed",
-    });
+    updateTask.mutate({ id: task.id, status: task.status === "completed" ? "open" : "completed" });
   };
 
   const handleTaskClick = (task: any) => {
@@ -1007,243 +1320,164 @@ export default function ToDo() {
 
   const handleTaskUpdate = (id: number, updates: any) => {
     updateTask.mutate({ id, ...updates });
-    if (selectedTask?.id === id) {
-      setSelectedTask((prev: any) => prev ? { ...prev, ...updates } : prev);
-    }
+    if (selectedTask?.id === id) setSelectedTask((prev: any) => prev ? { ...prev, ...updates } : prev);
   };
 
-  // Drag and drop handlers
+  // Drag handlers
   const handleDragStart = useCallback((e: React.DragEvent, task: any) => {
     draggedTaskRef.current = task;
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", task.id.toString());
   }, []);
 
-  const handleDragOver = useCallback((_e: React.DragEvent, columnId: string) => {
-    setDragOverColumn(columnId);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setDragOverColumn(null);
-  }, []);
-
   const handleDrop = useCallback((_e: React.DragEvent, targetStatus: string) => {
     setDragOverColumn(null);
     const task = draggedTaskRef.current;
     if (task && task.status !== targetStatus) {
-      updateTask.mutate({ id: task.id, status: targetStatus as "open" | "in_progress" | "completed" });
-      toast.success(`Moved to ${KANBAN_COLUMNS.find(c => c.id === targetStatus)?.label || targetStatus}`);
+      updateTask.mutate({ id: task.id, status: targetStatus as any });
+      toast.success(`Moved to ${KANBAN_COLUMNS.find(c => c.id === targetStatus)?.label}`);
     }
     draggedTaskRef.current = null;
   }, [updateTask]);
 
+  // Loading
   if (isLoading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-4">
-        <Skeleton className="h-10 w-64 bg-zinc-800/50" />
-        <Skeleton className="h-32 bg-zinc-800/50 rounded-lg" />
-        <div className="grid grid-cols-5 gap-3">
-          {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-24 bg-zinc-800/50 rounded-lg" />)}
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 bg-zinc-800/50 rounded-lg" />)}
+      <div className="p-5 max-w-6xl mx-auto space-y-3">
+        <Skeleton className="h-8 w-80 bg-zinc-800/50" />
+        <Skeleton className="h-8 w-full bg-zinc-800/50" />
+        <div className="space-y-1">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <Skeleton key={i} className="h-10 bg-zinc-800/30 rounded-lg" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Tasks</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            {filterPerson !== "all" ? `${filterPerson}'s tasks` : "Team task management"}
-          </p>
-        </div>
+    <div className="p-5 max-w-6xl mx-auto">
+      {/* Minimal header */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          {/* Bulk actions */}
-          {selectMode ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400">{selectedIds.size} selected</span>
-              <Button size="sm" variant="outline" onClick={selectAllFiltered} className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-xs">
-                Select All ({filteredTasks.length})
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleBulkDelete} disabled={selectedIds.size === 0 || bulkDeleteTask.isPending}
-                className="border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs">
-                <Trash2 className="h-3 w-3 mr-1" />
-                {bulkDeleteTask.isPending ? "Deleting..." : `Delete (${selectedIds.size})`}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }} className="text-zinc-400 text-xs">
-                Cancel
+          <h1 className="text-lg font-semibold text-white">Tasks</h1>
+          <span className="text-xs text-zinc-600">
+            {filterPerson !== "all" ? `${filterPerson}'s tasks` : ""}
+          </span>
+        </div>
+        {/* Keyboard hint */}
+        <div className="hidden md:flex items-center gap-2 text-[10px] text-zinc-700">
+          <kbd className="px-1 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-600">N</kbd>
+          <span>new</span>
+          <kbd className="px-1 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-600">/</kbd>
+          <span>search</span>
+          <kbd className="px-1 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-600">S</kbd>
+          <span>select</span>
+        </div>
+      </div>
+
+      {/* Command Bar */}
+      <CommandBar
+        stats={stats}
+        focusView={focusView}
+        setFocusView={setFocusView}
+        viewMode={viewMode}
+        setViewMode={(v) => setViewMode(v as any)}
+        showCompleted={showCompleted}
+        setShowCompleted={setShowCompleted}
+        selectMode={selectMode}
+        setSelectMode={(v) => { setSelectMode(v); if (!v) setSelectedIds(new Set()); }}
+        selectedCount={selectedIds.size}
+        onSelectAll={() => setSelectedIds(new Set(filteredTasks.map(t => t.id)))}
+        onBulkDelete={() => {
+          if (selectedIds.size > 0 && confirm(`Delete ${selectedIds.size} task(s)?`)) {
+            bulkDeleteTask.mutate({ ids: Array.from(selectedIds) });
+          }
+        }}
+        bulkDeleting={bulkDeleteTask.isPending}
+        filteredCount={filteredTasks.length}
+        onNewTask={() => setShowNewTask(true)}
+      />
+
+      {/* Filter Bar */}
+      <FilterBar
+        filterPerson={filterPerson}
+        setFilterPerson={setFilterPerson}
+        filterCategory={filterCategory}
+        setFilterCategory={setFilterCategory}
+        filterDue={filterDue}
+        setFilterDue={setFilterDue}
+        filterPriority={filterPriority}
+        setFilterPriority={setFilterPriority}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        allCategories={allCategories}
+        allTasks={allTasks || []}
+        overdue={stats.overdue}
+      />
+
+      {/* Task count */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] text-zinc-600">{filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      {/* Inline Quick Add */}
+      <AnimatePresence>
+        {showQuickAdd && (
+          <InlineQuickAdd
+            onClose={() => setShowQuickAdd(false)}
+            categories={allCategories}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Content */}
+      {viewMode === "list" ? (
+        <div className="space-y-0.5">
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-16">
+              <CheckSquare className="h-10 w-10 mx-auto mb-3 text-zinc-800" />
+              <p className="text-sm text-zinc-600 mb-1">
+                {focusView === "today" ? "Nothing urgent for today" : focusView === "week" ? "Clear for the week" : "No tasks found"}
+              </p>
+              <p className="text-xs text-zinc-700 mb-4">
+                {focusView !== "all" && "Switch to \"All\" to see everything"}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowQuickAdd(true)}
+                className="text-yellow-600 hover:text-yellow-500 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add Task
               </Button>
             </div>
           ) : (
-            <Button size="sm" variant="outline" onClick={() => setSelectMode(true)} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800 text-xs">
-              <CheckSquare className="h-3 w-3 mr-1.5" />
-              Select
-            </Button>
+            <AnimatePresence>
+              {filteredTasks.map(task => (
+                <CompactTaskRow
+                  key={task.id}
+                  task={task}
+                  onToggle={() => toggleComplete(task)}
+                  onClick={() => handleTaskClick(task)}
+                  selectMode={selectMode}
+                  selected={selectedIds.has(task.id)}
+                  onSelect={() => {
+                    setSelectedIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(task.id)) next.delete(task.id); else next.add(task.id);
+                      return next;
+                    });
+                  }}
+                />
+              ))}
+            </AnimatePresence>
           )}
-
-          {/* View toggle */}
-          <div className="flex bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={`p-2 transition-colors ${viewMode === "kanban" ? "bg-yellow-600/20 text-yellow-500" : "text-zinc-500 hover:text-white"}`}
-              title="Kanban Board"
-            >
-              <Columns3 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2 transition-colors ${viewMode === "list" ? "bg-yellow-600/20 text-yellow-500" : "text-zinc-500 hover:text-white"}`}
-              title="List View"
-            >
-              <ListFilter className="h-4 w-4" />
-            </button>
-          </div>
-
-          <Dialog open={showNewTask} onOpenChange={setShowNewTask}>
-            <DialogTrigger asChild>
-              <Button className="bg-yellow-600 hover:bg-yellow-500 text-black font-medium">
-                <Plus className="h-4 w-4 mr-2" />
-                New Task
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-white">Create Task</DialogTitle>
-              </DialogHeader>
-              <NewTaskForm
-                categories={allCategories}
-                onSuccess={() => {
-                  setShowNewTask(false);
-                  utils.tasks.list.invalidate();
-                }}
-              />
-            </DialogContent>
-          </Dialog>
         </div>
-      </div>
-
-      {/* Dashboard Stats */}
-      <TaskDashboard stats={stats} personFilter={filterPerson} />
-
-      {/* Filters Row */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        {/* Team Member Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <User className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
-          <button
-            onClick={() => setFilterPerson("all")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
-              ${filterPerson === "all"
-                ? "bg-yellow-600/20 text-yellow-500 border border-yellow-600/30"
-                : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"}`}
-          >
-            All Team
-          </button>
-          {TEAM_MEMBERS.map(name => {
-            const personTasks = allTasks?.filter(t => t.assignedName && t.assignedName.toLowerCase().startsWith(name.toLowerCase())) || [];
-            const personCompleted = personTasks.filter(t => t.status === "completed").length;
-            const personTotal = personTasks.length;
-            return (
-              <button
-                key={name}
-                onClick={() => setFilterPerson(filterPerson === name ? "all" : name)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5
-                  ${filterPerson === name
-                    ? "bg-yellow-600/20 text-yellow-500 border border-yellow-600/30"
-                    : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700"}`}
-              >
-                <span className="h-4 w-4 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-yellow-600">
-                  {name.charAt(0)}
-                </span>
-                {name}
-                {personTotal > 0 && (
-                  <span className="text-[10px] text-zinc-600">{personCompleted}/{personTotal}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="h-5 w-px bg-zinc-800 hidden md:block" />
-
-        {/* Due Date Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <Calendar className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
-          {[
-            { id: "all", label: "All" },
-            { id: "overdue", label: `Overdue${stats.overdue > 0 ? ` (${stats.overdue})` : ""}`, urgent: stats.overdue > 0 },
-            { id: "today", label: "Due Today" },
-            { id: "tomorrow", label: "Tomorrow" },
-            { id: "2days", label: "Next 2 Days" },
-            { id: "week", label: "This Week" },
-            { id: "no_date", label: "No Date" },
-          ].map(opt => (
-            <button
-              key={opt.id}
-              onClick={() => setFilterDue(filterDue === opt.id ? "all" : opt.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
-                ${filterDue === opt.id
-                  ? opt.urgent ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-yellow-600/20 text-yellow-500 border border-yellow-600/30"
-                  : opt.urgent ? "bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse" : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-zinc-700"}`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="h-5 w-px bg-zinc-800 hidden md:block" />
-
-        {/* Category Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <Tag className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
-          <button
-            onClick={() => setFilterCategory("all")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
-              ${filterCategory === "all"
-                ? "bg-zinc-700 text-white"
-                : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-zinc-700"}`}
-          >
-            All
-          </button>
-          {allCategories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setFilterCategory(filterCategory === cat ? "all" : cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
-                ${filterCategory === cat
-                  ? "bg-zinc-700 text-white"
-                  : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-zinc-700"}`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600"
-          />
-        </div>
-        <p className="text-xs text-zinc-500 whitespace-nowrap">{filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}</p>
-      </div>
-
-      {/* Kanban Board View */}
-      {viewMode === "kanban" ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      ) : (
+        /* Kanban View */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {KANBAN_COLUMNS.map(column => (
-            <KanbanColumn
+            <CompactKanbanColumn
               key={column.id}
               column={column}
               tasks={tasksByStatus[column.id] || []}
@@ -1251,48 +1485,10 @@ export default function ToDo() {
               onTaskClick={handleTaskClick}
               onDragStart={handleDragStart}
               dragOverColumn={dragOverColumn}
-              onDragOver={(e) => handleDragOver(e, column.id)}
-              onDragLeave={handleDragLeave}
+              onDragOver={(e) => setDragOverColumn(column.id)}
+              onDragLeave={() => setDragOverColumn(null)}
             />
           ))}
-        </div>
-      ) : (
-        /* List View */
-        <div className="space-y-1">
-          {filteredTasks.length === 0 ? (
-            <div className="text-center py-16">
-              <CheckSquare className="h-12 w-12 mx-auto mb-3 text-zinc-700" />
-              <p className="text-zinc-500">No tasks found</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowNewTask(true)}
-                className="text-yellow-600 hover:text-yellow-500 mt-2"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Create Task
-              </Button>
-            </div>
-          ) : (
-            filteredTasks.map(task => (
-              <div key={task.id} className="flex items-center gap-2">
-                {selectMode && (
-                  <Checkbox
-                    checked={selectedIds.has(task.id)}
-                    onCheckedChange={() => toggleSelectId(task.id)}
-                    className="border-zinc-600 data-[state=checked]:bg-yellow-600 data-[state=checked]:border-yellow-600 flex-shrink-0"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <TaskRow
-                    task={task}
-                    onToggle={() => toggleComplete(task)}
-                    onClick={() => selectMode ? toggleSelectId(task.id) : handleTaskClick(task)}
-                  />
-                </div>
-              </div>
-            ))
-          )}
         </div>
       )}
 
@@ -1303,10 +1499,14 @@ export default function ToDo() {
         onOpenChange={setDetailOpen}
         categories={allCategories}
         onUpdate={handleTaskUpdate}
-        onDelete={(id) => {
-          deleteTask.mutate({ id });
-          setDetailOpen(false);
-        }}
+        onDelete={(id) => { deleteTask.mutate({ id }); setDetailOpen(false); }}
+      />
+
+      {/* New Task Dialog */}
+      <NewTaskDialog
+        categories={allCategories}
+        open={showNewTask}
+        onOpenChange={setShowNewTask}
       />
     </div>
   );

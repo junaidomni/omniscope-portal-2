@@ -1333,3 +1333,47 @@
 - [x] Loading state with spinner + pulse animation during LLM extraction
 - [x] Write vitest tests for task extraction (20 tests)
 - [x] All 459 tests passing across 26 files
+
+## v37 — To-Do Module Redesign (Apple/Tesla Vision)
+
+### Layout Overhaul
+- [x] Collapse Team Progress + 5 stat boxes into a single compact command bar (1 row max)
+- [x] Inline micro-stats: open/overdue/high/completed ratio — no big cards
+- [x] Move filters into a unified smart filter bar (team, date, category, priority as popover pills)
+- [x] Maximize vertical space for actual task content
+
+### New "My Focus" Smart View
+- [x] Default view: "Today" — shows overdue + due today + high priority unassigned
+- [x] Quick toggle: Today / This Week / All (pill buttons in command bar)
+- [x] Focus mode: completed tasks hidden in Today/Week, visible in All
+
+### Inline Quick-Add
+- [x] Press N or click + Task button to add task inline at top of list
+- [x] Auto-focus title field, tab to priority/assignee/due date
+- [x] Press Enter to create, Escape to cancel
+
+### Redesigned Task Cards (Compact)
+- [x] Single-line 40px task rows in list view (not card-per-task)
+- [x] Checkbox + title + priority dot + assignee avatar + due date + category pill — all in one row
+- [x] Click to expand inline detail panel with description, notes, source link
+- [x] Hover actions: complete, edit, delete
+
+### Improved Kanban Board
+- [x] Compact kanban cards (less padding, tighter typography)
+- [x] View toggle: List / Kanban (icons in command bar)
+- [x] Column counts in header
+
+### Keyboard Shortcuts
+- [x] N = new task, / = search focus
+- [x] Escape to close expanded task
+
+### Visual Polish
+- [x] Subtle animations on task completion (checkbox fill + strikethrough fade)
+- [x] Gold accent for overdue indicators and warning triangles
+- [x] Clean typography hierarchy with proper weight hierarchy
+- [x] Minimal borders, use spacing and subtle backgrounds for separation
+- [x] Cleaned up 12 test/junk tasks from database
+
+### Testing
+- [x] Write vitest tests for new task features (34 tests)
+- [x] All 493 tests passing across 27 files
