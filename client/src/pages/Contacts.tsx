@@ -153,6 +153,15 @@ export default function Contacts() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Merge dialog state
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [mergeSourceId, setMergeSourceId] = useState<number | null>(null);
+  const [mergeTargetId, setMergeTargetId] = useState<number | null>(null);
+  const [mergeSearch, setMergeSearch] = useState("");
+  // Alias state
+  const [newAliasName, setNewAliasName] = useState("");
+  const [showAliasInput, setShowAliasInput] = useState(false);
+
   // Selected contact profile data
   const { data: selectedProfile, isLoading: profileLoading } = trpc.contacts.getProfile.useQuery(
     { id: selectedId! },
@@ -167,6 +176,10 @@ export default function Contacts() {
     { enabled: !!selectedId }
   );
   const { data: linkedEmployee } = trpc.contacts.getLinkedEmployee.useQuery(
+    { contactId: selectedId! },
+    { enabled: !!selectedId }
+  );
+  const { data: aliases = [] } = trpc.contacts.getAliases.useQuery(
     { contactId: selectedId! },
     { enabled: !!selectedId }
   );
@@ -276,6 +289,39 @@ export default function Contacts() {
     onSuccess: () => {
       toast.success("Document deleted");
       utils.contacts.getDocuments.invalidate({ contactId: selectedId! });
+    },
+  });
+
+  // Merge mutation
+  const mergeMutation = trpc.contacts.mergeContacts.useMutation({
+    onSuccess: () => {
+      toast.success("Contacts merged successfully");
+      utils.contacts.list.invalidate();
+      setMergeDialogOpen(false);
+      setMergeSourceId(null);
+      setMergeTargetId(null);
+      setMergeSearch("");
+      // If the merged-away contact was selected, clear selection
+      if (selectedId === mergeSourceId) setSelectedId(mergeTargetId);
+    },
+    onError: () => toast.error("Failed to merge contacts"),
+  });
+
+  // Alias mutations
+  const addAliasMutation = trpc.contacts.addAlias.useMutation({
+    onSuccess: () => {
+      toast.success("Alias added — future meetings will auto-link");
+      utils.contacts.getAliases.invalidate({ contactId: selectedId! });
+      setNewAliasName("");
+      setShowAliasInput(false);
+    },
+    onError: () => toast.error("Failed to add alias"),
+  });
+
+  const removeAliasMutation = trpc.contacts.removeAlias.useMutation({
+    onSuccess: () => {
+      toast.success("Alias removed");
+      utils.contacts.getAliases.invalidate({ contactId: selectedId! });
     },
   });
 
@@ -593,6 +639,10 @@ export default function Contacts() {
                           <div className="text-[10px] text-zinc-500 truncate">{contact.companyName || contact.organization || "Unknown org"}</div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          <button onClick={(e) => { e.stopPropagation(); setMergeSourceId(contact.id); setMergeDialogOpen(true); }}
+                            className="p-1 rounded hover:bg-purple-500/20 text-purple-400" title="Merge with existing">
+                            <Merge className="h-3.5 w-3.5" />
+                          </button>
                           <button onClick={(e) => { e.stopPropagation(); approveMutation.mutate({ id: contact.id }); }}
                             className="p-1 rounded hover:bg-emerald-500/20 text-emerald-400" title="Approve">
                             <Check className="h-3.5 w-3.5" />
@@ -708,6 +758,10 @@ export default function Contacts() {
                     </Button>
                   </>
                 )}
+                <Button variant="outline" size="sm" onClick={() => { setMergeSourceId(selectedId!); setMergeDialogOpen(true); }}
+                  className="border-purple-600/30 text-purple-400 hover:bg-purple-600/10 h-8 text-xs">
+                  <Merge className="h-3.5 w-3.5 mr-1.5" />Merge
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0">
@@ -842,6 +896,30 @@ export default function Contacts() {
                           <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pending</Badge>
                         )}
                       </div>
+                      {/* Aliases / Also Known As */}
+                      {(aliases.length > 0 || showAliasInput) && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] text-zinc-600 uppercase tracking-wider">aka</span>
+                          {aliases.map((a: any) => (
+                            <Badge key={a.id} variant="outline" className="bg-zinc-800/50 text-zinc-400 border-zinc-700 text-[10px] gap-1 pr-1">
+                              {a.aliasName}
+                              <button onClick={() => removeAliasMutation.mutate({ aliasId: a.id })} className="hover:text-red-400 ml-0.5"><X className="h-2.5 w-2.5" /></button>
+                            </Badge>
+                          ))}
+                          {showAliasInput ? (
+                            <div className="flex items-center gap-1">
+                              <Input value={newAliasName} onChange={e => setNewAliasName(e.target.value)} placeholder="Alias name..." className="h-6 text-xs bg-zinc-800 border-zinc-700 text-white w-32" onKeyDown={e => { if (e.key === 'Enter' && newAliasName.trim()) addAliasMutation.mutate({ contactId: selectedId!, aliasName: newAliasName.trim() }); if (e.key === 'Escape') { setShowAliasInput(false); setNewAliasName(''); } }} />
+                              <button onClick={() => { if (newAliasName.trim()) addAliasMutation.mutate({ contactId: selectedId!, aliasName: newAliasName.trim() }); }} className="text-emerald-400 hover:text-emerald-300"><Check className="h-3.5 w-3.5" /></button>
+                              <button onClick={() => { setShowAliasInput(false); setNewAliasName(''); }} className="text-zinc-500 hover:text-zinc-300"><X className="h-3.5 w-3.5" /></button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setShowAliasInput(true)} className="text-[10px] text-zinc-600 hover:text-yellow-500">+ add alias</button>
+                          )}
+                        </div>
+                      )}
+                      {aliases.length === 0 && !showAliasInput && (
+                        <button onClick={() => setShowAliasInput(true)} className="text-[10px] text-zinc-600 hover:text-yellow-500 mt-0.5">+ Add alias / secondary name</button>
+                      )}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-400">
                         {profile.title && <span className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5 text-yellow-600" />{profile.title}</span>}
                         {profile.organization && <span className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5 text-yellow-600" />{profile.organization}</span>}
@@ -890,7 +968,7 @@ export default function Contacts() {
             {/* ═══ AI INTELLIGENCE PANEL ═══ */}
             <Card className="bg-zinc-900/50 border-zinc-800 mb-5">
               <CardContent className="p-0">
-                <button onClick={() => setShowIntel(!showIntel)} className="w-full flex items-center justify-between p-4">
+                <div role="button" onClick={() => setShowIntel(!showIntel)} className="w-full flex items-center justify-between p-4 cursor-pointer">
                   <span className="flex items-center gap-2 text-sm font-semibold text-white">
                     <Sparkles className="h-4 w-4 text-yellow-600" />
                     AI Relationship Intelligence
@@ -904,7 +982,7 @@ export default function Contacts() {
                     </Button>
                     {showIntel ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
                   </div>
-                </button>
+                </div>
                 {showIntel && (
                   <div className="px-4 pb-4 border-t border-zinc-800/50">
                     {profile.aiSummary ? (
@@ -1262,6 +1340,97 @@ export default function Contacts() {
           </div>
         )}
       </div>
+
+      {/* ═══ MERGE CONTACT DIALOG ═══ */}
+      <Dialog open={mergeDialogOpen} onOpenChange={(open) => { setMergeDialogOpen(open); if (!open) { setMergeSourceId(null); setMergeTargetId(null); setMergeSearch(""); } }}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2"><Merge className="h-5 w-5 text-purple-400" />Merge Contact</DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const sourceContact = contacts?.find((c: any) => c.id === mergeSourceId);
+            const mergeTargets = (contacts || []).filter((c: any) =>
+              c.id !== mergeSourceId && c.approvalStatus !== "rejected" &&
+              (mergeSearch === "" || c.name?.toLowerCase().includes(mergeSearch.toLowerCase()) ||
+               c.email?.toLowerCase().includes(mergeSearch.toLowerCase()) ||
+               c.organization?.toLowerCase().includes(mergeSearch.toLowerCase()))
+            );
+            return (
+              <div className="space-y-4">
+                {sourceContact && (
+                  <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Merging this contact</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(sourceContact.name)} flex items-center justify-center text-white text-sm font-bold`}>
+                        {getInitials(sourceContact.name)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">{sourceContact.name}</p>
+                        <p className="text-xs text-zinc-500">{sourceContact.email || sourceContact.organization || "No details"}</p>
+                      </div>
+                      {sourceContact.approvalStatus === "pending" && <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">Pending</Badge>}
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <div className="flex-1 h-px bg-zinc-800" />
+                  <span className="text-xs">merge into</span>
+                  <div className="flex-1 h-px bg-zinc-800" />
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                  <Input value={mergeSearch} onChange={e => setMergeSearch(e.target.value)} placeholder="Search contacts to merge into..." className="pl-9 bg-zinc-800 border-zinc-700 text-white" />
+                </div>
+                <div className="max-h-60 overflow-y-auto space-y-1 border border-zinc-800 rounded-lg p-1">
+                  {mergeTargets.length === 0 ? (
+                    <p className="text-sm text-zinc-500 text-center py-4">No matching contacts found</p>
+                  ) : (
+                    mergeTargets.slice(0, 20).map((c: any) => (
+                      <button key={c.id} onClick={() => setMergeTargetId(c.id)}
+                        className={`w-full flex items-center gap-3 p-2.5 rounded-md text-left transition-colors ${
+                          mergeTargetId === c.id ? "bg-purple-500/20 border border-purple-500/30" : "hover:bg-zinc-800/50 border border-transparent"
+                        }`}>
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(c.name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                          {getInitials(c.name)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-white truncate">{c.name}</p>
+                          <p className="text-[10px] text-zinc-500 truncate">{c.email || c.organization || ""}</p>
+                        </div>
+                        {mergeTargetId === c.id && <Check className="h-4 w-4 text-purple-400 flex-shrink-0" />}
+                      </button>
+                    ))
+                  )}
+                </div>
+                {mergeTargetId && sourceContact && (() => {
+                  const target = contacts?.find((c: any) => c.id === mergeTargetId);
+                  return target ? (
+                    <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3">
+                      <p className="text-[10px] text-purple-400 uppercase tracking-wider mb-2">Merge Preview</p>
+                      <ul className="text-xs text-zinc-400 space-y-1">
+                        <li>{"\u2022"} <strong className="text-white">{sourceContact.name}</strong> will be saved as an alias of <strong className="text-white">{target.name}</strong></li>
+                        <li>{"\u2022"} All meetings and interactions will transfer to <strong className="text-white">{target.name}</strong></li>
+                        <li>{"\u2022"} Missing fields (email, phone, org) will be filled from the merged contact</li>
+                        <li>{"\u2022"} Future Fathom meetings with "{sourceContact.name}" will auto-link to {target.name}</li>
+                      </ul>
+                    </div>
+                  ) : null;
+                })()}
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline" className="border-zinc-700 text-zinc-300">Cancel</Button>
+                  </DialogClose>
+                  <Button onClick={() => { if (mergeSourceId && mergeTargetId) mergeMutation.mutate({ sourceId: mergeSourceId, targetId: mergeTargetId }); }}
+                    disabled={!mergeTargetId || mergeMutation.isPending}
+                    className="bg-purple-600 hover:bg-purple-700 text-white">
+                    {mergeMutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Merging...</> : <><Merge className="h-4 w-4 mr-2" />Merge Contacts</>}
+                  </Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total FROM contacts;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT COUNT(*) as total FROM contacts;",
+  "rows": [
+    {
+      "total": "78"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n78\n",
+  "stderr": "",
+  "execution_time_ms": 397
+}

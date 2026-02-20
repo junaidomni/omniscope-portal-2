@@ -2072,3 +2072,25 @@
 - [x] Company access in Share/Access dialog alongside individual contacts
 - [x] Search both companies and contacts in the Share dialog
 - [x] Show company access badges on documents and folders
+
+## v62 — Contact List Cleanup
+
+- [x] Identify contacts with no meaningful information (no email, phone, org, title, notes, company)
+- [x] Delete 67 empty/shell contacts (kept Jake Ryan and JUNAID as requested)
+- [x] Clean up orphaned meeting_contacts (25) and interactions (42) references
+
+## v63 — Contact Merge & Approval Workflow
+
+### Contact Merge with Aliases
+- [x] Add aliases/secondary names column to contacts table (contact_aliases table already existed)
+- [x] Merge contacts procedure: combine two contacts into one, transfer all references
+- [x] Alias matching: when Fathom/meetings create contacts, check aliases before creating new ones
+- [x] Merge dialog in UI: select two contacts, pick primary, preview what gets merged
+- [x] Display aliases/secondary names on contact profile
+
+### Approval Workflow
+- [x] Add approvalStatus field to contacts (pending/approved/denied) (already existed)
+- [x] New contacts from Fathom/meetings default to "pending" status (already existed)
+- [x] Approval queue: approve, deny, or edit new contacts before they enter the main list (already existed)
+- [x] Quick actions: approve with edit (update name/email/org), merge with existing, deny
+- [x] Pending tab/section in Relationships with count badge (already existed)

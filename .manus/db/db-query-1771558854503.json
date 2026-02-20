@@ -1,0 +1,266 @@
+{
+  "query": "DESCRIBE contacts;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute DESCRIBE contacts;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "email",
+      "Type": "varchar(320)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "phone",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "organization",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "title",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "notes",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "aiSummary",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "dateOfBirth",
+      "Type": "varchar(20)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "address",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "website",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "linkedin",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "category",
+      "Type": "enum('client','prospect','partner','vendor','other')",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "other",
+      "Extra": ""
+    },
+    {
+      "Field": "starred",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "rating",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "photoUrl",
+      "Type": "varchar(1000)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "lastContactedAt",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "aiMemory",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "companyId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "source",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tags",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "relationshipScore",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "engagementScore",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "lastInteractionAt",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "contactApprovalStatus",
+      "Type": "enum('approved','pending','rejected')",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "approved",
+      "Extra": ""
+    },
+    {
+      "Field": "riskTier",
+      "Type": "enum('low','medium','high','critical')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "complianceStage",
+      "Type": "enum('not_started','in_progress','cleared','flagged')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "influenceWeight",
+      "Type": "enum('decision_maker','influencer','gatekeeper','champion','end_user')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "introducerSource",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "referralChain",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nname\tvarchar(255)\tNO\tMUL\tNULL\t\nemail\tvarchar(320)\tYES\t\tNULL\t\nphone\tvarchar(50)\tYES\t\tNULL\t\norganization\tvarchar(255)\tYES\tMUL\tNULL\t\ntitle\tvarchar(255)\tYES\t\tNULL\t\nnotes\ttext\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\naiSummary\ttext\tYES\t\tNULL\t\ndateOfBirth\tvarchar(20)\tYES\t\tNULL\t\naddress\ttext\tYES\t\tNULL\t\nwebsite\tvarchar(500)\tYES\t\tNULL\t\nlinkedin\tvarchar(500)\tYES\t\tNULL\t\ncategory\tenum('client','prospect','partner','vendor','other')\tYES\tMUL\tother\t\nstarred\ttinyint(1)\tNO\tMUL\t0\t\nrating\tint\tYES\t\tNULL\t\nphotoUrl\tvarchar(1000)\tYES\t\tNULL\t\nlastContactedAt\ttimestamp\tYES\t\tNULL\t\naiMemory\ttext\tYES\t\tNULL\t\ncompanyId\tint\tYES\tMUL\tNULL\t\nsource\tvarchar(100)\tYES\t\tNULL\t\ntags\ttext\tYES\t\tNULL\t\nrelationshipScore\tint\tYES\t\tNULL\t\nengagementScore\tint\tYES\t\tNULL\t\nlastInteractionAt\ttimestamp\tYES\t\tNULL\t\ncontactApprovalStatus\tenum('approved','pending','rejected')\tNO\tMUL\tapproved\t\nriskTier\tenum('low','medium','high','critical')\tYES\t\tNULL\t\ncomplianceStage\tenum('not_started','in_progress','cleared','flagged')\tYES\t\tNULL\t\ninfluenceWeight\tenum('decision_maker','influencer','gatekeeper','champion','end_user')\tYES\t\tNULL\t\nintroducerSource\tvarchar(500)\tYES\t\tNULL\t\nreferralChain\ttext\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 346
+}

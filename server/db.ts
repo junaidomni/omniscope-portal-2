@@ -1941,6 +1941,12 @@ export async function getAliasesForContact(userId: number, contactId: number) {
   );
 }
 
+export async function deleteContactAlias(aliasId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(contactAliases).where(eq(contactAliases.id, aliasId));
+}
+
 // ============================================================================
 // COMPANY ALIASES — Smart duplicate learning
 // ============================================================================

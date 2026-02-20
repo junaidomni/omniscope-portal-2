@@ -1022,6 +1022,28 @@ IMPORTANT: Only include fields where you have high confidence from the meeting d
     .query(async ({ input }) => {
       return await db.getEmployeeByContactId(input.contactId);
     }),
+
+  // ========== ALIASES ==========
+  getAliases: protectedProcedure
+    .input(z.object({ contactId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return await db.getAliasesForContact(ctx.user!.id, input.contactId);
+    }),
+
+  addAlias: protectedProcedure
+    .input(z.object({ contactId: z.number(), aliasName: z.string().min(1), aliasEmail: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await db.saveContactAlias(ctx.user!.id, input.contactId, input.aliasName, input.aliasEmail, "manual");
+      const contact = await db.getContactById(input.contactId);
+      await db.logActivity({ userId: ctx.user!.id, action: "add_contact_alias", entityType: "contact", entityId: String(input.contactId), entityName: contact?.name || "Unknown", details: `Added alias "${input.aliasName}"` });
+      return result;
+    }),
+
+  removeAlias: protectedProcedure
+    .input(z.object({ aliasId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return await db.deleteContactAlias(input.aliasId);
+    }),
 });
 
 // ============================================================================

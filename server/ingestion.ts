@@ -209,10 +209,12 @@ export async function processIntelligenceData(rawData: IntelligenceData, created
       const internalNames = ["junaid", "kyle", "jake", "sania"];
       const isInternal = internalNames.some(n => participantName.toLowerCase().includes(n));
       
-      // Get or create contact with dedup
+      // Get or create contact with dedup (pass org=undefined, email, userId for alias lookup)
       const contactRecord = await db.getOrCreateContact(
         participantName,
-        participantEmails[i] || null
+        undefined,
+        participantEmails[i] || undefined,
+        createdBy
       );
       
       if (contactRecord) {

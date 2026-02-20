@@ -1,0 +1,15 @@
+{
+  "query": "SELECT COUNT(*) as total, SUM(CASE WHEN (name IS NULL OR name = '' OR name = 'Unknown') AND (email IS NULL OR email = '') AND (phone IS NULL OR phone = '') THEN 1 ELSE 0 END) as no_name_email_phone, SUM(CASE WHEN (email IS NULL OR email = '') AND (phone IS NULL OR phone = '') AND (organization IS NULL OR organization = '') AND (title IS NULL OR title = '') AND (notes IS NULL OR notes = '') AND (companyId IS NULL) THEN 1 ELSE 0 END) as name_only_nothing_else FROM contacts;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT COUNT(*) as total, SUM(CASE WHEN (name IS NULL OR name = '' OR name = 'Unknown') AND (email IS NULL OR email = '') AND (phone IS NULL OR phone = '') THEN 1 ELSE 0 END) as no_name_email_phone, SUM(CASE WHEN (email IS NULL OR email = '') AND (phone IS NULL OR phone = '') AND (organization IS NULL OR organization = '') AND (title IS NULL OR title = '') AND (notes IS NULL OR notes = '') AND (companyId IS NULL) THEN 1 ELSE 0 END) as name_only_nothing_else FROM contacts;",
+  "rows": [
+    {
+      "total": "78",
+      "no_name_email_phone": "0",
+      "name_only_nothing_else": "69"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tno_name_email_phone\tname_only_nothing_else\n78\t0\t69\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}
