@@ -2251,3 +2251,11 @@
 - [x] Typing indicator with animated dots
 - [x] Context-aware suggestions per page
 - [x] Premium input bar with unified container style
+
+## v71 — Fix Appearance Tab Functionality
+
+### Bug Fixes
+- [x] Fix design template selection not applying changes (CSS variable injection via useThemeInjection)
+- [x] Fix sidebar style selection not applying changes (sidebarStyle exposed in DesignContext)
+- [x] Fix live preview — made reactive to theme/accent/sidebar changes
+- [x] Ensure design preferences persist to database on click (verified working)

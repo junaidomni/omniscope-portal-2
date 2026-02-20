@@ -1643,41 +1643,67 @@ function AppearanceTab() {
         </div>
       </div>
 
-      {/* Live Preview Card */}
-      <div className="p-5 rounded-xl border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="flex items-center gap-2 mb-4">
-          <Monitor className="h-4 w-4 text-zinc-500" />
-          <span className="text-xs font-semibold text-white">Live Preview</span>
-          <Badge className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">LIVE</Badge>
-        </div>
-        <div className="h-32 rounded-lg overflow-hidden flex" style={{ background: '#000', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {/* Mini sidebar */}
-          <div className="w-12 h-full flex flex-col items-center py-3 gap-2" style={{ background: 'rgba(15,15,15,0.98)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
-            <div className="h-6 w-6 rounded-md" style={{ background: `rgba(${hexToRgb(selectedAccent)}, 0.15)`, border: `1px solid rgba(${hexToRgb(selectedAccent)}, 0.2)` }} />
-            <div className="flex-1 flex flex-col items-center gap-1.5 mt-2">
-              {[true, false, false, false].map((active, i) => (
-                <div key={i} className="h-1.5 w-5 rounded-full" style={{ background: active ? selectedAccent : 'rgba(255,255,255,0.08)' }} />
-              ))}
+      {/* Live Preview Card — Reactive */}
+      {(() => {
+        const tpl = DESIGN_TEMPLATES.find(t => t.id === selectedTheme) || DESIGN_TEMPLATES[0];
+        const isLight = selectedTheme === "ivory";
+        const previewBg = tpl.bg;
+        const previewCard = tpl.card;
+        const previewText = tpl.text;
+        const previewBorder = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
+        const previewMuted = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+        const previewSidebar = isLight ? '#f5f5f5' : 'rgba(15,15,15,0.98)';
+        const previewSidebarBorder = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+        const sidebarW = selectedSidebarStyle === "compact" ? 'w-10' : selectedSidebarStyle === "minimal" ? 'w-8' : 'w-12';
+        return (
+          <div className="p-5 rounded-xl border transition-all duration-300" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)', borderColor: previewBorder }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Monitor className="h-4 w-4" style={{ color: isLight ? '#666' : '#888' }} />
+              <span className="text-xs font-semibold" style={{ color: previewText }}>Live Preview</span>
+              <Badge className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">LIVE</Badge>
             </div>
-            <div className="h-5 w-5 rounded-full" style={{ backgroundColor: selectedAccent }} />
-          </div>
-          {/* Mini content */}
-          <div className="flex-1 p-3">
-            <div className="h-2.5 w-24 rounded-sm mb-3" style={{ background: `${selectedAccent}30` }} />
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {[1,2,3].map(i => (
-                <div key={i} className="h-10 rounded-md" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div className="h-1 w-6 rounded-full mt-2 ml-2" style={{ background: i === 1 ? `${selectedAccent}40` : 'rgba(255,255,255,0.06)' }} />
+            <div className="h-36 rounded-lg overflow-hidden flex transition-all duration-500" style={{ background: previewBg, border: `1px solid ${previewBorder}` }}>
+              {/* Mini sidebar */}
+              <div className={`${sidebarW} h-full flex flex-col items-center py-3 gap-2 transition-all duration-300 shrink-0`} style={{ background: previewSidebar, borderRight: `1px solid ${previewSidebarBorder}` }}>
+                <div className="h-5 w-5 rounded-md transition-colors duration-300" style={{ background: `rgba(${hexToRgb(selectedAccent)}, 0.15)`, border: `1px solid rgba(${hexToRgb(selectedAccent)}, 0.25)` }} />
+                <div className="flex-1 flex flex-col items-center gap-1.5 mt-1">
+                  {[true, false, false, false, false].map((active, i) => (
+                    <div key={i} className="h-1 w-4 rounded-full transition-colors duration-300" style={{ background: active ? selectedAccent : previewMuted }} />
+                  ))}
                 </div>
-              ))}
+                <div className="h-4 w-4 rounded-full transition-colors duration-300" style={{ backgroundColor: selectedAccent }} />
+              </div>
+              {/* Mini content area */}
+              <div className="flex-1 p-3">
+                {/* Header bar */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-16 rounded-sm transition-colors duration-300" style={{ background: `rgba(${hexToRgb(selectedAccent)}, 0.3)` }} />
+                  <div className="flex-1" />
+                  <div className="h-2 w-8 rounded-sm" style={{ background: previewMuted }} />
+                </div>
+                {/* Stat cards */}
+                <div className="grid grid-cols-3 gap-1.5 mb-2">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="h-12 rounded-md p-1.5 transition-colors duration-300" style={{ background: previewCard, border: `1px solid ${previewBorder}` }}>
+                      <div className="h-1 w-5 rounded-full mb-1" style={{ background: i === 1 ? `rgba(${hexToRgb(selectedAccent)}, 0.4)` : previewMuted }} />
+                      <div className="h-3 w-4 rounded-sm" style={{ background: i === 1 ? selectedAccent : previewMuted, opacity: i === 1 ? 0.7 : 0.3 }} />
+                    </div>
+                  ))}
+                </div>
+                {/* Content lines */}
+                <div className="space-y-1">
+                  <div className="h-1 w-full rounded-sm" style={{ background: previewMuted }} />
+                  <div className="h-1 w-3/4 rounded-sm" style={{ background: previewMuted, opacity: 0.6 }} />
+                  <div className="h-1 w-1/2 rounded-sm" style={{ background: previewMuted, opacity: 0.3 }} />
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <div className="h-1.5 w-full rounded-sm" style={{ background: 'rgba(255,255,255,0.05)' }} />
-              <div className="h-1.5 w-3/4 rounded-sm" style={{ background: 'rgba(255,255,255,0.03)' }} />
-            </div>
+            <p className="text-[10px] mt-2 text-center" style={{ color: isLight ? '#999' : '#555' }}>
+              {tpl.name} theme · {selectedSidebarStyle} sidebar · accent {selectedAccent}
+            </p>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Info Note */}
       <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
