@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { OrgProvider } from "./contexts/OrgContext";
+import { OrgProvider, useOrg } from "./contexts/OrgContext";
 import PortalLayout from "./components/PortalLayout";
+import AdminLayout from "./components/AdminLayout";
 
 // Domain wrappers
 import CommandCenter from "./pages/domains/CommandCenter";
@@ -29,7 +30,22 @@ import DedupSweep from "./pages/DedupSweep";
 import OrgOnboarding from "./pages/OrgOnboarding";
 import Organizations from "./pages/Organizations";
 
-function Router() {
+// Admin Hub pages
+import AdminHubDashboard from "./pages/admin-hub/Dashboard";
+import AdminHubOrganizations from "./pages/admin-hub/Organizations";
+import AdminHubPeople from "./pages/admin-hub/People";
+import AdminHubIntegrations from "./pages/admin-hub/Integrations";
+import AdminHubFeatures from "./pages/admin-hub/Features";
+import AdminHubAudit from "./pages/admin-hub/AuditLog";
+import AdminHubAnalytics from "./pages/admin-hub/Analytics";
+import AdminHubHealth from "./pages/admin-hub/Health";
+import AdminHubSettings from "./pages/admin-hub/Settings";
+
+/**
+ * Workspace Router — the standard PortalLayout shell.
+ * Active when a specific org is selected.
+ */
+function WorkspaceRouter() {
   return (
     <PortalLayout>
       <Switch>
@@ -83,11 +99,58 @@ function Router() {
         <Route path="/access-denied" component={AccessDenied} />
 
         <Route path={"/404"} component={NotFound} />
-        {/* Final fallback route */}
         <Route component={NotFound} />
       </Switch>
     </PortalLayout>
   );
+}
+
+/**
+ * Admin Hub Router — the Super Admin shell.
+ * Active when "All Organizations" is selected (currentOrg === null)
+ * or when navigating to /admin-hub/* routes directly.
+ */
+function AdminHubRouter() {
+  return (
+    <AdminLayout>
+      <Switch>
+        <Route path="/admin-hub" component={AdminHubDashboard} />
+        <Route path="/admin-hub/organizations" component={AdminHubOrganizations} />
+        <Route path="/admin-hub/people" component={AdminHubPeople} />
+        <Route path="/admin-hub/integrations" component={AdminHubIntegrations} />
+        <Route path="/admin-hub/features" component={AdminHubFeatures} />
+        <Route path="/admin-hub/audit" component={AdminHubAudit} />
+        <Route path="/admin-hub/analytics" component={AdminHubAnalytics} />
+        <Route path="/admin-hub/health" component={AdminHubHealth} />
+        <Route path="/admin-hub/settings" component={AdminHubSettings} />
+        <Route component={AdminHubDashboard} />
+      </Switch>
+    </AdminLayout>
+  );
+}
+
+/**
+ * Shell Switcher — determines which shell to render based on
+ * the current org context and the URL path.
+ */
+function ShellSwitcher() {
+  const [location] = useLocation();
+  const { currentOrg } = useOrg();
+
+  // If the URL is an /admin-hub/* route, always show AdminLayout
+  if (location.startsWith("/admin-hub")) {
+    return <AdminHubRouter />;
+  }
+
+  // If no org is selected (All Organizations mode), redirect to admin hub
+  if (currentOrg === null && location === "/") {
+    // Redirect to admin hub dashboard
+    window.location.replace("/admin-hub");
+    return null;
+  }
+
+  // Default: workspace mode
+  return <WorkspaceRouter />;
 }
 
 function App() {
@@ -97,7 +160,7 @@ function App() {
         <TooltipProvider>
           <OrgProvider>
             <Toaster />
-            <Router />
+            <ShellSwitcher />
           </OrgProvider>
         </TooltipProvider>
       </ThemeProvider>

@@ -2437,3 +2437,16 @@
 ## Bug Fixes - Org Layer
 - [x] Fix "All Organizations" click in OrgSwitcher — nothing opens when clicked
 - [x] Build All Organizations management page with org list, create new org, and org settings
+
+## Super Admin Organization Hub (Phase 0-1)
+- [x] Build AdminLayout component — parallel shell with admin sidebar navigation (Apple/Tesla design)
+- [x] Wire two-shell routing in App.tsx — AdminLayout when currentOrg is null, PortalLayout when org selected
+- [x] Build Super Admin Dashboard page with cross-org metrics and overview widgets
+- [x] Enhance Organizations page with list/detail view and org management
+- [x] Build People (Team Members) page with cross-org member management
+- [x] Build Integrations & API Keys page with per-org integration matrix
+- [x] Build Feature Flags management page
+- [x] Build Audit Log page (enhanced cross-org)
+- [x] Build Platform Settings page
+- [x] Write tRPC procedures for cross-org admin queries
+- [x] Write tests for admin hub functionality (9 tests, all passing)
