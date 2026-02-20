@@ -2097,3 +2097,27 @@
 
 ## Bug Fixes
 - [x] Fix: Contact merge fails when triggered from UI (param mismatch: sourceId/targetId → keepId/mergeId + FK cleanup)
+
+## v64 — Relationships Tab Redesign (Tesla/Apple-grade)
+
+### Research & Design
+- [x] Research top CRM UIs (Attio, HubSpot, Salesforce, Clay, Linear) for best patterns
+- [x] Audit all existing features in Contacts and Companies pages
+- [x] Design new layout structure and component hierarchy
+
+### Contacts Page Redesign
+- [x] Premium contact list with refined typography, spacing, and micro-interactions
+- [x] Redesigned contact detail panel with card-based sections
+- [x] Improved pending approval section with better visual hierarchy
+- [x] Enhanced merge dialog and alias display
+- [x] Refined stats, timeline, and intelligence panels
+
+### Companies Page Redesign
+- [x] Premium company list with refined UI
+- [x] Redesigned company detail panel
+- [x] Improved company approval workflow
+
+### Relationships Hub
+- [x] Unified relationships landing/overview page (uses DomainLayout with People/Companies/Pending tabs)
+- [x] Cross-entity search and navigation
+- [x] Activity feed and relationship health overview
