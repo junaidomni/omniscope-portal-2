@@ -47,6 +47,10 @@ import {
   Search,
   ArrowDown,
   Briefcase,
+  Activity,
+  TrendingUp,
+  Target,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -96,7 +100,7 @@ function getSituationalSummary(data: any, hour: number) {
   const parts: string[] = [];
 
   if (summary.totalOverdue > 0) {
-    parts.push(`${summary.totalOverdue} overdue task${summary.totalOverdue > 1 ? "s" : ""}`);
+    parts.push(`${summary.totalOverdue} overdue`);
   }
   if (data.todayTasks?.length > 0) {
     parts.push(`${data.todayTasks.length} due today`);
@@ -105,7 +109,7 @@ function getSituationalSummary(data: any, hour: number) {
     parts.push(`${summary.totalHighPriority} high-priority`);
   }
   if (summary.totalPendingApprovals > 0) {
-    parts.push(`${summary.totalPendingApprovals} pending approval${summary.totalPendingApprovals > 1 ? "s" : ""}`);
+    parts.push(`${summary.totalPendingApprovals} pending`);
   }
   if (data.recentMeetings?.length > 0) {
     const todayMeetings = data.recentMeetings.filter((m: any) => new Date(m.meetingDate).toDateString() === new Date().toDateString());
@@ -159,13 +163,13 @@ function getDailyQuote() {
 // ─── Priority badge ────────────────────────────────────────────────────────
 function PriorityBadge({ priority }: { priority: string }) {
   const config = {
-    high: { bg: "bg-red-500/20", text: "text-red-400", label: "High" },
-    medium: { bg: "bg-yellow-500/15", text: "text-yellow-500", label: "Med" },
-    low: { bg: "bg-zinc-500/20", text: "text-zinc-400", label: "Low" },
+    high: { bg: "bg-red-500/15 border border-red-500/20", text: "text-red-400", label: "High" },
+    medium: { bg: "bg-yellow-500/10 border border-yellow-500/15", text: "text-yellow-500", label: "Med" },
+    low: { bg: "bg-zinc-500/15 border border-zinc-500/20", text: "text-zinc-400", label: "Low" },
   };
   const c = config[priority as keyof typeof config] || config.medium;
   return (
-    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${c.bg} ${c.text}`}>
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>
       {c.label}
     </span>
   );
@@ -210,41 +214,41 @@ function TaskModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
       <div
-        className="relative bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="relative bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 rounded-3xl shadow-2xl shadow-black/50 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 pt-6 pb-3">
+          <div className="flex items-center gap-3">
             <PriorityBadge priority={isEditing ? editPriority : task.priority} />
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 font-medium">
               {task.status === "completed" ? "Completed" : task.status === "in_progress" ? "In Progress" : "Open"}
             </span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-zinc-800/80 text-zinc-500 hover:text-white transition-all duration-200">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 pb-4 space-y-4">
+        <div className="px-6 pb-5 space-y-4">
           {isEditing ? (
             <>
               <input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-600"
+                className="w-full bg-zinc-800/60 border border-zinc-700/50 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-yellow-600/50 focus:ring-1 focus:ring-yellow-600/20 transition-all"
                 placeholder="Task title"
               />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Priority</label>
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1.5 block font-medium">Priority</label>
                   <select
                     value={editPriority}
                     onChange={(e) => setEditPriority(e.target.value)}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-600"
+                    className="w-full bg-zinc-800/60 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-600/50 transition-all"
                   >
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -252,107 +256,82 @@ function TaskModal({
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Category</label>
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1.5 block font-medium">Category</label>
                   <input
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-600"
+                    className="w-full bg-zinc-800/60 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-600/50 transition-all"
                     placeholder="e.g. OTC, Gold"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Notes</label>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1.5 block font-medium">Notes</label>
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   rows={3}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-600 resize-none"
-                  placeholder="Add context or notes..."
+                  className="w-full bg-zinc-800/60 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-600/50 transition-all resize-none"
+                  placeholder="Additional notes..."
                 />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSave}
-                  className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-medium text-sm py-2 rounded-lg transition-colors"
-                >
-                  Save Changes
-                </button>
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm py-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
+              <div className="flex gap-2 pt-1">
+                <button onClick={handleSave} className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-semibold text-sm py-2.5 rounded-xl transition-all duration-200">Save</button>
+                <button onClick={() => setIsEditing(false)} className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium text-sm py-2.5 rounded-xl transition-all duration-200">Cancel</button>
               </div>
             </>
           ) : (
             <>
-              <div>
-                <h3 className="text-base font-semibold text-white mb-1">{cleanTitle}</h3>
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                  {dueDate && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </span>
-                  )}
-                  {task.assignedName && (
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {task.assignedName}
-                    </span>
-                  )}
-                  {task.category && (
-                    <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px]">{task.category}</span>
-                  )}
-                </div>
+              <h3 className="text-lg font-semibold text-white leading-snug">{cleanTitle}</h3>
+              <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
+                {dueDate && (
+                  <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" />{dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                )}
+                {task.assignedName && <span className="flex items-center gap-1.5"><Users className="h-3 w-3" />{task.assignedName}</span>}
+                {task.category && <span className="bg-zinc-800/80 px-2 py-0.5 rounded-full text-zinc-400">{task.category}</span>}
               </div>
-              {task.notes && (
-                <p className="text-sm text-zinc-400 leading-relaxed bg-zinc-800/50 rounded-lg px-3 py-2">{task.notes}</p>
-              )}
+              {task.notes && <p className="text-sm text-zinc-400 leading-relaxed bg-zinc-800/30 rounded-xl p-3">{task.notes}</p>}
+
+              {/* Action grid */}
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <button
+                  onClick={() => onComplete(task.id)}
+                  disabled={isActing}
+                  className="flex items-center justify-center gap-2 bg-emerald-600/90 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-sm py-3 rounded-xl transition-all duration-200"
+                >
+                  {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Complete
+                </button>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center justify-center gap-2 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 font-medium text-sm py-3 rounded-xl transition-all duration-200"
+                >
+                  <Edit3 className="h-4 w-4" /> Edit
+                </button>
+                <button
+                  onClick={() => onSnooze(task.id, 1)}
+                  disabled={isActing}
+                  className="flex items-center justify-center gap-2 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 font-medium text-sm py-3 rounded-xl transition-all duration-200"
+                >
+                  <Timer className="h-4 w-4" /> Snooze
+                </button>
+                <button
+                  onClick={() => onDelete(task.id)}
+                  disabled={isActing}
+                  className="flex items-center justify-center gap-2 bg-zinc-800/80 hover:bg-red-950/60 text-zinc-400 hover:text-red-400 font-medium text-sm py-3 rounded-xl transition-all duration-200"
+                >
+                  <Trash2 className="h-4 w-4" /> Delete
+                </button>
+              </div>
             </>
           )}
         </div>
-
-        {/* Footer actions */}
-        {!isEditing && (
-          <div className="flex items-center gap-2 px-5 pb-5">
-            <button
-              onClick={() => onComplete(task.id)}
-              disabled={isActing}
-              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
-            >
-              {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-              Complete
-            </button>
-            <button
-              onClick={() => onSnooze(task.id, 1)}
-              className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm py-2.5 px-4 rounded-lg transition-colors"
-            >
-              <Timer className="h-3.5 w-3.5" />
-              Snooze
-            </button>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="p-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-colors"
-            >
-              <Edit3 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => onDelete(task.id)}
-              className="p-2.5 bg-zinc-800 hover:bg-red-950 text-zinc-500 hover:text-red-400 rounded-lg transition-colors"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-// ─── Approval Modal with Merge/Duplicate Detection ──────────────────────
+// ─── Approval Modal ──────────────────────────────────────────────────────
 function ApprovalModal({
   item,
   type,
@@ -372,136 +351,88 @@ function ApprovalModal({
 }) {
   const [showMerge, setShowMerge] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: searchResults = [] } = type === "contact"
+    ? trpc.contacts.search.useQuery({ query: searchQuery }, { enabled: searchQuery.trim().length > 1 })
+    : trpc.companies.search.useQuery({ query: searchQuery }, { enabled: searchQuery.trim().length > 1 });
 
-  // Fetch duplicates for contacts
-  const { data: contactDuplicates } = trpc.triage.findDuplicatesFor.useQuery(
-    { contactId: item.id },
-    { enabled: type === "contact" }
-  );
+  const hasDuplicates = item.duplicates && item.duplicates.length > 0;
 
-  // Fetch duplicates for companies
-  const { data: companyDuplicates } = trpc.triage.findCompanyDuplicatesFor.useQuery(
-    { companyId: item.id },
-    { enabled: type === "company" }
-  );
-
-  const duplicates = type === "contact" ? contactDuplicates : companyDuplicates;
-
-  // Fetch all approved items for manual search
-  const { data: allContacts } = trpc.contacts.list.useQuery(undefined, {
-    enabled: type === "contact" && showMerge,
-  });
-  const { data: allCompanies } = trpc.companies.list.useQuery(undefined, {
-    enabled: type === "company" && showMerge,
-  });
-
-  const hasDuplicates = duplicates && duplicates.length > 0;
-
-  // Filter items for manual search
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    if (type === "contact") {
-      if (!allContacts) return [];
-      return (allContacts as any[])
-        .filter((c: any) => c.approvalStatus === "approved" && c.id !== item.id)
-        .filter((c: any) =>
-          c.name.toLowerCase().includes(q) ||
-          (c.email && c.email.toLowerCase().includes(q)) ||
-          (c.organization && c.organization.toLowerCase().includes(q))
-        )
-        .slice(0, 8);
-    } else {
-      if (!allCompanies) return [];
-      return (allCompanies as any[])
-        .filter((c: any) => c.approvalStatus === "approved" && c.id !== item.id)
-        .filter((c: any) =>
-          c.name.toLowerCase().includes(q) ||
-          (c.domain && c.domain.toLowerCase().includes(q)) ||
-          (c.industry && c.industry.toLowerCase().includes(q))
-        )
-        .slice(0, 8);
-    }
-  }, [allContacts, allCompanies, searchQuery, item.id, type]);
-
-  const confidenceColor = (conf: number) => {
-    if (conf >= 80) return "text-red-400 bg-red-950/40 border-red-900/40";
-    if (conf >= 60) return "text-yellow-400 bg-yellow-950/40 border-yellow-900/40";
-    return "text-zinc-400 bg-zinc-800/40 border-zinc-700/40";
+  const confidenceColor = (c: number) => {
+    if (c >= 80) return "border-emerald-500/30 text-emerald-400 bg-emerald-500/10";
+    if (c >= 50) return "border-yellow-500/30 text-yellow-400 bg-yellow-500/10";
+    return "border-zinc-600/30 text-zinc-400 bg-zinc-500/10";
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
       <div
-        className={`relative bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${showMerge ? "max-w-lg" : "max-w-sm"}`}
+        className="relative bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 rounded-3xl shadow-2xl shadow-black/50 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 pt-6 pb-3">
+          <div className="flex items-center gap-3">
             {type === "contact" ? (
-              <UserPlus className="h-4 w-4 text-blue-400" />
+              <div className="h-8 w-8 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                <UserPlus className="h-4 w-4 text-blue-400" />
+              </div>
             ) : (
-              <Building2 className="h-4 w-4 text-purple-400" />
+              <div className="h-8 w-8 rounded-xl bg-purple-500/15 flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-purple-400" />
+              </div>
             )}
-            <span className="text-xs text-zinc-500 uppercase tracking-wider">
-              {showMerge ? "Merge Contact" : `Pending ${type}`}
-            </span>
+            <div>
+              <h3 className="text-base font-semibold text-white">{item.name}</h3>
+              <p className="text-xs text-zinc-500">
+                {type === "contact" ? (item.organization || item.email || "New contact") : (item.sector || "New company")}
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-zinc-800/80 text-zinc-500 hover:text-white transition-all duration-200">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Contact Info */}
-        <div className="px-5 pb-3">
-          <h3 className="text-base font-semibold text-white mb-0.5">{item.name}</h3>
-          <div className="flex items-center gap-3 text-xs text-zinc-500">
-            {type === "contact" && item.organization && (
-              <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" />{item.organization}</span>
+        {/* Details */}
+        <div className="px-6 pb-3">
+          <div className="bg-zinc-800/30 rounded-xl p-3 space-y-1.5">
+            {type === "contact" && (
+              <>
+                {item.email && <p className="text-xs text-zinc-400"><span className="text-zinc-600">Email:</span> {item.email}</p>}
+                {item.phone && <p className="text-xs text-zinc-400"><span className="text-zinc-600">Phone:</span> {item.phone}</p>}
+                {item.organization && <p className="text-xs text-zinc-400"><span className="text-zinc-600">Org:</span> {item.organization}</p>}
+                {item.title && <p className="text-xs text-zinc-400"><span className="text-zinc-600">Title:</span> {item.title}</p>}
+              </>
             )}
-            {type === "contact" && item.email && (
-              <span className="truncate">{item.email}</span>
-            )}
-            {type === "contact" && item.title && (
-              <span className="truncate">{item.title}</span>
-            )}
-            {type === "company" && item.sector && (
-              <span>{item.sector}</span>
+            {type === "company" && (
+              <>
+                {item.sector && <p className="text-xs text-zinc-400"><span className="text-zinc-600">Sector:</span> {item.sector}</p>}
+                {item.domain && <p className="text-xs text-zinc-400"><span className="text-zinc-600">Domain:</span> {item.domain}</p>}
+              </>
             )}
           </div>
-          {type === "contact" && item.source && (
-            <p className="text-[10px] text-zinc-600 mt-1">Source: {item.source}</p>
-          )}
         </div>
 
-        {/* Duplicate Suggestions (auto-detected) */}
-        {!showMerge && hasDuplicates && (
-          <div className="mx-5 mb-3 border border-yellow-900/30 bg-yellow-950/20 rounded-xl p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <GitMerge className="h-3.5 w-3.5 text-yellow-500" />
-              <span className="text-xs font-medium text-yellow-400">Possible Duplicates Detected</span>
-            </div>
+        {/* Duplicate suggestions */}
+        {hasDuplicates && (
+          <div className="mx-6 mb-3">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-2">Possible Duplicates</p>
             <div className="space-y-1.5">
-              {duplicates!.map((d: any, idx: number) => (
+              {item.duplicates.map((d: any) => (
                 <div
-                  key={(d.contact || d.company)?.id || idx}
-                  className="flex items-center justify-between gap-2 bg-zinc-900/60 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-yellow-800/40 transition-colors cursor-pointer group"
-                  onClick={() => onMerge?.(item.id, (d.contact || d.company)?.id)}
+                  key={d.id}
+                  className="group flex items-center justify-between gap-2 bg-zinc-800/40 border border-zinc-700/30 rounded-xl px-3 py-2 hover:border-yellow-700/30 transition-all cursor-pointer"
+                  onClick={() => onMerge?.(item.id, d.id)}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-zinc-200 truncate">{(d.contact || d.company)?.name}</p>
+                    <p className="text-sm text-zinc-200 truncate">{d.name}</p>
                     <div className="flex items-center gap-2 text-[10px] text-zinc-500">
-                      {type === "contact" && d.contact?.organization && <span>{d.contact.organization}</span>}
-                      {type === "contact" && d.contact?.email && <span className="truncate">{d.contact.email}</span>}
-                      {type === "company" && d.company?.domain && <span>{d.company.domain}</span>}
-                      {type === "company" && d.company?.industry && <span>{d.company.industry}</span>}
-                      {d.reason && <span className="italic">{d.reason}</span>}
+                      {d.email && <span className="truncate">{d.email}</span>}
+                      {d.organization && <span>{d.organization}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${confidenceColor(d.confidence)}`}>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${confidenceColor(d.confidence)}`}>
                       {d.confidence}%
                     </span>
                     <span className="text-xs text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -516,7 +447,7 @@ function ApprovalModal({
 
         {/* Manual Merge Search */}
         {showMerge && (
-          <div className="mx-5 mb-3">
+          <div className="mx-6 mb-3">
             <div className="relative mb-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
               <input
@@ -524,7 +455,7 @@ function ApprovalModal({
                 placeholder={`Search existing ${type === 'contact' ? 'contacts' : 'companies'} to merge with...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-800/60 border border-zinc-700/40 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-yellow-800/60"
+                className="w-full bg-zinc-800/60 border border-zinc-700/40 rounded-xl pl-9 pr-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-yellow-800/60 transition-all"
                 autoFocus
               />
             </div>
@@ -533,7 +464,7 @@ function ApprovalModal({
                 {searchResults.map((c: any) => (
                   <div
                     key={c.id}
-                    className="flex items-center justify-between gap-2 bg-zinc-900/60 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-yellow-800/40 transition-colors cursor-pointer group"
+                    className="flex items-center justify-between gap-2 bg-zinc-900/60 border border-zinc-800/40 rounded-xl px-3 py-2 hover:border-yellow-800/40 transition-colors cursor-pointer group"
                     onClick={() => onMerge?.(item.id, c.id)}
                   >
                     <div className="min-w-0 flex-1">
@@ -560,12 +491,12 @@ function ApprovalModal({
         )}
 
         {/* Action Buttons */}
-        <div className="px-5 pb-5">
+        <div className="px-6 pb-6">
           <div className="flex items-center gap-2">
             <button
               onClick={() => onApprove(item.id)}
               disabled={isActing}
-              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600/90 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-sm py-3 rounded-xl transition-all duration-200"
             >
               <Shield className="h-3.5 w-3.5" />
               Approve
@@ -573,10 +504,10 @@ function ApprovalModal({
             {onMerge && (
               <button
                 onClick={() => setShowMerge(!showMerge)}
-                className={`flex items-center justify-center gap-2 font-medium text-sm py-2.5 px-4 rounded-lg transition-colors ${
+                className={`flex items-center justify-center gap-2 font-semibold text-sm py-3 px-5 rounded-xl transition-all duration-200 ${
                   showMerge
                     ? "bg-yellow-600/20 text-yellow-400 border border-yellow-700/40"
-                    : "bg-zinc-800 hover:bg-yellow-950/40 text-zinc-300 hover:text-yellow-400"
+                    : "bg-zinc-800/80 hover:bg-yellow-950/40 text-zinc-300 hover:text-yellow-400"
                 }`}
               >
                 <GitMerge className="h-3.5 w-3.5" />
@@ -586,14 +517,12 @@ function ApprovalModal({
             <button
               onClick={() => onReject(item.id)}
               disabled={isActing}
-              className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-red-950 text-zinc-300 hover:text-red-400 font-medium text-sm py-2.5 rounded-lg transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-zinc-800/80 hover:bg-red-950/60 text-zinc-300 hover:text-red-400 font-semibold text-sm py-3 rounded-xl transition-all duration-200"
             >
               <ShieldX className="h-3.5 w-3.5" />
               Reject
             </button>
           </div>
-
-          {/* Duplicate hint when not in merge mode */}
           {!showMerge && hasDuplicates && (
             <p className="text-[10px] text-zinc-600 text-center mt-2">
               Click a suggestion above or use Merge to search manually
@@ -605,7 +534,7 @@ function ApprovalModal({
   );
 }
 
-// ─── Task card (for overdue + today) ──────────────────────────────────────
+// ─── Task card (premium design) ──────────────────────────────────────────
 function TaskCard({
   task,
   showOverdue,
@@ -625,38 +554,39 @@ function TaskCard({
   return (
     <div
       onClick={onClick}
-      className="group bg-zinc-900/60 border border-zinc-800/40 rounded-xl p-3.5 hover:border-zinc-700/50 hover:bg-zinc-900/80 transition-all duration-200 cursor-pointer hover:shadow-lg hover:shadow-black/20 hover:-translate-y-px"
+      className="group relative bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl p-4 hover:border-zinc-700/60 hover:bg-zinc-900/70 transition-all duration-300 cursor-pointer hover:shadow-xl hover:shadow-black/20 hover:-translate-y-0.5"
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex items-start justify-between gap-2 mb-2.5">
         <PriorityBadge priority={task.priority} />
         {onQuickComplete && (
           <button
             onClick={(e) => { e.stopPropagation(); onQuickComplete(task.id); }}
             disabled={isActing}
-            className="p-1 rounded hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1.5 rounded-xl hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-all duration-200 opacity-0 group-hover:opacity-100"
             title="Complete"
           >
             {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
           </button>
         )}
       </div>
-      <p className="text-sm text-zinc-200 font-medium group-hover:text-white transition-colors line-clamp-2 mb-2">
+      <p className="text-sm text-zinc-200 font-medium group-hover:text-white transition-colors line-clamp-2 mb-2.5 leading-relaxed">
         {cleanTitle}
       </p>
       <div className="flex items-center gap-2 text-[10px] text-zinc-500">
         {showOverdue && dueDate && (
-          <span className="text-red-400 font-medium">
+          <span className="text-red-400 font-semibold flex items-center gap-1">
+            <AlertTriangle className="h-2.5 w-2.5" />
             {Math.ceil((Date.now() - dueDate.getTime()) / 86400000)}d overdue
           </span>
         )}
         {task.assignedName && <span className="truncate">{task.assignedName}</span>}
-        {task.category && <span className="bg-zinc-800/60 px-1.5 py-0.5 rounded">{task.category}</span>}
+        {task.category && <span className="bg-zinc-800/60 px-2 py-0.5 rounded-full">{task.category}</span>}
       </div>
     </div>
   );
 }
 
-// ─── Compact task row (for tomorrow + week) ──────────────────────────────
+// ─── Compact task row ──────────────────────────────────────────────────
 function CompactTaskRow({
   task,
   showDate,
@@ -672,7 +602,7 @@ function CompactTaskRow({
   return (
     <div
       onClick={onClick}
-      className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer"
+      className="group flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 hover:bg-zinc-900/60 transition-all duration-200 cursor-pointer"
     >
       <PriorityBadge priority={task.priority} />
       <span className="text-sm text-zinc-200 truncate flex-1 group-hover:text-white transition-colors">
@@ -699,7 +629,7 @@ function CompletedRow({
 }) {
   const cleanTitle = task.title.replace(/\s*\(Assigned to:.*?\)\s*$/, "");
   return (
-    <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-950/10 border border-emerald-900/15">
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-emerald-950/10 border border-emerald-900/15">
       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
       <span className="text-sm text-zinc-400 line-through truncate flex-1">{cleanTitle}</span>
       {task.assignedName && (
@@ -722,12 +652,14 @@ function MeetingCard({
 
   return (
     <Link href={`/meeting/${meeting.id}`}>
-      <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 hover:border-zinc-700/60 hover:bg-zinc-900/80 transition-all duration-200 cursor-pointer group h-full">
-        <div className="flex items-center gap-2 mb-2">
-          <Calendar className="h-3.5 w-3.5 text-emerald-500/70" />
+      <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800/50 rounded-2xl p-4 hover:border-zinc-700/60 hover:bg-zinc-900/60 transition-all duration-300 cursor-pointer group h-full hover:shadow-xl hover:shadow-black/20 hover:-translate-y-0.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <div className="h-6 w-6 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <Calendar className="h-3 w-3 text-emerald-500/70" />
+          </div>
           <span className="text-[10px] text-zinc-500 font-medium">{dateLabel}</span>
         </div>
-        <p className="text-sm text-zinc-200 font-medium group-hover:text-white transition-colors line-clamp-1 mb-1.5">
+        <p className="text-sm text-zinc-200 font-medium group-hover:text-white transition-colors line-clamp-1 mb-2">
           {meeting.title || "Untitled Meeting"}
         </p>
         <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">
@@ -739,7 +671,7 @@ function MeetingCard({
   );
 }
 
-// ─── Section wrapper ───────────────────────────────────────────────────────
+// ─── Section wrapper (premium) ────────────────────────────────────────────
 function Section({
   icon,
   title,
@@ -767,25 +699,25 @@ function Section({
 
   return (
     <div className={`animate-fade-in-up ${className || ''}`}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <button
-          className="flex items-center gap-2"
+          className="flex items-center gap-2.5"
           onClick={collapsible ? () => setOpen(!open) : undefined}
         >
-          <div className={`p-1.5 rounded-lg ${accentColor}`}>{icon}</div>
+          <div className={`p-2 rounded-xl ${accentColor}`}>{icon}</div>
           <h3 className="text-sm font-semibold text-white tracking-tight">{title}</h3>
           {count !== undefined && count > 0 && (
-            <span className="text-xs text-zinc-500 font-mono bg-zinc-800/50 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] text-zinc-400 font-mono bg-zinc-800/60 px-2 py-0.5 rounded-full">
               {count}
             </span>
           )}
           {collapsible && (
-            <ChevronDown className={`h-3.5 w-3.5 text-zinc-600 transition-transform duration-200 ${open ? "" : "-rotate-90"}`} />
+            <ChevronDown className={`h-3.5 w-3.5 text-zinc-600 transition-transform duration-300 ${open ? "" : "-rotate-90"}`} />
           )}
         </button>
         {linkTo && (
           <Link href={linkTo}>
-            <span className="text-xs text-zinc-500 hover:text-yellow-500 transition-colors flex items-center gap-1 cursor-pointer">
+            <span className="text-xs text-zinc-500 hover:text-yellow-500 transition-colors flex items-center gap-1.5 cursor-pointer font-medium">
               {linkLabel || "View all"} <ArrowRight className="h-3 w-3" />
             </span>
           </Link>
@@ -799,7 +731,7 @@ function Section({
 // ─── Filter type for stat card drill-down ───────────────────────────────
 type TriageFilter = "open" | "overdue" | "high" | "done" | "starred" | "pending" | null;
 
-// ─── Stat card (compact, clickable for filtering) ────────────────────────
+// ─── Stat card (Apple-grade glassmorphism) ──────────────────────────────
 function StatCard({
   icon,
   label,
@@ -822,30 +754,30 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className={`relative w-full border rounded-xl px-3 py-2.5 flex items-center gap-2.5 transition-all duration-200 cursor-pointer text-left hover:scale-[1.02] active:scale-[0.98] ${
+      className={`relative w-full border rounded-2xl px-3.5 py-3 flex items-center gap-3 transition-all duration-300 cursor-pointer text-left hover:scale-[1.03] active:scale-[0.97] backdrop-blur-sm ${
         active
-          ? "bg-yellow-600/15 border-yellow-500/40 ring-1 ring-yellow-500/20"
+          ? "bg-yellow-500/10 border-yellow-500/30 shadow-lg shadow-yellow-500/5"
           : highlight
-            ? "bg-yellow-950/15 border-yellow-800/30 hover:border-yellow-700/40"
-            : "bg-zinc-900/40 border-zinc-800/40 hover:border-zinc-700/50"
+            ? "bg-red-950/10 border-red-800/20 hover:border-red-700/30 hover:shadow-lg hover:shadow-red-500/5"
+            : "bg-zinc-900/30 border-zinc-800/40 hover:border-zinc-700/50 hover:bg-zinc-900/50"
       }`}
     >
       {hasNotification && value > 0 && (
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border border-zinc-900" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-zinc-900" />
         </span>
       )}
-      <div className={`p-1.5 rounded-lg ${color}`}>{icon}</div>
+      <div className={`p-2 rounded-xl ${color}`}>{icon}</div>
       <div>
-        <div className={`text-base font-bold font-mono ${active ? "text-yellow-400" : "text-white"}`}>{value}</div>
-        <div className={`text-[9px] uppercase tracking-wider leading-tight ${active ? "text-yellow-500/70" : "text-zinc-500"}`}>{label}</div>
+        <div className={`text-lg font-bold font-mono leading-none ${active ? "text-yellow-400" : "text-white"}`}>{value}</div>
+        <div className={`text-[9px] uppercase tracking-widest leading-tight mt-0.5 ${active ? "text-yellow-500/70" : "text-zinc-500"}`}>{label}</div>
       </div>
     </button>
   );
 }
 
-// // ─── Inline Strategic Insights (for greeting bar) ────────────────────
+// ─── Inline Strategic Insights ────────────────────────────────────────
 function InlineInsights() {
   const [, navigate] = useLocation();
   const { data, isLoading } = trpc.triage.strategicInsights.useQuery(undefined, {
@@ -855,9 +787,9 @@ function InlineInsights() {
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-4 bg-zinc-800/40 rounded animate-pulse w-full" />
+          <div key={i} className="h-4 bg-zinc-800/30 rounded-lg animate-pulse w-full" />
         ))}
       </div>
     );
@@ -865,7 +797,7 @@ function InlineInsights() {
 
   if (!data?.insights?.length) {
     return (
-      <div className="flex items-center gap-2 text-xs text-zinc-500">
+      <div className="flex items-center gap-2.5 text-xs text-zinc-500">
         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500/60" />
         <span>No critical risks detected.</span>
       </div>
@@ -873,7 +805,7 @@ function InlineInsights() {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {data.insights.map((insight: any, i: number) => {
         const text = typeof insight === 'string' ? insight : insight.text;
         const linkTo = typeof insight === 'string' ? null : insight.linkTo;
@@ -883,8 +815,8 @@ function InlineInsights() {
         return (
           <div
             key={i}
-            className={`flex items-start gap-2 group ${
-              isClickable ? 'cursor-pointer hover:bg-zinc-800/30 -mx-2 px-2 py-1 rounded-lg transition-all duration-200' : 'py-1'
+            className={`flex items-start gap-2.5 group ${
+              isClickable ? 'cursor-pointer hover:bg-zinc-800/20 -mx-2 px-2 py-1.5 rounded-xl transition-all duration-200' : 'py-1'
             }`}
             onClick={isClickable ? () => navigate(linkTo) : undefined}
             role={isClickable ? 'button' : undefined}
@@ -929,7 +861,7 @@ function UnreadEmailsSection() {
       >
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-zinc-900/50 border border-zinc-800/40 rounded-lg animate-pulse" />
+            <div key={i} className="h-14 bg-zinc-900/50 border border-zinc-800/40 rounded-xl animate-pulse" />
           ))}
         </div>
       </Section>
@@ -938,9 +870,7 @@ function UnreadEmailsSection() {
 
   if (!threads?.threads?.length) return null;
 
-  // Filter unread emails
   const unreadEmails = threads.threads.filter((t: any) => t.unread);
-  // Also get today's emails for the "recent" view
   const today = new Date();
   const todayStr = today.toDateString();
   const todayEmails = threads.threads.filter((t: any) => {
@@ -948,7 +878,6 @@ function UnreadEmailsSection() {
     return d && d.toDateString() === todayStr;
   });
 
-  // Show unread first, then today's emails if no unread
   const displayEmails = unreadEmails.length > 0 ? unreadEmails : todayEmails;
   const sectionTitle = unreadEmails.length > 0 ? "Unread Emails" : "Today's Emails";
   const displayCount = displayEmails.length;
@@ -968,7 +897,7 @@ function UnreadEmailsSection() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {displayEmails.slice(0, 8).map((t: any) => (
           <Link key={t.threadId} href="/communications">
-            <div className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors cursor-pointer">
+            <div className="group flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 hover:bg-zinc-900/60 transition-all duration-200 cursor-pointer">
               <Mail className="h-3.5 w-3.5 text-violet-400/60 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-zinc-200 truncate group-hover:text-white transition-colors">
@@ -992,8 +921,10 @@ function UnreadEmailsSection() {
   );
 }
 
-// ─── Greeting Bar (v48 — collapsible with chevron toggle) ───────────────────
-function GreetingBar({
+// ═══════════════════════════════════════════════════════════════════════════
+// HERO GREETING — Tesla/Apple-grade design
+// ═══════════════════════════════════════════════════════════════════════════
+function HeroGreeting({
   greeting, userName, statusLine, situationalSummary, timeIcon,
   timeString, dateString, tzAbbr, quote, showQuote, setShowQuote,
   summary, activeFilter, onFilterChange,
@@ -1007,208 +938,163 @@ function GreetingBar({
 }) {
   const { omniMode, openChat } = useOmni();
   const [omniHover, setOmniHover] = useState(false);
-  const [expanded, setExpanded] = useState(() => {
-    const stored = localStorage.getItem('omniscope-greeting-expanded');
-    return stored === null ? true : stored === 'true';
-  });
-
-  const toggleExpanded = () => {
-    const next = !expanded;
-    setExpanded(next);
-    localStorage.setItem('omniscope-greeting-expanded', String(next));
-  };
 
   const toggleFilter = (f: TriageFilter) => {
     onFilterChange(activeFilter === f ? null : f);
   };
 
-  return (
-    <div className="bg-gradient-to-br from-zinc-900/80 via-zinc-900/60 to-zinc-900/40 border border-zinc-800/40 rounded-2xl backdrop-blur-sm shadow-[0_1px_3px_0_rgba(0,0,0,0.3),0_1px_2px_-1px_rgba(0,0,0,0.3)] animate-fade-in-up transition-all duration-300">
+  // Calculate a "health score" for the visual ring
+  const healthScore = useMemo(() => {
+    const overdue = summary.totalOverdue;
+    const high = summary.totalHighPriority;
+    if (overdue > 3 || high > 5) return "critical";
+    if (overdue > 0 || high > 2) return "attention";
+    return "clear";
+  }, [summary]);
 
-      {/* ── ALWAYS VISIBLE: Greeting + Omni + Clock + Collapse Toggle ── */}
-      <div className="p-5 lg:p-6 pb-0 lg:pb-0">
-        <div className="flex items-center gap-4">
-          {/* Left: Greeting line */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="hidden sm:flex p-2 rounded-xl bg-zinc-800/60 border border-zinc-700/30 shrink-0">
-              {timeIcon}
-            </div>
+  const healthColor = healthScore === "critical" ? "from-red-500/20 to-red-600/5" : healthScore === "attention" ? "from-yellow-500/15 to-yellow-600/5" : "from-emerald-500/10 to-emerald-600/5";
+  const healthBorder = healthScore === "critical" ? "border-red-500/20" : healthScore === "attention" ? "border-yellow-500/15" : "border-emerald-500/10";
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Main hero card */}
+      <div className={`relative bg-gradient-to-br ${healthColor} border ${healthBorder} rounded-3xl backdrop-blur-sm overflow-hidden`}>
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+
+        {/* Top section: Greeting + Clock + Omni */}
+        <div className="relative p-6 lg:p-8">
+          <div className="flex items-start justify-between gap-6">
+            {/* Left: Greeting */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl lg:text-3xl font-semibold text-white tracking-tight">
-                {greeting}, <span className="text-yellow-500">{userName}</span>
-              </h1>
-              {!expanded && (
-                <p className="text-xs text-zinc-500 mt-0.5 font-mono truncate">{situationalSummary}</p>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="p-2 rounded-xl bg-white/5 border border-white/5">
+                  {timeIcon}
+                </div>
+                <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight">
+                  {greeting}, <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">{userName}</span>
+                </h1>
+              </div>
+              <p className="text-sm text-zinc-400 mt-2 font-medium leading-relaxed max-w-xl">{statusLine}</p>
+              <p className="text-xs text-zinc-500 mt-1 font-mono">{situationalSummary}</p>
+
+              {/* Quote */}
+              {showQuote && (
+                <div className="flex items-center gap-2.5 mt-4 group">
+                  <Quote className="h-3.5 w-3.5 text-yellow-600/30 shrink-0" />
+                  <p className="text-[11px] text-zinc-600 italic">
+                    "{quote.text}" <span className="text-zinc-700 not-italic">— {quote.author}</span>
+                  </p>
+                  <button
+                    onClick={() => setShowQuote(false)}
+                    className="p-1 rounded-lg hover:bg-zinc-800/50 text-zinc-700 hover:text-zinc-500 transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <EyeOff className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {!showQuote && (
+                <button
+                  onClick={() => setShowQuote(true)}
+                  className="mt-3 flex items-center gap-1.5 text-[10px] text-zinc-700 hover:text-zinc-500 transition-colors"
+                >
+                  <Eye className="h-3 w-3" /> Show quote
+                </button>
+              )}
+            </div>
+
+            {/* Right: Clock + Omni */}
+            <div className="hidden lg:flex flex-col items-center gap-4 shrink-0">
+              {/* Clock */}
+              <div className="text-right">
+                <div className="text-2xl font-mono text-white tracking-wider tabular-nums font-bold">{timeString}</div>
+                <p className="text-[11px] text-zinc-500 mt-0.5">{dateString}</p>
+                <p className="text-[10px] text-zinc-600">{tzAbbr}</p>
+              </div>
+
+              {/* Omni Avatar */}
+              {omniMode !== "hidden" && (
+                <div className="flex flex-col items-center">
+                  <div
+                    className="cursor-pointer transition-all duration-300 hover:scale-110"
+                    onMouseEnter={() => setOmniHover(true)}
+                    onMouseLeave={() => setOmniHover(false)}
+                    onClick={openChat}
+                    title="Ask Omni"
+                  >
+                    <OmniAvatar
+                      mode={omniMode}
+                      state={omniHover ? "wave" : "idle"}
+                      size={80}
+                      badge={false}
+                    />
+                  </div>
+                  <p className="text-[10px] text-zinc-600 mt-1">Click to ask Omni</p>
+                </div>
               )}
             </div>
           </div>
-
-          {/* Center: Omni (always visible, smaller when collapsed) */}
-          {omniMode !== "hidden" && (
-            <div className="hidden lg:flex flex-col items-center shrink-0">
-              <div
-                className="cursor-pointer transition-all duration-300 hover:scale-105"
-                onMouseEnter={() => setOmniHover(true)}
-                onMouseLeave={() => setOmniHover(false)}
-                onClick={openChat}
-                title="Ask Omni"
-              >
-                <OmniAvatar
-                  mode={omniMode}
-                  state={omniHover ? "wave" : "idle"}
-                  size={expanded ? 90 : 50}
-                  badge={false}
-                />
-              </div>
-              {expanded && <p className="text-[10px] text-zinc-600 mt-1 text-center">Click to ask Omni</p>}
-            </div>
-          )}
-
-          {/* Right: Clock + Collapse toggle */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="hidden lg:block text-right">
-              <div className={`font-mono text-white tracking-wider tabular-nums transition-all duration-200 ${expanded ? 'text-xl' : 'text-base'}`}>{timeString}</div>
-              <p className="text-[10px] text-zinc-500 mt-0.5">{dateString}</p>
-              {expanded && <p className="text-[9px] text-zinc-600">{tzAbbr}</p>}
-            </div>
-            {/* Mobile clock */}
-            <div className="text-right hidden sm:block lg:hidden shrink-0">
-              <div className="text-lg font-mono text-white tracking-wider tabular-nums">{timeString}</div>
-              <p className="text-[10px] text-zinc-500">{dateString}</p>
-            </div>
-            {/* Collapse/Expand toggle */}
-            <button
-              onClick={toggleExpanded}
-              className="p-1.5 rounded-lg bg-zinc-800/50 border border-zinc-700/30 hover:bg-zinc-700/50 hover:border-zinc-600/40 transition-all duration-200 text-zinc-500 hover:text-zinc-300"
-              title={expanded ? 'Minimize' : 'Expand'}
-            >
-              {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-            </button>
-          </div>
         </div>
-      </div>
 
-      {/* ── EXPANDED ONLY: Status, Quote, Insights ── */}
-      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-        expanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
-      }`}>
-        <div className="px-5 lg:px-6 pt-1">
-          {/* Status line + summary */}
-          <div className="pl-0 sm:pl-[52px]">
-            <p className="text-sm text-zinc-400 font-medium">{statusLine}</p>
-            <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500 font-mono">
-              <span>{situationalSummary}</span>
-            </div>
-          </div>
+        {/* Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
 
-          {/* Quote */}
-          {showQuote && (
-            <div className="flex items-center gap-2 mt-2 pl-0 sm:pl-[52px]">
-              <Quote className="h-3 w-3 text-yellow-600/30 shrink-0" />
-              <p className="text-[11px] text-zinc-600 italic truncate">
-                "{quote.text}" <span className="text-zinc-700 not-italic">— {quote.author}</span>
-              </p>
-              <button
-                onClick={() => setShowQuote(false)}
-                className="p-0.5 rounded hover:bg-zinc-800 text-zinc-700 hover:text-zinc-500 transition-colors shrink-0"
-              >
-                <EyeOff className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          {!showQuote && (
-            <button
-              onClick={() => setShowQuote(true)}
-              className="mt-2 pl-0 sm:pl-[52px] flex items-center gap-1.5 text-[10px] text-zinc-700 hover:text-zinc-500 transition-colors"
-            >
-              <Eye className="h-3 w-3" /> Show quote
-            </button>
-          )}
-
-          {/* Insights + Stats side-by-side */}
-          <div className="mt-4 pt-4 border-t border-zinc-800/30">
-            <div className="flex flex-col lg:flex-row lg:gap-6">
-              {/* Left: Strategic Insights */}
-              <div className="flex-1 min-w-0 mb-4 lg:mb-0">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Brain className="h-3 w-3 text-yellow-500/60" />
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Strategic Insights</span>
-                  <span className="text-[9px] text-yellow-600/40 ml-2">AI</span>
+        {/* Bottom section: Insights + Stats */}
+        <div className="relative p-6 lg:p-8 pt-5 lg:pt-6">
+          <div className="flex flex-col lg:flex-row lg:gap-8">
+            {/* Left: Strategic Insights */}
+            <div className="flex-1 min-w-0 mb-5 lg:mb-0">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-6 w-6 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                  <Brain className="h-3 w-3 text-yellow-500" />
                 </div>
-                <InlineInsights />
+                <span className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold">Strategic Insights</span>
+                <span className="text-[9px] text-yellow-600/50 bg-yellow-600/10 px-1.5 py-0.5 rounded-full font-medium">AI</span>
               </div>
+              <InlineInsights />
+            </div>
 
-              {/* Vertical divider (desktop only) */}
-              <div className="hidden lg:block w-px bg-zinc-800/40 self-stretch" />
+            {/* Vertical divider */}
+            <div className="hidden lg:block w-px bg-gradient-to-b from-zinc-700/30 via-zinc-700/20 to-transparent self-stretch" />
 
-              {/* Right: Quick Stats */}
-              <div className="lg:w-[420px] xl:w-[480px] shrink-0">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <Filter className="h-3 w-3 text-zinc-600" />
-                    <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">Quick Stats</span>
+            {/* Right: Quick Stats */}
+            <div className="lg:w-[440px] xl:w-[500px] shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-lg bg-zinc-700/30 flex items-center justify-center">
+                    <BarChart3 className="h-3 w-3 text-zinc-400" />
                   </div>
-                  {activeFilter && (
-                    <button
-                      onClick={() => onFilterChange(null)}
-                      className="flex items-center gap-1 text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                      Clear filter
-                    </button>
-                  )}
+                  <span className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold">Quick Stats</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <StatCard icon={<ListTodo className="h-3.5 w-3.5 text-zinc-300" />} label="Open Tasks" value={summary.totalOpen} color="bg-zinc-800/60" active={activeFilter === "open"} onClick={() => toggleFilter("open")} />
-                  <StatCard icon={<AlertTriangle className="h-3.5 w-3.5 text-red-400" />} label="Overdue" value={summary.totalOverdue} color="bg-red-950/40" active={activeFilter === "overdue"} onClick={() => toggleFilter("overdue")} highlight={summary.totalOverdue > 0} />
-                  <StatCard icon={<Flame className="h-3.5 w-3.5 text-yellow-400" />} label="High Priority" value={summary.totalHighPriority} color="bg-yellow-950/40" active={activeFilter === "high"} onClick={() => toggleFilter("high")} />
-                  <StatCard icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />} label="Done Today" value={summary.completedToday} color="bg-emerald-950/40" active={activeFilter === "done"} onClick={() => toggleFilter("done")} />
-                  <StatCard icon={<Star className="h-3.5 w-3.5 text-yellow-400" />} label="Starred Mail" value={summary.totalStarred} color="bg-yellow-950/40" active={activeFilter === "starred"} onClick={() => toggleFilter("starred")} />
-<StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="Pending" value={summary.totalPendingApprovals} color="bg-blue-950/40" active={activeFilter === "pending"} onClick={() => toggleFilter("pending")} hasNotification={summary.totalPendingApprovals > 0} />
-                 </div>
+                {activeFilter && (
+                  <button
+                    onClick={() => onFilterChange(null)}
+                    className="flex items-center gap-1 text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors font-medium"
+                  >
+                    <X className="h-3 w-3" />
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <StatCard icon={<ListTodo className="h-3.5 w-3.5 text-zinc-300" />} label="Open Tasks" value={summary.totalOpen} color="bg-zinc-800/50" active={activeFilter === "open"} onClick={() => toggleFilter("open")} />
+                <StatCard icon={<AlertTriangle className="h-3.5 w-3.5 text-red-400" />} label="Overdue" value={summary.totalOverdue} color="bg-red-950/40" active={activeFilter === "overdue"} onClick={() => toggleFilter("overdue")} highlight={summary.totalOverdue > 0} />
+                <StatCard icon={<Flame className="h-3.5 w-3.5 text-yellow-400" />} label="High Priority" value={summary.totalHighPriority} color="bg-yellow-950/40" active={activeFilter === "high"} onClick={() => toggleFilter("high")} />
+                <StatCard icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />} label="Done Today" value={summary.completedToday} color="bg-emerald-950/40" active={activeFilter === "done"} onClick={() => toggleFilter("done")} />
+                <StatCard icon={<Star className="h-3.5 w-3.5 text-yellow-400" />} label="Starred Mail" value={summary.totalStarred} color="bg-yellow-950/40" active={activeFilter === "starred"} onClick={() => toggleFilter("starred")} />
+                <StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="Pending" value={summary.totalPendingApprovals} color="bg-blue-950/40" active={activeFilter === "pending"} onClick={() => toggleFilter("pending")} hasNotification={summary.totalPendingApprovals > 0} />
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* ── COLLAPSED ONLY: Compact stat cards row ── */}
-      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-        !expanded ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
-      }`}>
-        <div className="px-5 lg:px-6 pt-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <Filter className="h-3 w-3 text-zinc-600" />
-              <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">Quick Stats</span>
-            </div>
-            {activeFilter && (
-              <button
-                onClick={() => onFilterChange(null)}
-                className="flex items-center gap-1 text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors"
-              >
-                <X className="h-3 w-3" />
-                Clear filter
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-6 gap-1.5">
-            <StatCard icon={<ListTodo className="h-3.5 w-3.5 text-zinc-300" />} label="Open" value={summary.totalOpen} color="bg-zinc-800/60" active={activeFilter === "open"} onClick={() => toggleFilter("open")} />
-            <StatCard icon={<AlertTriangle className="h-3.5 w-3.5 text-red-400" />} label="Overdue" value={summary.totalOverdue} color="bg-red-950/40" active={activeFilter === "overdue"} onClick={() => toggleFilter("overdue")} highlight={summary.totalOverdue > 0} />
-            <StatCard icon={<Flame className="h-3.5 w-3.5 text-yellow-400" />} label="High" value={summary.totalHighPriority} color="bg-yellow-950/40" active={activeFilter === "high"} onClick={() => toggleFilter("high")} />
-            <StatCard icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />} label="Done" value={summary.completedToday} color="bg-emerald-950/40" active={activeFilter === "done"} onClick={() => toggleFilter("done")} />
-            <StatCard icon={<Star className="h-3.5 w-3.5 text-yellow-400" />} label="Starred" value={summary.totalStarred} color="bg-yellow-950/40" active={activeFilter === "starred"} onClick={() => toggleFilter("starred")} />
-<StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="Pending" value={summary.totalPendingApprovals} color="bg-blue-950/40" active={activeFilter === "pending"} onClick={() => toggleFilter("pending")} hasNotification={summary.totalPendingApprovals > 0} />
-           </div>
-        </div>
-      </div>
-
-      {/* Bottom padding */}
-      <div className="h-5 lg:h-6" />
     </div>
   );
 }
-// ─── Main Triage Feed ──────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN TRIAGE FEED
+// ═══════════════════════════════════════════════════════════════════════════
 export default function TriageFeed() {
   const utils = trpc.useUtils();
   const { data, isLoading, error } = trpc.triage.feed.useQuery();
@@ -1275,10 +1161,7 @@ export default function TriageFeed() {
       utils.contacts.list.invalidate();
       toast("Contact approved", {
         description: "Click Undo to reverse",
-        action: {
-          label: "Undo",
-          onClick: () => rejectContactMutation.mutate({ contactId: variables.contactId }),
-        },
+        action: { label: "Undo", onClick: () => rejectContactMutation.mutate({ contactId: variables.contactId }) },
         duration: 5000,
       });
     },
@@ -1292,10 +1175,7 @@ export default function TriageFeed() {
       utils.contacts.list.invalidate();
       toast("Contact rejected", {
         description: "Click Undo to reverse",
-        action: {
-          label: "Undo",
-          onClick: () => approveContactMutation.mutate({ contactId: variables.contactId }),
-        },
+        action: { label: "Undo", onClick: () => approveContactMutation.mutate({ contactId: variables.contactId }) },
         duration: 5000,
       });
     },
@@ -1309,10 +1189,7 @@ export default function TriageFeed() {
       utils.companies.list.invalidate();
       toast("Company approved", {
         description: "Click Undo to reverse",
-        action: {
-          label: "Undo",
-          onClick: () => rejectCompanyMutation.mutate({ companyId: variables.companyId }),
-        },
+        action: { label: "Undo", onClick: () => rejectCompanyMutation.mutate({ companyId: variables.companyId }) },
         duration: 5000,
       });
     },
@@ -1326,10 +1203,7 @@ export default function TriageFeed() {
       utils.companies.list.invalidate();
       toast("Company rejected", {
         description: "Click Undo to reverse",
-        action: {
-          label: "Undo",
-          onClick: () => approveCompanyMutation.mutate({ companyId: variables.companyId }),
-        },
+        action: { label: "Undo", onClick: () => approveCompanyMutation.mutate({ companyId: variables.companyId }) },
         duration: 5000,
       });
     },
@@ -1359,10 +1233,7 @@ export default function TriageFeed() {
       utils.triage.feed.invalidate();
       toast("Suggestion approved", {
         description: "Click Undo to reverse",
-        action: {
-          label: "Undo",
-          onClick: () => rejectSuggestionMutation.mutate({ id: variables.id }),
-        },
+        action: { label: "Undo", onClick: () => rejectSuggestionMutation.mutate({ id: variables.id }) },
         duration: 5000,
       });
     },
@@ -1374,10 +1245,7 @@ export default function TriageFeed() {
       utils.triage.feed.invalidate();
       toast("Suggestion dismissed", {
         description: "Click Undo to reverse",
-        action: {
-          label: "Undo",
-          onClick: () => approveSuggestionMutation.mutate({ id: variables.id }),
-        },
+        action: { label: "Undo", onClick: () => approveSuggestionMutation.mutate({ id: variables.id }) },
         duration: 5000,
       });
     },
@@ -1396,7 +1264,10 @@ export default function TriageFeed() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin text-yellow-600" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-yellow-600" />
+          <p className="text-xs text-zinc-500 font-medium">Loading your triage feed...</p>
+        </div>
       </div>
     );
   }
@@ -1429,7 +1300,7 @@ export default function TriageFeed() {
   const allTodayDone = !hasOverdue && !hasTodayTasks && hasCompletedToday;
 
   return (
-    <div className="p-5 lg:p-6 max-w-[1400px] mx-auto space-y-4">
+    <div className="p-5 lg:p-6 max-w-[1400px] mx-auto space-y-5">
       {/* ── Task Modal ──────────────────────────────────────────────── */}
       {selectedTask && (
         <TaskModal
@@ -1470,8 +1341,8 @@ export default function TriageFeed() {
         />
       )}
 
-      {/* ── Greeting bar with integrated insights ──────────────────── */}
-      <GreetingBar
+      {/* ── Hero Greeting ──────────────────────────────────────────── */}
+      <HeroGreeting
         greeting={greeting}
         userName={data.userName}
         statusLine={statusLine}
@@ -1490,9 +1361,11 @@ export default function TriageFeed() {
 
       {/* ── Active filter indicator ─────────────────────────────────────── */}
       {activeFilter && (
-        <div className="flex items-center gap-2 bg-yellow-950/15 border border-yellow-800/25 rounded-xl px-4 py-2.5">
-          <Filter className="h-3.5 w-3.5 text-yellow-500" />
-          <span className="text-sm text-yellow-400 font-medium">
+        <div className="flex items-center gap-2.5 bg-yellow-500/5 border border-yellow-500/15 rounded-2xl px-5 py-3">
+          <div className="h-7 w-7 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+            <Filter className="h-3.5 w-3.5 text-yellow-500" />
+          </div>
+          <span className="text-sm text-yellow-400 font-semibold">
             {activeFilter === "open" && "Showing all open tasks"}
             {activeFilter === "overdue" && "Showing overdue tasks"}
             {activeFilter === "high" && "Showing high priority tasks"}
@@ -1502,7 +1375,7 @@ export default function TriageFeed() {
           </span>
           <button
             onClick={() => setActiveFilter(null)}
-            className="ml-auto p-1 rounded hover:bg-yellow-900/30 text-yellow-500 hover:text-yellow-400 transition-colors"
+            className="ml-auto p-1.5 rounded-xl hover:bg-yellow-900/20 text-yellow-500 hover:text-yellow-400 transition-all"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -1519,7 +1392,7 @@ export default function TriageFeed() {
           linkTo="/operations"
           linkLabel="Manage in Operations"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {[...data.overdueTasks, ...data.todayTasks, ...data.highPriorityTasks, ...(data.tomorrowTasks || []), ...(data.weekTasks || [])]
               .filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
               .map((t) => (
@@ -1543,21 +1416,14 @@ export default function TriageFeed() {
           count={data.overdueTasks.length}
           accentColor="bg-red-950/40"
           linkTo="/operations"
-          className="bg-red-950/5 border border-red-900/15 rounded-xl p-4"
+          className="bg-red-950/5 border border-red-900/10 rounded-2xl p-5"
         >
           {data.overdueTasks.length === 0 ? (
             <p className="text-sm text-zinc-500 py-4 text-center">No overdue tasks. You're on track.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {data.overdueTasks.map((t) => (
-                <TaskCard
-                  key={t.id}
-                  task={t}
-                  showOverdue
-                  onClick={() => setSelectedTask(t)}
-                  onQuickComplete={(id) => completeMutation.mutate({ taskId: id })}
-                  isActing={actingIds.has(t.id)}
-                />
+                <TaskCard key={t.id} task={t} showOverdue onClick={() => setSelectedTask(t)} onQuickComplete={(id) => completeMutation.mutate({ taskId: id })} isActing={actingIds.has(t.id)} />
               ))}
             </div>
           )}
@@ -1575,18 +1441,11 @@ export default function TriageFeed() {
           {data.highPriorityTasks.length === 0 ? (
             <p className="text-sm text-zinc-500 py-4 text-center">No high priority tasks.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {[...data.overdueTasks.filter(t => t.priority === 'high'), ...data.todayTasks.filter(t => t.priority === 'high'), ...data.highPriorityTasks]
                 .filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
                 .map((t) => (
-                  <TaskCard
-                    key={t.id}
-                    task={t}
-                    showOverdue={data.overdueTasks.some(o => o.id === t.id)}
-                    onClick={() => setSelectedTask(t)}
-                    onQuickComplete={(id) => completeMutation.mutate({ taskId: id })}
-                    isActing={actingIds.has(t.id)}
-                  />
+                  <TaskCard key={t.id} task={t} showOverdue={data.overdueTasks.some(o => o.id === t.id)} onClick={() => setSelectedTask(t)} onQuickComplete={(id) => completeMutation.mutate({ taskId: id })} isActing={actingIds.has(t.id)} />
                 ))}
             </div>
           )}
@@ -1594,43 +1453,29 @@ export default function TriageFeed() {
       )}
 
       {activeFilter === "done" && (
-        <Section
-          icon={<Trophy className="h-4 w-4 text-emerald-400" />}
-          title="Completed Today"
-          count={data.completedTodayTasks?.length || 0}
-          accentColor="bg-emerald-950/40"
-        >
+        <Section icon={<Trophy className="h-4 w-4 text-emerald-400" />} title="Completed Today" count={data.completedTodayTasks?.length || 0} accentColor="bg-emerald-950/40">
           {!data.completedTodayTasks?.length ? (
             <p className="text-sm text-zinc-500 py-4 text-center">No tasks completed today yet.</p>
           ) : (
-            <div className="space-y-1.5">
-              {data.completedTodayTasks.map((t) => (
-                <CompletedRow key={t.id} task={t} />
-              ))}
+            <div className="space-y-2">
+              {data.completedTodayTasks.map((t) => <CompletedRow key={t.id} task={t} />)}
             </div>
           )}
         </Section>
       )}
 
       {activeFilter === "starred" && (
-        <Section
-          icon={<Star className="h-4 w-4 text-yellow-500" />}
-          title="Starred Emails"
-          count={data.starredEmails.length}
-          accentColor="bg-yellow-950/40"
-          linkTo="/communications"
-          linkLabel="Open inbox"
-        >
+        <Section icon={<Star className="h-4 w-4 text-yellow-500" />} title="Starred Emails" count={data.starredEmails.length} accentColor="bg-yellow-950/40" linkTo="/communications" linkLabel="Open inbox">
           {data.starredEmails.length === 0 ? (
             <p className="text-sm text-zinc-500 py-4 text-center">No starred emails.</p>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {data.starredEmails.map((s) => {
                 const starLabels: Record<number, string> = { 1: "Reply Today", 2: "Delegate", 3: "Critical" };
                 const starColors: Record<number, string> = { 1: "text-yellow-500", 2: "text-orange-400", 3: "text-red-400" };
                 return (
                   <Link key={s.threadId} href="/communications">
-                    <div className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all cursor-pointer">
                       <Mail className="h-3.5 w-3.5 text-zinc-500" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-zinc-200 truncate">{s.subject || s.fromName || s.threadId.slice(0, 16) + "..."}</p>
@@ -1650,23 +1495,13 @@ export default function TriageFeed() {
 
       {activeFilter === "pending" && (
         <>
-        <Section
-          icon={<UserPlus className="h-4 w-4 text-blue-400" />}
-          title="Pending Approvals"
-          count={data.pendingContacts.length + data.pendingCompanies.length}
-          accentColor="bg-blue-950/40"
-          linkTo="/relationships"
-        >
+        <Section icon={<UserPlus className="h-4 w-4 text-blue-400" />} title="Pending Approvals" count={data.pendingContacts.length + data.pendingCompanies.length} accentColor="bg-blue-950/40" linkTo="/relationships">
           {data.pendingContacts.length === 0 && data.pendingCompanies.length === 0 ? (
             <p className="text-sm text-zinc-500 py-4 text-center">No pending approvals.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {data.pendingContacts.map((c) => (
-                <div
-                  key={`c-${c.id}`}
-                  onClick={() => setSelectedApproval({ item: c, type: "contact" })}
-                  className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                >
+                <div key={`c-${c.id}`} onClick={() => setSelectedApproval({ item: c, type: "contact" })} className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all cursor-pointer">
                   <UserPlus className="h-3.5 w-3.5 text-blue-400/60" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-zinc-200 truncate">{c.name}</p>
@@ -1676,11 +1511,7 @@ export default function TriageFeed() {
                 </div>
               ))}
               {data.pendingCompanies.map((c) => (
-                <div
-                  key={`co-${c.id}`}
-                  onClick={() => setSelectedApproval({ item: c, type: "company" })}
-                  className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                >
+                <div key={`co-${c.id}`} onClick={() => setSelectedApproval({ item: c, type: "company" })} className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all cursor-pointer">
                   <Building2 className="h-3.5 w-3.5 text-purple-400/60" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-zinc-200 truncate">{c.name}</p>
@@ -1693,35 +1524,24 @@ export default function TriageFeed() {
           )}
         </Section>
 
-        {/* Data Review Suggestions in pending filter */}
         {hasPendingSuggestions && (
-          <Section
-            icon={<Brain className="h-4 w-4 text-violet-400" />}
-            title="Data Review Suggestions"
-            count={data.pendingSuggestions?.length}
-            accentColor="bg-violet-950/40"
-          >
-            <div className="space-y-1.5">
+          <Section icon={<Brain className="h-4 w-4 text-violet-400" />} title="Data Review Suggestions" count={data.pendingSuggestions?.length} accentColor="bg-violet-950/40">
+            <div className="space-y-2">
               {data.pendingSuggestions?.map((s: any) => {
-                const typeLabels: Record<string, string> = {
-                  company_link: "Company Association",
-                  enrichment: "Contact Enrichment",
-                  company_enrichment: "Company Enrichment",
-                };
+                const typeLabels: Record<string, string> = { company_link: "Company Association", enrichment: "Contact Enrichment", company_enrichment: "Company Enrichment" };
                 return (
-                  <div key={s.id} className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors">
+                  <div key={s.id} className="group flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all">
                     <Brain className="h-3.5 w-3.5 text-violet-400/60" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-zinc-200 truncate">
                         {s.type === 'company_link' ? `Link ${s.contactName} → ${s.suggestedCompanyName}` :
-                         s.type === 'enrichment' ? `Enrich ${s.contactName}` :
-                         `Enrich ${s.companyName}`}
+                         s.type === 'enrichment' ? `Enrich ${s.contactName}` : `Enrich ${s.companyName}`}
                       </p>
                       <p className="text-[10px] text-zinc-500">{typeLabels[s.type]} {s.confidence ? `• ${s.confidence}%` : ''}</p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => approveSuggestionMutation.mutate({ id: s.id })} className="p-1 rounded hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => rejectSuggestionMutation.mutate({ id: s.id })} className="p-1 rounded hover:bg-red-950/50 text-zinc-600 hover:text-red-400 transition-colors" title="Dismiss"><X className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => approveSuggestionMutation.mutate({ id: s.id })} className="p-1.5 rounded-xl hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-all" title="Approve"><Check className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => rejectSuggestionMutation.mutate({ id: s.id })} className="p-1.5 rounded-xl hover:bg-red-950/50 text-zinc-600 hover:text-red-400 transition-all" title="Dismiss"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>
                 );
@@ -1737,19 +1557,19 @@ export default function TriageFeed() {
         <>
           {/* Celebration */}
           {allTodayDone && (
-            <div className="flex items-center gap-3 bg-emerald-950/15 border border-emerald-800/25 rounded-xl p-4">
-              <div className="p-2 rounded-full bg-emerald-950/40">
-                <Trophy className="h-5 w-5 text-emerald-400" />
+            <div className="flex items-center gap-4 bg-emerald-500/5 border border-emerald-500/15 rounded-2xl p-5">
+              <div className="p-3 rounded-2xl bg-emerald-500/10">
+                <Trophy className="h-6 w-6 text-emerald-400" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-emerald-400">All tasks completed for today</h3>
+                <h3 className="text-base font-semibold text-emerald-400">All tasks completed for today</h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   {data.completedTodayTasks?.length || 0} completed.
                   {hasTomorrowTasks ? ` ${data.tomorrowTasks?.length} coming tomorrow.` : ""}
                 </p>
               </div>
               <Link href="/operations">
-                <span className="text-xs text-emerald-500 hover:text-emerald-400 flex items-center gap-1 cursor-pointer">
+                <span className="text-xs text-emerald-500 hover:text-emerald-400 flex items-center gap-1.5 cursor-pointer font-medium">
                   View all <ArrowRight className="h-3 w-3" />
                 </span>
               </Link>
@@ -1758,11 +1578,11 @@ export default function TriageFeed() {
 
           {/* All clear */}
           {nothingToTriage && !allTodayDone && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-3 rounded-full bg-emerald-950/30 border border-emerald-800/30 mb-3">
-                <Sparkles className="h-6 w-6 text-emerald-500" />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 mb-4">
+                <Sparkles className="h-8 w-8 text-emerald-500" />
               </div>
-              <h3 className="text-base font-semibold text-white mb-1">All Clear</h3>
+              <h3 className="text-lg font-semibold text-white mb-1">All Clear</h3>
               <p className="text-sm text-zinc-500 max-w-sm">
                 Nothing requires your immediate attention.
               </p>
@@ -1777,18 +1597,11 @@ export default function TriageFeed() {
               count={data.overdueTasks.length}
               accentColor="bg-red-950/40"
               linkTo="/operations"
-              className="bg-red-950/5 border border-red-900/15 rounded-xl p-4"
+              className="bg-red-950/5 border border-red-900/10 rounded-2xl p-5"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {data.overdueTasks.map((t) => (
-                  <TaskCard
-                    key={t.id}
-                    task={t}
-                    showOverdue
-                    onClick={() => setSelectedTask(t)}
-                    onQuickComplete={(id) => completeMutation.mutate({ taskId: id })}
-                    isActing={actingIds.has(t.id)}
-                  />
+                  <TaskCard key={t.id} task={t} showOverdue onClick={() => setSelectedTask(t)} onQuickComplete={(id) => completeMutation.mutate({ taskId: id })} isActing={actingIds.has(t.id)} />
                 ))}
               </div>
             </Section>
@@ -1796,22 +1609,10 @@ export default function TriageFeed() {
 
           {/* Due today */}
           {hasTodayTasks && (
-            <Section
-              icon={<Clock className="h-4 w-4 text-yellow-500" />}
-              title="Due Today"
-              count={data.todayTasks.length}
-              accentColor="bg-yellow-950/40"
-              linkTo="/operations"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+            <Section icon={<Clock className="h-4 w-4 text-yellow-500" />} title="Due Today" count={data.todayTasks.length} accentColor="bg-yellow-950/40" linkTo="/operations">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {data.todayTasks.map((t) => (
-                  <TaskCard
-                    key={t.id}
-                    task={t}
-                    onClick={() => setSelectedTask(t)}
-                    onQuickComplete={(id) => completeMutation.mutate({ taskId: id })}
-                    isActing={actingIds.has(t.id)}
-                  />
+                  <TaskCard key={t.id} task={t} onClick={() => setSelectedTask(t)} onQuickComplete={(id) => completeMutation.mutate({ taskId: id })} isActing={actingIds.has(t.id)} />
                 ))}
               </div>
             </Section>
@@ -1819,37 +1620,18 @@ export default function TriageFeed() {
 
           {/* Two-column: High Priority + Approvals/Starred */}
           {(hasHighPriority || hasStarredEmails || hasPendingContacts || hasPendingCompanies) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {hasHighPriority && (
-                <Section
-                  icon={<Flame className="h-4 w-4 text-orange-400" />}
-                  title="High Priority"
-                  count={data.highPriorityTasks.length}
-                  accentColor="bg-orange-950/40"
-                  linkTo="/operations"
-                >
-                  <div className="space-y-1.5">
+                <Section icon={<Flame className="h-4 w-4 text-orange-400" />} title="High Priority" count={data.highPriorityTasks.length} accentColor="bg-orange-950/40" linkTo="/operations">
+                  <div className="space-y-2">
                     {data.highPriorityTasks.slice(0, 6).map((t) => {
                       const cleanTitle = t.title.replace(/\s*\(Assigned to:.*?\)\s*$/, "");
                       return (
-                        <div
-                          key={t.id}
-                          onClick={() => setSelectedTask(t)}
-                          className="group flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                        >
+                        <div key={t.id} onClick={() => setSelectedTask(t)} className="group flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 hover:bg-zinc-900/60 transition-all duration-200 cursor-pointer">
                           <PriorityBadge priority={t.priority} />
-                          <span className="text-sm text-zinc-200 truncate flex-1 group-hover:text-white transition-colors">
-                            {cleanTitle}
-                          </span>
-                          {t.assignedName && (
-                            <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">{t.assignedName}</span>
-                          )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); completeMutation.mutate({ taskId: t.id }); }}
-                            disabled={actingIds.has(t.id)}
-                            className="p-1 rounded hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                            title="Complete"
-                          >
+                          <span className="text-sm text-zinc-200 truncate flex-1 group-hover:text-white transition-colors">{cleanTitle}</span>
+                          {t.assignedName && <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">{t.assignedName}</span>}
+                          <button onClick={(e) => { e.stopPropagation(); completeMutation.mutate({ taskId: t.id }); }} disabled={actingIds.has(t.id)} className="p-1.5 rounded-xl hover:bg-emerald-950/50 text-zinc-600 hover:text-emerald-400 transition-all opacity-0 group-hover:opacity-100 shrink-0" title="Complete">
                             <Check className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -1859,22 +1641,16 @@ export default function TriageFeed() {
                 </Section>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {hasStarredEmails && (
-                  <Section
-                    icon={<Star className="h-4 w-4 text-yellow-500" />}
-                    title="Starred Emails"
-                    count={data.starredEmails.length}
-                    accentColor="bg-yellow-950/40"
-                    linkTo="/communications"
-                  >
-                    <div className="space-y-1.5">
+                  <Section icon={<Star className="h-4 w-4 text-yellow-500" />} title="Starred Emails" count={data.starredEmails.length} accentColor="bg-yellow-950/40" linkTo="/communications">
+                    <div className="space-y-2">
                       {data.starredEmails.map((s) => {
                         const starLabels: Record<number, string> = { 1: "Reply Today", 2: "Delegate", 3: "Critical" };
                         const starColors: Record<number, string> = { 1: "text-yellow-500", 2: "text-orange-400", 3: "text-red-400" };
                         return (
                           <Link key={s.threadId} href="/communications">
-                            <div className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer">
+                            <div className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all cursor-pointer">
                               <Mail className="h-3.5 w-3.5 text-zinc-500" />
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm text-zinc-200 truncate">{s.subject || s.fromName || s.threadId.slice(0, 16) + "..."}</p>
@@ -1892,20 +1668,10 @@ export default function TriageFeed() {
                 )}
 
                 {(hasPendingContacts || hasPendingCompanies) && (
-                  <Section
-                    icon={<UserPlus className="h-4 w-4 text-blue-400" />}
-                    title="Pending Approvals"
-                    count={data.pendingContacts.length + data.pendingCompanies.length}
-                    accentColor="bg-blue-950/40"
-                    linkTo="/relationships"
-                  >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <Section icon={<UserPlus className="h-4 w-4 text-blue-400" />} title="Pending Approvals" count={data.pendingContacts.length + data.pendingCompanies.length} accentColor="bg-blue-950/40" linkTo="/relationships">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {data.pendingContacts.map((c) => (
-                        <div
-                          key={`c-${c.id}`}
-                          onClick={() => setSelectedApproval({ item: c, type: "contact" })}
-                          className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                        >
+                        <div key={`c-${c.id}`} onClick={() => setSelectedApproval({ item: c, type: "contact" })} className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all cursor-pointer">
                           <UserPlus className="h-3.5 w-3.5 text-blue-400/60" />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm text-zinc-200 truncate">{c.name}</p>
@@ -1915,11 +1681,7 @@ export default function TriageFeed() {
                         </div>
                       ))}
                       {data.pendingCompanies.map((c) => (
-                        <div
-                          key={`co-${c.id}`}
-                          onClick={() => setSelectedApproval({ item: c, type: "company" })}
-                          className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2 hover:border-zinc-700/50 transition-colors cursor-pointer"
-                        >
+                        <div key={`co-${c.id}`} onClick={() => setSelectedApproval({ item: c, type: "company" })} className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all cursor-pointer">
                           <Building2 className="h-3.5 w-3.5 text-purple-400/60" />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm text-zinc-200 truncate">{c.name}</p>
@@ -1937,19 +1699,10 @@ export default function TriageFeed() {
 
           {/* Data Review Suggestions */}
           {hasPendingSuggestions && (
-            <Section
-              icon={<Brain className="h-4 w-4 text-violet-400" />}
-              title="Data Review"
-              count={data.pendingSuggestions?.length}
-              accentColor="bg-violet-950/40"
-            >
-              <div className="space-y-1.5">
+            <Section icon={<Brain className="h-4 w-4 text-violet-400" />} title="Data Review" count={data.pendingSuggestions?.length} accentColor="bg-violet-950/40">
+              <div className="space-y-2">
                 {data.pendingSuggestions?.map((s: any) => {
-                  const typeLabels: Record<string, string> = {
-                    company_link: "Company Association",
-                    enrichment: "Contact Enrichment",
-                    company_enrichment: "Company Enrichment",
-                  };
+                  const typeLabels: Record<string, string> = { company_link: "Company Association", enrichment: "Contact Enrichment", company_enrichment: "Company Enrichment" };
                   const typeIcons: Record<string, React.ReactNode> = {
                     company_link: <Building2 className="h-3.5 w-3.5 text-purple-400/60" />,
                     enrichment: <Sparkles className="h-3.5 w-3.5 text-amber-400/60" />,
@@ -1957,86 +1710,52 @@ export default function TriageFeed() {
                   };
 
                   return (
-                    <div
-                      key={s.id}
-                      className="group bg-zinc-900/50 border border-zinc-800/40 rounded-lg px-3 py-2.5 hover:border-zinc-700/50 transition-colors"
-                    >
+                    <div key={s.id} className="group bg-zinc-900/40 border border-zinc-800/40 rounded-xl px-4 py-3 hover:border-zinc-700/50 transition-all">
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5">{typeIcons[s.type] || <Zap className="h-3.5 w-3.5 text-zinc-500" />}</div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-[10px] font-medium text-violet-400/80 uppercase tracking-wider">
-                              {typeLabels[s.type] || s.type}
-                            </span>
+                            <span className="text-[10px] font-semibold text-violet-400/80 uppercase tracking-wider">{typeLabels[s.type] || s.type}</span>
                             {s.confidence && (
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full ${
                                 s.confidence >= 80 ? 'bg-emerald-950/50 text-emerald-400' :
                                 s.confidence >= 50 ? 'bg-amber-950/50 text-amber-400' :
                                 'bg-zinc-800/50 text-zinc-400'
-                              }`}>
-                                {s.confidence}% match
-                              </span>
+                              }`}>{s.confidence}% match</span>
                             )}
                           </div>
-
                           {s.type === 'company_link' && (
-                            <p className="text-sm text-zinc-200">
-                              Link <span className="text-white font-medium">{s.contactName}</span> to{" "}
-                              <span className="text-purple-300 font-medium">{s.suggestedCompanyName}</span>
-                            </p>
+                            <p className="text-sm text-zinc-200">Link <span className="text-white font-medium">{s.contactName}</span> to <span className="text-purple-300 font-medium">{s.suggestedCompanyName}</span></p>
                           )}
-
                           {s.type === 'enrichment' && s.suggestedData && (
                             <div>
-                              <p className="text-sm text-zinc-200 mb-1">
-                                Update <span className="text-white font-medium">{s.contactName}</span>
-                              </p>
+                              <p className="text-sm text-zinc-200 mb-1">Update <span className="text-white font-medium">{s.contactName}</span></p>
                               <div className="flex flex-wrap gap-1">
                                 {Object.entries(s.suggestedData).map(([key, val]) => (
-                                  <span key={key} className="text-[10px] bg-zinc-800/60 border border-zinc-700/30 rounded px-1.5 py-0.5 text-zinc-300">
+                                  <span key={key} className="text-[10px] bg-zinc-800/60 border border-zinc-700/30 rounded-full px-2 py-0.5 text-zinc-300">
                                     {key}: <span className="text-amber-300">{String(val)}</span>
                                   </span>
                                 ))}
                               </div>
                             </div>
                           )}
-
                           {s.type === 'company_enrichment' && s.suggestedData && (
                             <div>
-                              <p className="text-sm text-zinc-200 mb-1">
-                                Update <span className="text-white font-medium">{s.companyName}</span>
-                              </p>
+                              <p className="text-sm text-zinc-200 mb-1">Update <span className="text-white font-medium">{s.companyName}</span></p>
                               <div className="flex flex-wrap gap-1">
                                 {Object.entries(s.suggestedData).map(([key, val]) => (
-                                  <span key={key} className="text-[10px] bg-zinc-800/60 border border-zinc-700/30 rounded px-1.5 py-0.5 text-zinc-300">
+                                  <span key={key} className="text-[10px] bg-zinc-800/60 border border-zinc-700/30 rounded-full px-2 py-0.5 text-zinc-300">
                                     {key}: <span className="text-blue-300">{String(val)}</span>
                                   </span>
                                 ))}
                               </div>
                             </div>
                           )}
-
                           {s.reason && <p className="text-[10px] text-zinc-500 mt-1">{s.reason}</p>}
                         </div>
-
-                        {/* Quick actions */}
                         <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => approveSuggestionMutation.mutate({ id: s.id })}
-                            disabled={approveSuggestionMutation.isPending}
-                            className="p-1.5 rounded-md hover:bg-emerald-950/50 text-zinc-500 hover:text-emerald-400 transition-colors"
-                            title="Approve"
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => rejectSuggestionMutation.mutate({ id: s.id })}
-                            disabled={rejectSuggestionMutation.isPending}
-                            className="p-1.5 rounded-md hover:bg-red-950/50 text-zinc-500 hover:text-red-400 transition-colors"
-                            title="Dismiss"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                          <button onClick={() => approveSuggestionMutation.mutate({ id: s.id })} disabled={approveSuggestionMutation.isPending} className="p-1.5 rounded-xl hover:bg-emerald-950/50 text-zinc-500 hover:text-emerald-400 transition-all" title="Approve"><Check className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => rejectSuggestionMutation.mutate({ id: s.id })} disabled={rejectSuggestionMutation.isPending} className="p-1.5 rounded-xl hover:bg-red-950/50 text-zinc-500 hover:text-red-400 transition-all" title="Dismiss"><X className="h-3.5 w-3.5" /></button>
                         </div>
                       </div>
                     </div>
@@ -2051,55 +1770,28 @@ export default function TriageFeed() {
 
           {/* Completed today */}
           {hasCompletedToday && (
-            <Section
-              icon={<Trophy className="h-4 w-4 text-emerald-400" />}
-              title="Completed Today"
-              count={data.completedTodayTasks?.length}
-              accentColor="bg-emerald-950/40"
-              collapsible
-              defaultOpen={false}
-            >
-              <div className="space-y-1.5">
-                {data.completedTodayTasks?.map((t) => (
-                  <CompletedRow key={t.id} task={t} />
-                ))}
+            <Section icon={<Trophy className="h-4 w-4 text-emerald-400" />} title="Completed Today" count={data.completedTodayTasks?.length} accentColor="bg-emerald-950/40" collapsible defaultOpen={false}>
+              <div className="space-y-2">
+                {data.completedTodayTasks?.map((t) => <CompletedRow key={t.id} task={t} />)}
               </div>
             </Section>
           )}
 
           {/* Tomorrow + This week */}
           {(hasTomorrowTasks || hasWeekTasks) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {hasTomorrowTasks && (
-                <Section
-                  icon={<Sunrise className="h-4 w-4 text-amber-400" />}
-                  title="Tomorrow"
-                  count={data.tomorrowTasks?.length}
-                  accentColor="bg-amber-950/40"
-                  linkTo="/operations"
-                  collapsible
-                >
-                  <div className="space-y-1.5">
-                    {data.tomorrowTasks?.map((t) => (
-                      <CompactTaskRow key={t.id} task={t} onClick={() => setSelectedTask({ ...t, notes: "" })} />
-                    ))}
+                <Section icon={<Sunrise className="h-4 w-4 text-amber-400" />} title="Tomorrow" count={data.tomorrowTasks?.length} accentColor="bg-amber-950/40" linkTo="/operations" collapsible>
+                  <div className="space-y-2">
+                    {data.tomorrowTasks?.map((t) => <CompactTaskRow key={t.id} task={t} onClick={() => setSelectedTask({ ...t, notes: "" })} />)}
                   </div>
                 </Section>
               )}
 
               {hasWeekTasks && (
-                <Section
-                  icon={<CalendarDays className="h-4 w-4 text-blue-400" />}
-                  title="This Week"
-                  count={data.weekTasks?.length}
-                  accentColor="bg-blue-950/40"
-                  linkTo="/operations"
-                  collapsible
-                >
-                  <div className="space-y-1.5">
-                    {data.weekTasks?.map((t) => (
-                      <CompactTaskRow key={t.id} task={t} showDate onClick={() => setSelectedTask({ ...t, notes: "" })} />
-                    ))}
+                <Section icon={<CalendarDays className="h-4 w-4 text-blue-400" />} title="This Week" count={data.weekTasks?.length} accentColor="bg-blue-950/40" linkTo="/operations" collapsible>
+                  <div className="space-y-2">
+                    {data.weekTasks?.map((t) => <CompactTaskRow key={t.id} task={t} showDate onClick={() => setSelectedTask({ ...t, notes: "" })} />)}
                   </div>
                 </Section>
               )}
@@ -2108,18 +1800,9 @@ export default function TriageFeed() {
 
           {/* Recent meetings */}
           {hasRecentMeetings && (
-            <Section
-              icon={<Calendar className="h-4 w-4 text-emerald-400" />}
-              title="Recent Intelligence"
-              count={data.recentMeetings.length}
-              accentColor="bg-emerald-950/40"
-              linkTo="/intelligence"
-              linkLabel="All meetings"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                {data.recentMeetings.map((m) => (
-                  <MeetingCard key={m.id} meeting={m} />
-                ))}
+            <Section icon={<Calendar className="h-4 w-4 text-emerald-400" />} title="Recent Intelligence" count={data.recentMeetings.length} accentColor="bg-emerald-950/40" linkTo="/intelligence" linkLabel="All meetings">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {data.recentMeetings.map((m) => <MeetingCard key={m.id} meeting={m} />)}
               </div>
             </Section>
           )}
