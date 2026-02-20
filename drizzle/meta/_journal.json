@@ -183,6 +183,13 @@
       "when": 1771556192276,
       "tag": "0025_awesome_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1771568539063,
+      "tag": "0026_aspiring_mentor",
+      "breakpoints": true
     }
   ]
 }

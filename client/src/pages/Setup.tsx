@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useSearch } from "wouter";
@@ -11,11 +12,14 @@ import {
   Mail, Calendar, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
   ExternalLink, Shield, Clock, Loader2, Copy, Info, User, Settings,
   Link2, Zap, ChevronRight, Sparkles, Eye, EyeOff, Monitor,
-  HardDrive, FileText, FileSpreadsheet
+  HardDrive, FileText, FileSpreadsheet, Power, Plus, Search,
+  ToggleLeft, ToggleRight, Lock, Unlock, ChevronDown, ChevronUp,
+  Key, Globe, Webhook, Trash2, Edit3, Check, X, ArrowRight,
+  Puzzle, MessageSquare, CreditCard, BarChart3, Briefcase, Bot
 } from "lucide-react";
 import OmniAvatar, { OmniMode, OmniState } from "@/components/OmniAvatar";
 
-type Tab = "profile" | "integrations" | "webhooks" | "omni";
+type Tab = "profile" | "integrations" | "features" | "webhooks" | "omni";
 
 export default function Setup() {
   const search = useSearch();
@@ -24,10 +28,9 @@ export default function Setup() {
   const initialTab = params.get("tab") as Tab | null;
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || "integrations");
 
-  // Show toast on redirect from Google OAuth
   useEffect(() => {
     if (googleStatus === "connected") {
-      toast.success("Google account connected successfully! Gmail and Calendar scopes are now active.");
+      toast.success("Google account connected successfully!");
       setActiveTab("integrations");
       window.history.replaceState({}, "", "/setup?tab=integrations");
     } else if (googleStatus === "error") {
@@ -38,49 +41,63 @@ export default function Setup() {
     }
   }, [googleStatus]);
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "profile", label: "Profile", icon: <User className="h-4 w-4" /> },
-    { id: "integrations", label: "Integrations", icon: <Settings className="h-4 w-4" /> },
-    { id: "webhooks", label: "Webhooks & API", icon: <Link2 className="h-4 w-4" /> },
-    { id: "omni", label: "Omni Assistant", icon: <Sparkles className="h-4 w-4" /> },
+  const tabs: { id: Tab; label: string; icon: React.ReactNode; description: string }[] = [
+    { id: "profile", label: "Profile", icon: <User className="h-4 w-4" />, description: "Account" },
+    { id: "integrations", label: "Integrations", icon: <Puzzle className="h-4 w-4" />, description: "Connected services" },
+    { id: "features", label: "Feature Controls", icon: <ToggleRight className="h-4 w-4" />, description: "Module toggles" },
+    { id: "webhooks", label: "Webhooks & API", icon: <Webhook className="h-4 w-4" />, description: "Endpoints" },
+    { id: "omni", label: "Omni Assistant", icon: <Sparkles className="h-4 w-4" />, description: "AI companion" },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Setup</h1>
-        <p className="text-sm text-zinc-400 mt-1">
-          Manage your profile, connected services, and API integrations.
-        </p>
+    <div className="min-h-screen">
+      {/* Premium Header */}
+      <div className="border-b border-zinc-800/60 bg-gradient-to-r from-zinc-950 via-zinc-900/80 to-zinc-950">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="flex items-center gap-4 mb-1">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-yellow-600/20 to-yellow-600/5 border border-yellow-600/20 flex items-center justify-center">
+              <Settings className="h-5 w-5 text-yellow-500" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Settings</h1>
+              <p className="text-sm text-zinc-500 mt-0.5">
+                Manage integrations, feature controls, and system configuration
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 mb-8 border-b border-zinc-800 pb-px">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all relative ${
-              activeTab === tab.id
-                ? "text-yellow-500 bg-zinc-900/50"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/30"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-            {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-600" />
-            )}
-          </button>
-        ))}
+      {/* Tab Navigation — Apple-style pill tabs */}
+      <div className="border-b border-zinc-800/40 bg-zinc-950/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex gap-1 py-2 overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "bg-yellow-600/10 text-yellow-400 border border-yellow-600/20"
+                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40 border border-transparent"
+                }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Tab Content */}
-      {activeTab === "profile" && <ProfileTab />}
-      {activeTab === "integrations" && <IntegrationsTab />}
-      {activeTab === "webhooks" && <WebhooksTab />}
-      {activeTab === "omni" && <OmniTab />}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {activeTab === "profile" && <ProfileTab />}
+        {activeTab === "integrations" && <IntegrationsHubTab />}
+        {activeTab === "features" && <FeatureControlsTab />}
+        {activeTab === "webhooks" && <WebhooksTab />}
+        {activeTab === "omni" && <OmniTab />}
+      </div>
     </div>
   );
 }
@@ -93,139 +110,268 @@ function ProfileTab() {
   const { user } = useAuth();
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg text-white">Your Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center gap-5">
-            <div className="h-16 w-16 rounded-full bg-yellow-600 flex items-center justify-center text-black font-bold text-2xl shrink-0">
+    <div className="space-y-6 max-w-2xl">
+      <Card className="bg-zinc-900/40 border-zinc-800/60 overflow-hidden">
+        <div className="h-24 bg-gradient-to-r from-yellow-600/10 via-zinc-900 to-zinc-900" />
+        <CardContent className="relative px-6 pb-6">
+          <div className="flex items-end gap-5 -mt-10">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-yellow-600 to-yellow-700 flex items-center justify-center text-black font-bold text-3xl border-4 border-zinc-900 shadow-xl">
               {user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white">{user?.name || "User"}</h3>
+            <div className="pb-1">
+              <h3 className="text-xl font-bold text-white">{user?.name || "User"}</h3>
               <p className="text-sm text-zinc-400">{user?.email || "No email"}</p>
-              <Badge className="mt-2 bg-yellow-600/10 text-yellow-500 border-yellow-600/20 text-xs">
-                {user?.role === "admin" ? "Administrator" : "Team Member"}
-              </Badge>
             </div>
+            <Badge className="ml-auto mb-1 bg-yellow-600/10 text-yellow-500 border-yellow-600/20 text-xs">
+              {user?.role === "admin" ? "Administrator" : "Team Member"}
+            </Badge>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-zinc-800">
-            <div>
-              <label className="text-xs text-zinc-500 uppercase tracking-wider">Name</label>
-              <p className="text-sm text-white mt-1">{user?.name || "—"}</p>
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 uppercase tracking-wider">Email</label>
-              <p className="text-sm text-white mt-1">{user?.email || "—"}</p>
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 uppercase tracking-wider">Role</label>
-              <p className="text-sm text-white mt-1 capitalize">{user?.role || "user"}</p>
-            </div>
-            <div>
-              <label className="text-xs text-zinc-500 uppercase tracking-wider">Login Method</label>
-              <p className="text-sm text-white mt-1">Manus OAuth</p>
-            </div>
+          <div className="grid grid-cols-2 gap-6 mt-8 pt-6 border-t border-zinc-800/60">
+            {[
+              { label: "Name", value: user?.name },
+              { label: "Email", value: user?.email },
+              { label: "Role", value: user?.role || "user" },
+              { label: "Login Method", value: "Manus OAuth" },
+            ].map((field) => (
+              <div key={field.label}>
+                <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-medium">{field.label}</label>
+                <p className="text-sm text-white mt-1 capitalize">{field.value || "—"}</p>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-zinc-900/30 border-zinc-800/50">
-        <CardContent className="p-4 flex items-start gap-3">
-          <Shield className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-zinc-300">Account Security</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Your account is secured via Manus OAuth. Password management and two-factor authentication
-              are handled through your Manus account settings.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40 flex items-start gap-3">
+        <Shield className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-zinc-300">Account Security</p>
+          <p className="text-xs text-zinc-500 mt-1">
+            Your account is secured via Manus OAuth. Password management and two-factor authentication
+            are handled through your Manus account settings.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ============================================================================
-// INTEGRATIONS TAB (merged from old Integrations page)
+// INTEGRATIONS HUB TAB — The main event
 // ============================================================================
 
-function IntegrationsTab() {
-  const { data: mailStatus, isLoading: mailLoading } = trpc.mail.connectionStatus.useQuery();
-  const authUrlMutation = trpc.mail.getAuthUrl.useMutation();
-  const [redirectUri, setRedirectUri] = useState<string | null>(null);
+const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+  communication: { label: "Communication", icon: <MessageSquare className="h-4 w-4" />, color: "blue" },
+  intelligence: { label: "Intelligence", icon: <Bot className="h-4 w-4" />, color: "purple" },
+  finance: { label: "Finance", icon: <CreditCard className="h-4 w-4" />, color: "emerald" },
+  productivity: { label: "Productivity", icon: <Briefcase className="h-4 w-4" />, color: "orange" },
+  custom: { label: "Custom", icon: <Puzzle className="h-4 w-4" />, color: "zinc" },
+};
 
+function IntegrationsHubTab() {
+  const { data: integrationsList, isLoading } = trpc.integrations.list.useQuery();
+  const { data: mailStatus } = trpc.mail.connectionStatus.useQuery();
   const { data: driveStatus } = trpc.drive.connectionStatus.useQuery();
+  const authUrlMutation = trpc.mail.getAuthUrl.useMutation();
+  const toggleMutation = trpc.integrations.toggle.useMutation();
+  const updateApiKeyMutation = trpc.integrations.updateApiKey.useMutation();
+  const upsertMutation = trpc.integrations.upsert.useMutation();
+  const deleteMutation = trpc.integrations.delete.useMutation();
+  const utils = trpc.useUtils();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editingApiKey, setEditingApiKey] = useState<number | null>(null);
+  const [apiKeyValue, setApiKeyValue] = useState("");
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [customForm, setCustomForm] = useState({ slug: "", name: "", description: "", category: "custom" as const, type: "api_key" as const, baseUrl: "", apiKey: "" });
 
   const googleConnected = mailStatus?.connected === true;
-  const googleEmail = mailStatus?.email || null;
   const hasGmailScopes = mailStatus?.hasGmailScopes === true;
-  const hasCalendarScopes = mailStatus?.hasCalendarScopes === true;
   const hasDriveScopes = driveStatus?.hasDriveScopes === true;
-  const hasDocsScopes = driveStatus?.hasDocsScopes === true;
-  const hasSheetsScopes = driveStatus?.hasSheetsScopes === true;
-  const needsReauth = googleConnected && !hasGmailScopes;
 
-  useEffect(() => {
-    if (!redirectUri) {
-      setRedirectUri(`${window.location.origin}/api/google/callback`);
+  // Filtered integrations
+  const filtered = useMemo(() => {
+    if (!integrationsList) return [];
+    return integrationsList.filter((i) => {
+      if (filterCategory !== "all" && i.category !== filterCategory) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return i.name.toLowerCase().includes(q) || (i.description || "").toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [integrationsList, filterCategory, searchQuery]);
+
+  // Group by category
+  const grouped = useMemo(() => {
+    const groups: Record<string, typeof filtered> = {};
+    for (const i of filtered) {
+      const cat = i.category || "custom";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(i);
     }
-  }, []);
+    return groups;
+  }, [filtered]);
 
-  const handleConnect = () => {
+  // Stats
+  const stats = useMemo(() => {
+    if (!integrationsList) return { total: 0, active: 0, connected: 0 };
+    return {
+      total: integrationsList.length,
+      active: integrationsList.filter((i) => i.enabled).length,
+      connected: integrationsList.filter((i) => i.status === "connected").length,
+    };
+  }, [integrationsList]);
+
+  const handleToggle = async (id: number, enabled: boolean) => {
+    try {
+      await toggleMutation.mutateAsync({ id, enabled });
+      utils.integrations.list.invalidate();
+      toast.success(enabled ? "Integration enabled" : "Integration disabled");
+    } catch {
+      toast.error("Failed to toggle integration");
+    }
+  };
+
+  const handleSaveApiKey = async (id: number) => {
+    try {
+      await updateApiKeyMutation.mutateAsync({ id, apiKey: apiKeyValue || null });
+      utils.integrations.list.invalidate();
+      setEditingApiKey(null);
+      setApiKeyValue("");
+      toast.success("API key updated");
+    } catch {
+      toast.error("Failed to update API key");
+    }
+  };
+
+  const handleGoogleConnect = () => {
     authUrlMutation.mutateAsync({ origin: window.location.origin, returnPath: "/setup?tab=integrations" })
-      .then(r => { window.location.href = r.url; })
+      .then((r) => { window.location.href = r.url; })
       .catch(() => toast.error("Failed to generate auth URL"));
   };
 
-  const handleReconnect = () => {
-    authUrlMutation.mutateAsync({ origin: window.location.origin, returnPath: "/setup?tab=integrations" })
-      .then(r => { window.location.href = r.url; })
-      .catch(() => toast.error("Failed to generate auth URL"));
-  };
-
-  const copyRedirectUri = () => {
-    if (redirectUri) {
-      navigator.clipboard.writeText(redirectUri);
-      toast.success("Redirect URI copied to clipboard");
+  const handleAddCustom = async () => {
+    if (!customForm.slug || !customForm.name) {
+      toast.error("Name and slug are required");
+      return;
+    }
+    try {
+      await upsertMutation.mutateAsync({
+        slug: customForm.slug,
+        name: customForm.name,
+        description: customForm.description || undefined,
+        category: "custom",
+        type: customForm.type,
+        baseUrl: customForm.baseUrl || undefined,
+        apiKey: customForm.apiKey || undefined,
+        enabled: true,
+        status: customForm.apiKey ? "connected" : "pending",
+      });
+      utils.integrations.list.invalidate();
+      setShowAddCustom(false);
+      setCustomForm({ slug: "", name: "", description: "", category: "custom", type: "api_key", baseUrl: "", apiKey: "" });
+      toast.success("Custom integration added");
+    } catch {
+      toast.error("Failed to add integration");
     }
   };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteMutation.mutateAsync({ id });
+      utils.integrations.list.invalidate();
+      setExpandedId(null);
+      toast.success("Integration removed");
+    } catch {
+      toast.error("Failed to remove integration");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full bg-zinc-800/40 rounded-xl" />)}
+      </div>
+    );
+  }
+
+  const categoryOrder = ["communication", "intelligence", "finance", "productivity", "custom"];
 
   return (
-    <div className="space-y-6">
-      {/* Scope Warning Banner */}
-      {needsReauth && (
-        <div className="p-4 rounded-lg bg-yellow-600/10 border border-yellow-600/30 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-yellow-400 mb-1">Gmail Permissions Required</h3>
-            <p className="text-xs text-zinc-300 mb-3">
-              Your Google account is connected, but the current authorization only includes Calendar and Send permissions.
-              To use the full Mail module, you need to re-authenticate with expanded Gmail scopes.
-            </p>
-            <Button
-              onClick={handleReconnect}
-              disabled={authUrlMutation.isPending}
-              size="sm"
-              className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium"
-            >
-              {authUrlMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
-              Re-authenticate with Gmail Access
-            </Button>
+    <div className="space-y-8">
+      {/* Stats Strip */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Total Integrations", value: stats.total, icon: <Puzzle className="h-4 w-4" />, color: "zinc" },
+          { label: "Active", value: stats.active, icon: <Power className="h-4 w-4" />, color: "emerald" },
+          { label: "Connected", value: stats.connected, icon: <CheckCircle2 className="h-4 w-4" />, color: "yellow" },
+        ].map((stat) => (
+          <div key={stat.label} className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`text-${stat.color === "zinc" ? "zinc-400" : stat.color === "emerald" ? "emerald-400" : "yellow-500"}`}>{stat.icon}</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">{stat.label}</span>
+            </div>
+            <p className="text-2xl font-bold text-white">{stat.value}</p>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Google Workspace Integration */}
-      <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader className="pb-4">
+      {/* Search & Filter Bar */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Input
+            placeholder="Search integrations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-zinc-900/50 border-zinc-800/60 text-white placeholder:text-zinc-600 h-10"
+          />
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setFilterCategory("all")}
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              filterCategory === "all" ? "bg-yellow-600/10 text-yellow-400 border border-yellow-600/20" : "text-zinc-500 hover:text-zinc-300 border border-zinc-800/40 hover:bg-zinc-800/40"
+            }`}
+          >
+            All
+          </button>
+          {categoryOrder.map((cat) => {
+            const meta = CATEGORY_META[cat];
+            return (
+              <button
+                key={cat}
+                onClick={() => setFilterCategory(cat)}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  filterCategory === cat ? "bg-yellow-600/10 text-yellow-400 border border-yellow-600/20" : "text-zinc-500 hover:text-zinc-300 border border-zinc-800/40 hover:bg-zinc-800/40"
+                }`}
+              >
+                {meta.label}
+              </button>
+            );
+          })}
+        </div>
+        <Button
+          onClick={() => setShowAddCustom(true)}
+          size="sm"
+          className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium h-10 px-4"
+        >
+          <Plus className="h-4 w-4 mr-1.5" />
+          Add Custom
+        </Button>
+      </div>
+
+      {/* Google Workspace Special Banner (if not connected) */}
+      {!googleConnected && (
+        <div className="p-5 rounded-xl bg-gradient-to-r from-blue-600/5 via-zinc-900/50 to-zinc-900/50 border border-blue-500/20">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="h-6 w-6">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="h-7 w-7">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -233,302 +379,476 @@ function IntegrationsTab() {
                 </svg>
               </div>
               <div>
-                <CardTitle className="text-lg text-white">Google Workspace</CardTitle>
-                <p className="text-xs text-zinc-400 mt-0.5">Gmail, Calendar, and Contacts</p>
+                <h3 className="text-base font-semibold text-white">Connect Google Workspace</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">Enable Gmail, Calendar, Drive, Docs & Sheets in one click</p>
               </div>
             </div>
-            {mailLoading ? (
-              <Skeleton className="h-6 w-24 bg-zinc-800" />
-            ) : googleConnected ? (
-              needsReauth ? (
-                <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20">
-                  <AlertTriangle className="h-3 w-3 mr-1" />Partial
-                </Badge>
-              ) : (
-                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />Connected
-                </Badge>
-              )
-            ) : (
-              <Badge className="bg-red-500/10 text-red-400 border-red-500/20">
-                <XCircle className="h-3 w-3 mr-1" />Not Connected
-              </Badge>
-            )}
+            <Button onClick={handleGoogleConnect} disabled={authUrlMutation.isPending}
+              className="bg-white/10 hover:bg-white/15 text-white border border-white/10 font-medium">
+              {authUrlMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+              Connect
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {googleConnected ? (
-            <>
-              {/* Connected Account Info */}
-              <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                      <span className="text-sm font-bold text-white">{(googleEmail || "?")[0].toUpperCase()}</span>
+        </div>
+      )}
+
+      {/* Gmail scope warning */}
+      {googleConnected && !hasGmailScopes && (
+        <div className="p-4 rounded-xl bg-yellow-600/5 border border-yellow-600/20 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-yellow-400 mb-1">Gmail Permissions Required</h3>
+            <p className="text-xs text-zinc-400 mb-3">
+              Re-authenticate to enable full Gmail access (read, search, manage).
+            </p>
+            <Button onClick={handleGoogleConnect} disabled={authUrlMutation.isPending} size="sm"
+              className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium">
+              {authUrlMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+              Re-authenticate
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Integration Cards by Category */}
+      {categoryOrder.map((cat) => {
+        const items = grouped[cat];
+        if (!items || items.length === 0) return null;
+        const meta = CATEGORY_META[cat];
+
+        return (
+          <div key={cat}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-zinc-500">{meta.icon}</span>
+              <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">{meta.label}</h2>
+              <span className="text-[10px] text-zinc-600 bg-zinc-800/50 px-2 py-0.5 rounded-full">{items.length}</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {items.map((integration) => {
+                const isExpanded = expandedId === integration.id;
+                const isGoogle = integration.slug === "google-workspace";
+                const isFathom = integration.slug === "fathom";
+                const isActive = isGoogle ? googleConnected : integration.enabled;
+                const statusText = isGoogle
+                  ? (googleConnected ? "Connected" : "Not connected")
+                  : integration.status === "connected" ? "Connected"
+                  : integration.status === "error" ? "Error"
+                  : integration.status === "pending" ? "Pending"
+                  : "Not connected";
+                const statusColor = statusText === "Connected" ? "emerald" : statusText === "Error" ? "red" : statusText === "Pending" ? "yellow" : "zinc";
+
+                return (
+                  <div
+                    key={integration.id}
+                    className={`rounded-xl border transition-all ${
+                      isExpanded
+                        ? "bg-zinc-900/60 border-yellow-600/20 ring-1 ring-yellow-600/10"
+                        : "bg-zinc-900/30 border-zinc-800/50 hover:border-zinc-700/60 hover:bg-zinc-900/40"
+                    }`}
+                  >
+                    {/* Card Header */}
+                    <div
+                      className="p-4 flex items-center gap-4 cursor-pointer"
+                      onClick={() => setExpandedId(isExpanded ? null : integration.id)}
+                    >
+                      {/* Icon */}
+                      <div
+                        className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border"
+                        style={{
+                          backgroundColor: `${integration.iconColor || "#71717a"}15`,
+                          borderColor: `${integration.iconColor || "#71717a"}30`,
+                        }}
+                      >
+                        {isGoogle ? (
+                          <svg viewBox="0 0 24 24" className="h-5 w-5">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                          </svg>
+                        ) : (
+                          <span className="text-xs font-bold" style={{ color: integration.iconColor || "#71717a" }}>
+                            {integration.iconLetter || integration.name.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-semibold text-white truncate">{integration.name}</h3>
+                          {integration.isBuiltIn && (
+                            <Badge className="bg-zinc-800/60 text-zinc-500 border-zinc-700/40 text-[9px] px-1.5 py-0">Built-in</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-500 truncate mt-0.5">{integration.description}</p>
+                      </div>
+
+                      {/* Status + Toggle */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Badge className={`bg-${statusColor}-500/10 text-${statusColor}-400 border-${statusColor}-500/20 text-[10px] px-2 py-0.5`}>
+                          {statusText}
+                        </Badge>
+
+                        {!isGoogle && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleToggle(integration.id, !integration.enabled); }}
+                            className={`relative w-10 h-5.5 rounded-full transition-colors duration-200 ${
+                              integration.enabled ? "bg-yellow-600" : "bg-zinc-700"
+                            }`}
+                            style={{ width: 40, height: 22 }}
+                          >
+                            <div className={`absolute top-0.5 left-0.5 w-[18px] h-[18px] rounded-full bg-white transition-transform duration-200 shadow-sm ${
+                              integration.enabled ? "translate-x-[18px]" : "translate-x-0"
+                            }`} />
+                          </button>
+                        )}
+
+                        <ChevronDown className={`h-4 w-4 text-zinc-600 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">{googleEmail}</p>
-                      <p className="text-xs text-zinc-500">Google Account</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={handleReconnect}
-                    disabled={authUrlMutation.isPending}
-                    className="border-zinc-700 text-zinc-400 hover:text-white h-8">
-                    {authUrlMutation.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 border-t border-zinc-800/40 pt-4 space-y-4">
+                        {/* Google-specific details */}
+                        {isGoogle && googleConnected && (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-xs text-zinc-400">
+                              <Mail className="h-3.5 w-3.5 text-zinc-500" />
+                              <span>Connected as: <span className="text-white">{mailStatus?.email || "—"}</span></span>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {[
+                                { label: "Gmail", ok: hasGmailScopes, icon: <Mail className="h-3 w-3" /> },
+                                { label: "Calendar", ok: mailStatus?.hasCalendarScopes, icon: <Calendar className="h-3 w-3" /> },
+                                { label: "Drive", ok: hasDriveScopes, icon: <HardDrive className="h-3 w-3" /> },
+                                { label: "Docs", ok: driveStatus?.hasDocsScopes, icon: <FileText className="h-3 w-3" /> },
+                                { label: "Sheets", ok: driveStatus?.hasSheetsScopes, icon: <FileSpreadsheet className="h-3 w-3" /> },
+                              ].map((s) => (
+                                <div key={s.label} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${s.ok ? "bg-emerald-500/5 text-emerald-400" : "bg-yellow-500/5 text-yellow-400"}`}>
+                                  {s.ok ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                                  {s.icon}
+                                  <span>{s.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <Button onClick={handleGoogleConnect} variant="outline" size="sm"
+                              disabled={authUrlMutation.isPending}
+                              className="border-zinc-700 text-zinc-400 hover:text-white h-8 mt-2">
+                              {authUrlMutation.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                              Re-authenticate
+                            </Button>
+                          </div>
+                        )}
+
+                        {isGoogle && !googleConnected && (
+                          <Button onClick={handleGoogleConnect} disabled={authUrlMutation.isPending}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium w-full">
+                            {authUrlMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+                            Connect Google Account
+                          </Button>
+                        )}
+
+                        {/* API Key management for non-OAuth integrations */}
+                        {!isGoogle && (integration.type === "api_key" || integration.type === "custom") && (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              <Key className="h-3.5 w-3.5" />
+                              <span className="uppercase tracking-wider font-medium">API Key</span>
+                            </div>
+                            {editingApiKey === integration.id ? (
+                              <div className="flex gap-2">
+                                <Input
+                                  type="password"
+                                  placeholder="Enter API key..."
+                                  value={apiKeyValue}
+                                  onChange={(e) => setApiKeyValue(e.target.value)}
+                                  className="bg-zinc-800/50 border-zinc-700 text-white h-9 text-sm flex-1"
+                                />
+                                <Button size="sm" onClick={() => handleSaveApiKey(integration.id)}
+                                  className="bg-yellow-600 hover:bg-yellow-700 text-black h-9 px-3">
+                                  <Check className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => { setEditingApiKey(null); setApiKeyValue(""); }}
+                                  className="border-zinc-700 text-zinc-400 h-9 px-3">
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <code className="flex-1 text-xs text-zinc-500 bg-zinc-800/30 px-3 py-2 rounded-lg border border-zinc-800/40 truncate">
+                                  {integration.apiKey ? "••••••••••••••••" : "No API key configured"}
+                                </code>
+                                <Button size="sm" variant="outline" onClick={() => { setEditingApiKey(integration.id); setApiKeyValue(integration.apiKey || ""); }}
+                                  className="border-zinc-700 text-zinc-400 hover:text-white h-8 px-3">
+                                  <Edit3 className="h-3 w-3 mr-1" />Edit
+                                </Button>
+                              </div>
+                            )}
+
+                            {isFathom && (
+                              <p className="text-[10px] text-zinc-600">
+                                Fathom API key is managed via environment variables. Update it in the Secrets panel of the Management UI.
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Webhook URL for webhook-type integrations */}
+                        {integration.type === "webhook" && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              <Webhook className="h-3.5 w-3.5" />
+                              <span className="uppercase tracking-wider font-medium">Webhook Endpoint</span>
+                            </div>
+                            <code className="text-xs text-zinc-400 bg-zinc-800/30 px-3 py-2 rounded-lg border border-zinc-800/40 block break-all">
+                              POST /api/webhook/ingest
+                            </code>
+                            <p className="text-[10px] text-zinc-600">
+                              Send payloads to this endpoint. OmniScope will auto-detect the source and process accordingly.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Base URL for custom integrations */}
+                        {integration.baseUrl && (
+                          <div className="flex items-center gap-2 text-xs text-zinc-500">
+                            <Globe className="h-3.5 w-3.5" />
+                            <span>Base URL: <span className="text-zinc-300">{integration.baseUrl}</span></span>
+                          </div>
+                        )}
+
+                        {/* Last sync */}
+                        {integration.lastSyncAt && (
+                          <div className="flex items-center gap-2 text-xs text-zinc-500">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>Last synced: <span className="text-zinc-300">{new Date(integration.lastSyncAt).toLocaleString()}</span></span>
+                          </div>
+                        )}
+
+                        {/* Delete for custom integrations */}
+                        {!integration.isBuiltIn && (
+                          <div className="pt-2 border-t border-zinc-800/40">
+                            <Button variant="outline" size="sm" onClick={() => handleDelete(integration.id)}
+                              className="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 h-8">
+                              <Trash2 className="h-3 w-3 mr-1.5" />Remove Integration
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* "Coming Soon" for unconnected built-in future integrations */}
+                        {integration.isBuiltIn && integration.status === "disconnected" && !isGoogle && integration.type === "oauth" && (
+                          <div className="p-3 rounded-lg bg-zinc-800/20 border border-zinc-800/30 text-center">
+                            <p className="text-xs text-zinc-500">OAuth integration coming soon. Enable to be notified when available.</p>
+                          </div>
+                        )}
+                      </div>
                     )}
-                    Re-authenticate
-                  </Button>
-                </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Add Custom Integration Modal */}
+      {showAddCustom && (
+        <Card className="bg-zinc-900/60 border-yellow-600/20 ring-1 ring-yellow-600/10">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base text-white flex items-center gap-2">
+                <Plus className="h-4 w-4 text-yellow-500" />
+                Add Custom Integration
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddCustom(false)} className="text-zinc-500 hover:text-white h-8 w-8 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5 block">Name *</label>
+                <Input placeholder="e.g., Twilio" value={customForm.name}
+                  onChange={(e) => setCustomForm({ ...customForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") })}
+                  className="bg-zinc-800/50 border-zinc-700 text-white h-9" />
               </div>
-
-              {/* Service Status Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Google Drive */}
-                <div className={`p-4 rounded-lg border ${hasDriveScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-800/20 border-zinc-800/50"}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <HardDrive className="h-4 w-4 text-green-400" />
-                    <span className="text-sm font-medium text-white">Google Drive</span>
-                    {hasDriveScopes ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
-                    ) : (
-                      <Badge className="bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[10px] px-1.5 py-0 ml-auto">Inactive</Badge>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Browse files
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Shared drives
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasDriveScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Import to Vault
-                    </div>
-                  </div>
-                </div>
-
-                {/* Google Docs */}
-                <div className={`p-4 rounded-lg border ${hasDocsScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-800/20 border-zinc-800/50"}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <FileText className="h-4 w-4 text-blue-400" />
-                    <span className="text-sm font-medium text-white">Google Docs</span>
-                    {hasDocsScopes ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
-                    ) : (
-                      <Badge className="bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[10px] px-1.5 py-0 ml-auto">Inactive</Badge>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Create documents
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Read & edit
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasDocsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Template engine
-                    </div>
-                  </div>
-                </div>
-
-                {/* Google Sheets */}
-                <div className={`p-4 rounded-lg border ${hasSheetsScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-800/20 border-zinc-800/50"}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
-                    <span className="text-sm font-medium text-white">Google Sheets</span>
-                    {hasSheetsScopes ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
-                    ) : (
-                      <Badge className="bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[10px] px-1.5 py-0 ml-auto">Inactive</Badge>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Create spreadsheets
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Read data
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasSheetsScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-zinc-600" />}
-                      Import to Vault
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5 block">Slug (auto)</label>
+                <Input placeholder="auto-generated" value={customForm.slug} readOnly
+                  className="bg-zinc-800/30 border-zinc-800 text-zinc-500 h-9" />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Gmail */}
-                <div className={`p-4 rounded-lg border ${hasGmailScopes ? "bg-zinc-800/30 border-zinc-800" : "bg-yellow-600/5 border-yellow-600/20"}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Mail className="h-4 w-4 text-red-400" />
-                    <span className="text-sm font-medium text-white">Gmail</span>
-                    {hasGmailScopes ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
-                    ) : (
-                      <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-[10px] px-1.5 py-0 ml-auto">Limited</Badge>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasGmailScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
-                      Read emails
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Send emails
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      {hasGmailScopes ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-yellow-500" />}
-                      Search & manage
-                    </div>
-                  </div>
-                  {!hasGmailScopes && (
-                    <p className="text-[10px] text-yellow-500/70 mt-2">Re-authenticate to enable full Gmail access</p>
-                  )}
-                </div>
-
-                {/* Calendar */}
-                <div className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="h-4 w-4 text-blue-400" />
-                    <span className="text-sm font-medium text-white">Calendar</span>
-                    <Badge className={`${hasCalendarScopes ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'} text-[10px] px-1.5 py-0 ml-auto`}>
-                      {hasCalendarScopes ? 'Active' : 'Pending'}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />View events
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Sync meetings
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Create events
-                    </div>
-                  </div>
-                </div>
-
-                {/* Fathom */}
-                <div className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="h-4 w-4 rounded bg-purple-500/20 flex items-center justify-center">
-                      <span className="text-[8px] font-bold text-purple-400">F</span>
-                    </div>
-                    <span className="text-sm font-medium text-white">Fathom AI</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Auto-sync meetings
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />AI transcription
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />Contact extraction
-                    </div>
-                  </div>
-                </div>
+            </div>
+            <div>
+              <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5 block">Description</label>
+              <Input placeholder="What does this integration do?" value={customForm.description}
+                onChange={(e) => setCustomForm({ ...customForm, description: e.target.value })}
+                className="bg-zinc-800/50 border-zinc-700 text-white h-9" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5 block">Type</label>
+                <select value={customForm.type}
+                  onChange={(e) => setCustomForm({ ...customForm, type: e.target.value as any })}
+                  className="w-full bg-zinc-800/50 border border-zinc-700 text-white h-9 rounded-md px-3 text-sm">
+                  <option value="api_key">API Key</option>
+                  <option value="webhook">Webhook</option>
+                  <option value="oauth">OAuth</option>
+                  <option value="custom">Custom</option>
+                </select>
               </div>
-
-              {/* Permissions & Security */}
-              <div className="p-4 rounded-lg bg-zinc-800/30 border border-zinc-800">
-                <div className="flex items-center gap-2 mb-3">
-                  <Shield className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm font-medium text-white">Permissions & Security</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-zinc-400">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                    <span>OAuth 2.0 — No passwords stored</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                    <span>Tokens encrypted at rest</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {hasGmailScopes ? (
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                    ) : (
-                      <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
-                    )}
-                    <span>Scopes: Calendar{hasGmailScopes ? ", Gmail (full)" : ", Gmail (send only)"}{hasDriveScopes ? ", Drive" : ""}{hasDocsScopes ? ", Docs" : ""}{hasSheetsScopes ? ", Sheets" : ""}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                    <span>Auto-refresh tokens on expiry</span>
-                  </div>
-                </div>
+              <div>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5 block">Base URL</label>
+                <Input placeholder="https://api.example.com" value={customForm.baseUrl}
+                  onChange={(e) => setCustomForm({ ...customForm, baseUrl: e.target.value })}
+                  className="bg-zinc-800/50 border-zinc-700 text-white h-9" />
               </div>
-            </>
-          ) : (
-            /* Not Connected State */
-            <div className="py-8 text-center">
-              <div className="h-16 w-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                <Mail className="h-8 w-8 text-zinc-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Connect Google Workspace</h3>
-              <p className="text-sm text-zinc-400 max-w-md mx-auto mb-6">
-                Connect your Google account to enable Gmail integration, calendar sync, and contact matching.
-                OmniScope uses OAuth 2.0 — your password is never stored.
-              </p>
-              <Button onClick={handleConnect}
-                disabled={authUrlMutation.isPending}
+            </div>
+            <div>
+              <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-1.5 block">API Key</label>
+              <Input type="password" placeholder="Enter API key (optional)" value={customForm.apiKey}
+                onChange={(e) => setCustomForm({ ...customForm, apiKey: e.target.value })}
+                className="bg-zinc-800/50 border-zinc-700 text-white h-9" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowAddCustom(false)}
+                className="border-zinc-700 text-zinc-400 hover:text-white">Cancel</Button>
+              <Button onClick={handleAddCustom}
                 className="bg-yellow-600 hover:bg-yellow-700 text-black font-medium">
-                {authUrlMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ExternalLink className="h-4 w-4 mr-2" />}
-                Connect Google Account
-              </Button>
-              <div className="mt-6 flex items-center justify-center gap-6 text-xs text-zinc-500">
-                <div className="flex items-center gap-1.5">
-                  <Shield className="h-3.5 w-3.5" />Secure OAuth 2.0
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />Takes 30 seconds
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Redirect URI Setup Card (admin-level info) */}
-      {redirectUri && (
-        <Card className="bg-zinc-900/30 border-zinc-800/50">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-blue-400" />
-              <span className="text-sm font-medium text-white">Google Cloud Console Setup</span>
-            </div>
-            <p className="text-xs text-zinc-400">
-              For Google OAuth to work, this <strong className="text-zinc-200">Authorized redirect URI</strong> must be registered in your Google Cloud Console OAuth 2.0 credentials:
-            </p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs text-yellow-400 bg-zinc-900 px-3 py-2 rounded border border-zinc-800 break-all">
-                {redirectUri}
-              </code>
-              <Button variant="outline" size="sm" onClick={copyRedirectUri}
-                className="border-zinc-700 text-zinc-400 hover:text-white h-8 flex-shrink-0">
-                <Copy className="h-3.5 w-3.5 mr-1" />Copy
+                <Plus className="h-4 w-4 mr-1.5" />Add Integration
               </Button>
             </div>
-            <p className="text-[10px] text-zinc-500">
-              Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">Google Cloud Console → Credentials</a> → Edit your OAuth 2.0 Client ID → Add this URI under "Authorized redirect URIs" → Save.
-            </p>
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// FEATURE CONTROLS TAB
+// ============================================================================
+
+const FEATURE_CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; description: string }> = {
+  core: { label: "Core Platform", icon: <Shield className="h-4 w-4" />, description: "Essential features that power the platform" },
+  communication: { label: "Communication", icon: <MessageSquare className="h-4 w-4" />, description: "Email, calendar, and messaging" },
+  intelligence: { label: "Intelligence & AI", icon: <Bot className="h-4 w-4" />, description: "AI-powered analysis and insights" },
+  operations: { label: "Operations", icon: <Briefcase className="h-4 w-4" />, description: "Documents, tasks, and workflows" },
+  experimental: { label: "Experimental", icon: <Sparkles className="h-4 w-4" />, description: "Beta features in development" },
+};
+
+function FeatureControlsTab() {
+  const { data: toggles, isLoading } = trpc.integrations.listToggles.useQuery();
+  const setToggleMutation = trpc.integrations.setToggle.useMutation();
+  const utils = trpc.useUtils();
+
+  const handleToggle = async (key: string, enabled: boolean) => {
+    try {
+      await setToggleMutation.mutateAsync({ key, enabled });
+      utils.integrations.listToggles.invalidate();
+      toast.success(`${key} ${enabled ? "enabled" : "disabled"}`);
+    } catch {
+      toast.error("Failed to update feature toggle");
+    }
+  };
+
+  // Group by category
+  const grouped = useMemo(() => {
+    if (!toggles) return {};
+    const groups: Record<string, typeof toggles> = {};
+    for (const t of toggles) {
+      const cat = t.category || "core";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(t);
+    }
+    return groups;
+  }, [toggles]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full bg-zinc-800/40 rounded-xl" />)}
+      </div>
+    );
+  }
+
+  const categoryOrder = ["core", "communication", "intelligence", "operations", "experimental"];
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+      {/* Info Banner */}
+      <div className="p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40 flex items-start gap-3">
+        <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-zinc-300">Feature Controls</p>
+          <p className="text-xs text-zinc-500 mt-1">
+            Enable or disable entire modules across the platform. Core features cannot be disabled.
+            Changes take effect immediately for all users.
+          </p>
+        </div>
+      </div>
+
+      {categoryOrder.map((cat) => {
+        const items = grouped[cat];
+        if (!items || items.length === 0) return null;
+        const meta = FEATURE_CATEGORY_META[cat];
+
+        return (
+          <div key={cat}>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-zinc-500">{meta.icon}</span>
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">{meta.label}</h2>
+                <p className="text-[10px] text-zinc-600">{meta.description}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {items.map((toggle) => (
+                <div
+                  key={toggle.id}
+                  className={`p-4 rounded-xl border transition-all ${
+                    toggle.enabled
+                      ? "bg-zinc-900/40 border-zinc-800/50"
+                      : "bg-zinc-950/30 border-zinc-800/30 opacity-60"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className={`h-2 w-2 rounded-full ${toggle.enabled ? "bg-emerald-400" : "bg-zinc-600"}`} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-medium text-white">{toggle.label}</h3>
+                          {toggle.isLocked && (
+                            <Lock className="h-3 w-3 text-zinc-600" />
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-500 mt-0.5">{toggle.description}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => !toggle.isLocked && handleToggle(toggle.featureKey, !toggle.enabled)}
+                      disabled={toggle.isLocked}
+                      className={`relative rounded-full transition-colors duration-200 ${
+                        toggle.isLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                      } ${toggle.enabled ? "bg-yellow-600" : "bg-zinc-700"}`}
+                      style={{ width: 44, height: 24 }}
+                    >
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-sm ${
+                        toggle.enabled ? "translate-x-5" : "translate-x-0"
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -538,98 +858,146 @@ function IntegrationsTab() {
 // ============================================================================
 
 function WebhooksTab() {
+  const [redirectUri, setRedirectUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRedirectUri(`${window.location.origin}/api/google/callback`);
+  }, []);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
   return (
-    <div className="space-y-6">
-      <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-orange-400" />
-              </div>
-              <div>
-                <CardTitle className="text-lg text-white">Webhooks & API</CardTitle>
-                <p className="text-xs text-zinc-400 mt-0.5">Zapier, Plaud, and custom integrations</p>
-              </div>
-            </div>
-            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-              <CheckCircle2 className="h-3 w-3 mr-1" />Active
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded bg-purple-500/10 flex items-center justify-center">
-                  <span className="text-xs font-bold text-purple-400">P</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">Plaud Webhook</p>
-                  <p className="text-xs text-zinc-500">Auto-ingest meeting recordings</p>
-                </div>
-              </div>
-              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Listening</Badge>
-            </div>
-
-            <div className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded bg-orange-500/10 flex items-center justify-center">
-                  <span className="text-xs font-bold text-orange-400">Z</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">Zapier Webhook</p>
-                  <p className="text-xs text-zinc-500">Custom automation triggers</p>
-                </div>
-              </div>
-              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Listening</Badge>
-            </div>
-
-            <div className="p-3 rounded-lg bg-zinc-800/30 border border-zinc-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-white">Webhook Endpoint</span>
-              </div>
-              <code className="text-xs text-zinc-400 bg-zinc-900 px-3 py-2 rounded block break-all">
-                POST /api/webhook/ingest
-              </code>
-              <p className="text-xs text-zinc-500 mt-2">
-                Send meeting transcripts, recordings, or structured data to this endpoint for automatic processing.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Coming Soon */}
-      <Card className="bg-zinc-900/50 border-zinc-800 opacity-60">
+    <div className="space-y-6 max-w-3xl">
+      {/* Active Webhooks */}
+      <Card className="bg-zinc-900/40 border-zinc-800/60">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-zinc-500" />
+            <div className="h-10 w-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+              <Webhook className="h-5 w-5 text-orange-400" />
             </div>
             <div>
-              <CardTitle className="text-lg text-white">Coming Soon</CardTitle>
-              <p className="text-xs text-zinc-400 mt-0.5">Planned integrations</p>
+              <CardTitle className="text-base text-white">Active Webhooks</CardTitle>
+              <p className="text-xs text-zinc-500 mt-0.5">Incoming data endpoints</p>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="p-3 rounded-lg bg-zinc-800/20 border border-zinc-800/50 text-center">
-              <p className="text-sm font-medium text-zinc-400">Slack</p>
-              <p className="text-xs text-zinc-600 mt-1">Team notifications</p>
+        <CardContent className="space-y-3">
+          {/* Plaud */}
+          <div className="p-4 rounded-xl bg-zinc-800/20 border border-zinc-800/40 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-purple-400">P</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Plaud Webhook</p>
+                <p className="text-xs text-zinc-500">Auto-ingest meeting recordings</p>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-zinc-800/20 border border-zinc-800/50 text-center">
-              <p className="text-sm font-medium text-zinc-400">WhatsApp</p>
-              <p className="text-xs text-zinc-600 mt-1">Message tracking</p>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-emerald-400 font-medium">Listening</span>
             </div>
-            <div className="p-3 rounded-lg bg-zinc-800/20 border border-zinc-800/50 text-center">
-              <p className="text-sm font-medium text-zinc-400">HubSpot</p>
-              <p className="text-xs text-zinc-600 mt-1">CRM sync</p>
+          </div>
+
+          {/* Zapier */}
+          <div className="p-4 rounded-xl bg-zinc-800/20 border border-zinc-800/40 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-orange-400">Z</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Zapier Webhook</p>
+                <p className="text-xs text-zinc-500">Custom automation triggers</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-emerald-400 font-medium">Listening</span>
+            </div>
+          </div>
+
+          {/* Fathom */}
+          <div className="p-4 rounded-xl bg-zinc-800/20 border border-zinc-800/40 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-violet-400">F</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Fathom AI Webhook</p>
+                <p className="text-xs text-zinc-500">Meeting transcripts & summaries</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-emerald-400 font-medium">Listening</span>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Webhook Endpoint */}
+      <Card className="bg-zinc-900/40 border-zinc-800/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base text-white flex items-center gap-2">
+            <Link2 className="h-4 w-4 text-zinc-500" />
+            Endpoint Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2 block">Ingest Endpoint</label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs text-yellow-400 bg-zinc-900/60 px-4 py-2.5 rounded-lg border border-zinc-800/40 break-all font-mono">
+                POST /api/webhook/ingest
+              </code>
+              <Button variant="outline" size="sm" onClick={() => copyToClipboard(`${window.location.origin}/api/webhook/ingest`)}
+                className="border-zinc-700 text-zinc-400 hover:text-white h-9 px-3">
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-zinc-600 mt-2">
+              Send meeting transcripts, recordings, or structured data. OmniScope auto-detects the source format.
+            </p>
+          </div>
+
+          {redirectUri && (
+            <div>
+              <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2 block">Google OAuth Redirect URI</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs text-blue-400 bg-zinc-900/60 px-4 py-2.5 rounded-lg border border-zinc-800/40 break-all font-mono">
+                  {redirectUri}
+                </code>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(redirectUri)}
+                  className="border-zinc-700 text-zinc-400 hover:text-white h-9 px-3">
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-zinc-600 mt-2">
+                Register this URI in{" "}
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+                  Google Cloud Console
+                </a>{" "}
+                under OAuth 2.0 Client ID → Authorized redirect URIs.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Security */}
+      <div className="p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40 flex items-start gap-3">
+        <Shield className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-zinc-300">Webhook Security</p>
+          <p className="text-xs text-zinc-500 mt-1">
+            All webhook endpoints validate payload signatures when a webhook secret is configured.
+            OAuth tokens are encrypted at rest and auto-refresh on expiry.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -654,7 +1022,6 @@ function OmniTab() {
   const handleModeChange = (newMode: OmniMode) => {
     setMode(newMode);
     try { localStorage.setItem(OMNI_MODE_KEY, newMode); } catch {}
-    // Dispatch storage event so PortalLayout picks up the change in real-time
     window.dispatchEvent(new StorageEvent("storage", { key: OMNI_MODE_KEY, newValue: newMode }));
     toast.success(`Omni appearance set to ${newMode === "sigil" ? "Sigil" : newMode === "character" ? "Character" : "Hidden"}`);
   };
@@ -680,23 +1047,23 @@ function OmniTab() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl">
       {/* Live Preview */}
-      <Card className="bg-zinc-900/50 border-zinc-800">
+      <Card className="bg-zinc-900/40 border-zinc-800/60">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg text-white flex items-center gap-2">
+          <CardTitle className="text-base text-white flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-yellow-500" />
             Omni Assistant
           </CardTitle>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             Your persistent AI companion. Customize how Omni appears and behaves across the portal.
           </p>
         </CardHeader>
         <CardContent>
           {/* Live Preview Area */}
           <div className="mb-8">
-            <label className="text-xs text-zinc-500 uppercase tracking-wider mb-3 block">Live Preview</label>
-            <div className="bg-black/50 rounded-xl border border-zinc-800 p-8 flex flex-col items-center gap-6">
+            <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-medium mb-3 block">Live Preview</label>
+            <div className="bg-black/40 rounded-xl border border-zinc-800/40 p-8 flex flex-col items-center gap-6">
               {mode === "hidden" ? (
                 <div className="flex flex-col items-center gap-3 py-4">
                   <EyeOff className="h-10 w-10 text-zinc-600" />
@@ -722,14 +1089,13 @@ function OmniTab() {
                 </>
               )}
 
-              {/* State Switcher */}
               {mode !== "hidden" && (
                 <div className="flex gap-2">
                   {states.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => setPreviewState(s.id)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         previewState === s.id
                           ? "bg-yellow-600/20 text-yellow-400 border border-yellow-600/30"
                           : "bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300 hover:bg-zinc-800"
@@ -745,7 +1111,7 @@ function OmniTab() {
 
           {/* Mode Selector */}
           <div className="mb-8">
-            <label className="text-xs text-zinc-500 uppercase tracking-wider mb-3 block">Appearance Mode</label>
+            <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-medium mb-3 block">Appearance Mode</label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {modes.map((m) => (
                 <button
@@ -753,8 +1119,8 @@ function OmniTab() {
                   onClick={() => handleModeChange(m.id)}
                   className={`p-4 rounded-xl border text-left transition-all ${
                     mode === m.id
-                      ? "bg-yellow-600/10 border-yellow-600/40 ring-1 ring-yellow-600/20"
-                      : "bg-zinc-900/30 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/50"
+                      ? "bg-yellow-600/10 border-yellow-600/30 ring-1 ring-yellow-600/10"
+                      : "bg-zinc-900/30 border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-900/50"
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-2">
@@ -769,7 +1135,7 @@ function OmniTab() {
                       {m.label}
                     </span>
                     {mode === m.id && (
-                      <Badge className="ml-auto bg-yellow-600/20 text-yellow-500 border-yellow-600/30 text-[10px]">Active</Badge>
+                      <Badge className="ml-auto bg-yellow-600/20 text-yellow-500 border-yellow-600/30 text-[9px]">Active</Badge>
                     )}
                   </div>
                   <p className="text-xs text-zinc-500 leading-relaxed">{m.description}</p>
@@ -780,8 +1146,8 @@ function OmniTab() {
 
           {/* Sidebar Toggle */}
           <div>
-            <label className="text-xs text-zinc-500 uppercase tracking-wider mb-3 block">Sidebar Visibility</label>
-            <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/30 border border-zinc-800">
+            <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-medium mb-3 block">Sidebar Visibility</label>
+            <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40">
               <div className="flex items-center gap-3">
                 <Sparkles className="h-5 w-5 text-zinc-500" />
                 <div>
@@ -793,11 +1159,12 @@ function OmniTab() {
               </div>
               <button
                 onClick={() => handleSidebarToggle(!sidebarVisible)}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                className={`relative rounded-full transition-colors duration-200 ${
                   sidebarVisible ? "bg-yellow-600" : "bg-zinc-700"
                 }`}
+                style={{ width: 44, height: 24 }}
               >
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-sm ${
                   sidebarVisible ? "translate-x-5" : "translate-x-0"
                 }`} />
               </button>
@@ -806,27 +1173,23 @@ function OmniTab() {
         </CardContent>
       </Card>
 
-      {/* Keyboard Shortcuts Reference */}
-      <Card className="bg-zinc-900/30 border-zinc-800/50">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-zinc-300">Keyboard Shortcuts</p>
-              <div className="mt-2 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <kbd className="text-[10px] text-zinc-400 font-mono bg-zinc-800 border border-zinc-700/60 px-1.5 py-0.5 rounded">⌘K</kbd>
-                  <span className="text-xs text-zinc-500">Open Ask Omni from anywhere</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <kbd className="text-[10px] text-zinc-400 font-mono bg-zinc-800 border border-zinc-700/60 px-1.5 py-0.5 rounded">Esc</kbd>
-                  <span className="text-xs text-zinc-500">Close Omni panel</span>
-                </div>
-              </div>
+      {/* Keyboard Shortcuts */}
+      <div className="p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40 flex items-start gap-3">
+        <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-zinc-300">Keyboard Shortcuts</p>
+          <div className="mt-2 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <kbd className="text-[10px] text-zinc-400 font-mono bg-zinc-800 border border-zinc-700/60 px-1.5 py-0.5 rounded">⌘K</kbd>
+              <span className="text-xs text-zinc-500">Open Ask Omni from anywhere</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="text-[10px] text-zinc-400 font-mono bg-zinc-800 border border-zinc-700/60 px-1.5 py-0.5 rounded">Esc</kbd>
+              <span className="text-xs text-zinc-500">Close Omni panel</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

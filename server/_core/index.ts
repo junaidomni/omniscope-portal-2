@@ -87,6 +87,16 @@ async function startServer() {
     serveStatic(app);
   }
 
+  // Seed built-in integrations and feature toggles
+  try {
+    const { seedBuiltInIntegrations, seedFeatureToggles } = await import("../db");
+    await seedBuiltInIntegrations();
+    await seedFeatureToggles();
+    console.log("[Seed] Built-in integrations and feature toggles seeded");
+  } catch (e) {
+    console.warn("[Seed] Failed to seed integrations/toggles:", e);
+  }
+
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
 

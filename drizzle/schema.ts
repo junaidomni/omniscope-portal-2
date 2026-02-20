@@ -1263,3 +1263,79 @@ export const documentNotesRelations = relations(documentNotes, ({ one }) => ({
   document: one(documents, { fields: [documentNotes.documentId], references: [documents.id] }),
   user: one(users, { fields: [documentNotes.userId], references: [users.id] }),
 }));
+
+
+/**
+ * Integrations — centralized registry for all connected services.
+ * Each row represents one integration (built-in or custom).
+ * Built-in integrations are seeded on first run; custom ones are user-created.
+ */
+export const integrations = mysqlTable("integrations", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("intSlug", { length: 100 }).notNull().unique(),
+  name: varchar("intName", { length: 255 }).notNull(),
+  description: text("intDescription"),
+  category: mysqlEnum("intCategory", [
+    "intelligence",   // Fathom, Plaud, meeting tools
+    "communication",  // Gmail, Calendar, Slack, Discord, WhatsApp
+    "finance",        // QuickBooks, Stripe, invoicing
+    "productivity",   // Google Drive, Docs, Sheets, Notion
+    "custom",         // User-defined API integrations
+  ]).notNull().default("custom"),
+  type: mysqlEnum("intType", ["oauth", "api_key", "webhook", "custom"]).notNull().default("api_key"),
+  enabled: boolean("intEnabled").default(false).notNull(),
+  status: mysqlEnum("intStatus", ["connected", "disconnected", "error", "pending"]).default("disconnected").notNull(),
+  iconUrl: text("intIconUrl"),       // URL to integration logo/icon
+  iconColor: varchar("intIconColor", { length: 20 }),  // fallback color for icon badge
+  iconLetter: varchar("intIconLetter", { length: 5 }), // fallback letter for icon badge
+  apiKey: text("intApiKey"),         // encrypted API key (if applicable)
+  apiSecret: text("intApiSecret"),   // encrypted API secret (if applicable)
+  baseUrl: varchar("intBaseUrl", { length: 500 }),      // API base URL
+  webhookUrl: text("intWebhookUrl"),                    // incoming webhook URL
+  webhookSecret: varchar("intWebhookSecret", { length: 500 }), // webhook verification secret
+  oauthConnected: boolean("intOauthConnected").default(false),
+  config: text("intConfig"),         // JSON: provider-specific configuration
+  metadata: text("intMetadata"),     // JSON: extra metadata (scopes, last sync, etc.)
+  isBuiltIn: boolean("intIsBuiltIn").default(false).notNull(), // true = system integration, false = user-created
+  sortOrder: int("intSortOrder").default(0).notNull(),
+  lastSyncAt: timestamp("intLastSyncAt"),
+  createdBy: int("intCreatedBy").references(() => users.id),
+  createdAt: timestamp("intCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("intUpdatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  slugIdx: index("int_slug_idx").on(table.slug),
+  categoryIdx: index("int_category_idx").on(table.category),
+  enabledIdx: index("int_enabled_idx").on(table.enabled),
+}));
+
+export type Integration = typeof integrations.$inferSelect;
+export type InsertIntegration = typeof integrations.$inferInsert;
+
+/**
+ * Feature Toggles — global on/off switches for major platform features.
+ * Allows admins to enable/disable entire modules without code changes.
+ */
+export const featureToggles = mysqlTable("feature_toggles", {
+  id: int("id").autoincrement().primaryKey(),
+  featureKey: varchar("ftKey", { length: 100 }).notNull().unique(),
+  label: varchar("ftLabel", { length: 255 }).notNull(),
+  description: text("ftDescription"),
+  category: mysqlEnum("ftCategory", [
+    "core",           // Essential features (meetings, tasks, contacts)
+    "communication",  // Email, calendar, messaging
+    "intelligence",   // AI analysis, reports, insights
+    "operations",     // Tasks, documents, signing
+    "experimental",   // Beta features
+  ]).notNull().default("core"),
+  enabled: boolean("ftEnabled").default(true).notNull(),
+  isLocked: boolean("ftIsLocked").default(false).notNull(), // locked = cannot be disabled
+  sortOrder: int("ftSortOrder").default(0).notNull(),
+  updatedBy: int("ftUpdatedBy").references(() => users.id),
+  updatedAt: timestamp("ftUpdatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  keyIdx: index("ft_key_idx").on(table.featureKey),
+  categoryIdx: index("ft_category_idx").on(table.category),
+}));
+
+export type FeatureToggle = typeof featureToggles.$inferSelect;
+export type InsertFeatureToggle = typeof featureToggles.$inferInsert;

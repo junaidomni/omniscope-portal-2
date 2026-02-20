@@ -2168,3 +2168,30 @@
 - [x] Meeting trends and engagement metrics
 - [x] Team activity overview
 - [x] Useful at-a-glance intelligence summary
+
+## v68 — Centralized Integration Hub in Settings
+
+### Database & Backend
+- [x] Create integrations table (slug, name, description, category, type, enabled, status, apiKey, webhookUrl, config)
+- [x] Create feature_toggles table (featureKey, label, description, enabled, isLocked, category)
+- [x] Seed built-in integrations (Google, Fathom, Plaud, Zapier, WhatsApp, Discord, Slack, QuickBooks, Stripe, Xero, Notion, HubSpot, Salesforce)
+- [x] Seed default feature toggles (Meetings, Tasks, Contacts, Email, Calendar, AI Insights, Reports, Ask Omni, Vault, E-Signing, HR, Templates)
+- [x] Integration CRUD procedures (list, upsert, toggle, updateApiKey, delete)
+- [x] Feature toggle procedures (list, toggle)
+- [x] Webhook URL generation and management
+- [x] API key masking for display
+
+### Integration Hub UI (Settings Tab)
+- [x] Integration Hub page with category filters (All, Communication, Intelligence, Finance, Productivity, Custom)
+- [x] Integration cards with icon, description, status badge, toggle switch, expand/collapse
+- [x] Fathom integration card with API key management
+- [x] Plaud integration card with webhook URL display
+- [x] Google Workspace card with OAuth status and scope details (Gmail, Calendar, Drive, Docs, Sheets)
+- [x] Feature Controls tab (enable/disable major features with lock for core)
+- [x] Custom API integration form (name, slug, base URL, API key, type)
+- [x] Future integration placeholders: WhatsApp, Discord, Slack, QuickBooks, Stripe, Xero, Notion, HubSpot, Salesforce
+- [x] Search/filter integrations
+- [x] Premium Tesla/Apple design matching the rest of the portal
+- [x] Webhooks & API tab with endpoint configuration and copy-to-clipboard
+- [x] Omni Assistant tab with mode selector and sidebar toggle
+- [x] Stats strip (Total, Active, Connected)

@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes, integrations, InsertIntegration, featureToggles, InsertFeatureToggle } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -2442,4 +2442,219 @@ export async function getFolderBreadcrumbs(folderId: number): Promise<Array<{ id
     currentId = folder.parentId;
   }
   return crumbs;
+}
+
+
+// ============================================================================
+// INTEGRATIONS
+// ============================================================================
+
+export async function listIntegrations() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(integrations).orderBy(integrations.sortOrder, integrations.createdAt);
+}
+
+export async function getIntegrationBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(integrations).where(eq(integrations.slug, slug)).limit(1);
+  return row || null;
+}
+
+export async function getIntegrationById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(integrations).where(eq(integrations.id, id)).limit(1);
+  return row || null;
+}
+
+export async function upsertIntegration(data: {
+  slug: string;
+  name: string;
+  description?: string | null;
+  category?: "intelligence" | "communication" | "finance" | "productivity" | "custom";
+  type?: "oauth" | "api_key" | "webhook" | "custom";
+  enabled?: boolean;
+  status?: "connected" | "disconnected" | "error" | "pending";
+  iconUrl?: string | null;
+  iconColor?: string | null;
+  iconLetter?: string | null;
+  apiKey?: string | null;
+  apiSecret?: string | null;
+  baseUrl?: string | null;
+  webhookUrl?: string | null;
+  webhookSecret?: string | null;
+  config?: string | null;
+  metadata?: string | null;
+  isBuiltIn?: boolean;
+  sortOrder?: number;
+  createdBy?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getIntegrationBySlug(data.slug);
+  if (existing) {
+    await db.update(integrations).set({
+      name: data.name,
+      description: data.description !== undefined ? data.description : existing.description,
+      category: data.category ?? existing.category,
+      type: data.type ?? existing.type,
+      enabled: data.enabled ?? existing.enabled,
+      status: data.status ?? existing.status,
+      iconUrl: data.iconUrl !== undefined ? data.iconUrl : existing.iconUrl,
+      iconColor: data.iconColor !== undefined ? data.iconColor : existing.iconColor,
+      iconLetter: data.iconLetter !== undefined ? data.iconLetter : existing.iconLetter,
+      apiKey: data.apiKey !== undefined ? data.apiKey : existing.apiKey,
+      apiSecret: data.apiSecret !== undefined ? data.apiSecret : existing.apiSecret,
+      baseUrl: data.baseUrl !== undefined ? data.baseUrl : existing.baseUrl,
+      webhookUrl: data.webhookUrl !== undefined ? data.webhookUrl : existing.webhookUrl,
+      webhookSecret: data.webhookSecret !== undefined ? data.webhookSecret : existing.webhookSecret,
+      config: data.config !== undefined ? data.config : existing.config,
+      metadata: data.metadata !== undefined ? data.metadata : existing.metadata,
+      sortOrder: data.sortOrder ?? existing.sortOrder,
+    }).where(eq(integrations.id, existing.id));
+    return { ...existing, ...data };
+  } else {
+    const [result] = await db.insert(integrations).values({
+      slug: data.slug,
+      name: data.name,
+      description: data.description || null,
+      category: data.category || "custom",
+      type: data.type || "api_key",
+      enabled: data.enabled ?? false,
+      status: data.status || "disconnected",
+      iconUrl: data.iconUrl || null,
+      iconColor: data.iconColor || null,
+      iconLetter: data.iconLetter || null,
+      apiKey: data.apiKey || null,
+      apiSecret: data.apiSecret || null,
+      baseUrl: data.baseUrl || null,
+      webhookUrl: data.webhookUrl || null,
+      webhookSecret: data.webhookSecret || null,
+      config: data.config || null,
+      metadata: data.metadata || null,
+      isBuiltIn: data.isBuiltIn ?? false,
+      sortOrder: data.sortOrder ?? 99,
+      createdBy: data.createdBy || null,
+    });
+    return { id: result.insertId, ...data };
+  }
+}
+
+export async function toggleIntegration(id: number, enabled: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(integrations).set({ enabled }).where(eq(integrations.id, id));
+}
+
+export async function updateIntegrationApiKey(id: number, apiKey: string | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(integrations).set({
+    apiKey,
+    status: apiKey ? "connected" : "disconnected",
+  }).where(eq(integrations.id, id));
+}
+
+export async function deleteIntegration(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(integrations).where(eq(integrations.id, id));
+}
+
+export async function updateIntegrationStatus(slug: string, status: "connected" | "disconnected" | "error" | "pending") {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(integrations).set({ status }).where(eq(integrations.slug, slug));
+}
+
+export async function updateIntegrationLastSync(slug: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(integrations).set({ lastSyncAt: new Date() }).where(eq(integrations.slug, slug));
+}
+
+// ============================================================================
+// FEATURE TOGGLES
+// ============================================================================
+
+export async function listFeatureToggles() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(featureToggles).orderBy(featureToggles.sortOrder, featureToggles.featureKey);
+}
+
+export async function getFeatureToggle(key: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(featureToggles).where(eq(featureToggles.featureKey, key)).limit(1);
+  return row || null;
+}
+
+export async function setFeatureToggle(key: string, enabled: boolean, userId?: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const existing = await getFeatureToggle(key);
+  if (existing) {
+    if (existing.isLocked) return existing;
+    await db.update(featureToggles).set({ enabled, updatedBy: userId || null }).where(eq(featureToggles.id, existing.id));
+    return { ...existing, enabled };
+  }
+  return null;
+}
+
+export async function seedFeatureToggles() {
+  const db = await getDb();
+  if (!db) return;
+  const defaults = [
+    { featureKey: "meetings", label: "Meeting Intelligence", description: "Auto-ingest and analyze meeting transcripts from Fathom, Plaud, and other sources", category: "core" as const, enabled: true, isLocked: true, sortOrder: 1 },
+    { featureKey: "tasks", label: "Task Management", description: "Track action items, assignments, and deadlines extracted from meetings", category: "core" as const, enabled: true, isLocked: true, sortOrder: 2 },
+    { featureKey: "contacts", label: "Contact & Company CRM", description: "Manage relationships, companies, and interaction history", category: "core" as const, enabled: true, isLocked: true, sortOrder: 3 },
+    { featureKey: "email", label: "Email Integration", description: "Read, send, and manage emails directly within OmniScope", category: "communication" as const, enabled: true, isLocked: false, sortOrder: 10 },
+    { featureKey: "calendar", label: "Calendar Sync", description: "Sync Google Calendar events and schedule meetings", category: "communication" as const, enabled: true, isLocked: false, sortOrder: 11 },
+    { featureKey: "ai_insights", label: "AI Strategic Insights", description: "AI-powered analysis of meetings, contacts, and business intelligence", category: "intelligence" as const, enabled: true, isLocked: false, sortOrder: 20 },
+    { featureKey: "daily_reports", label: "Daily & Weekly Reports", description: "Automated intelligence briefings and summaries", category: "intelligence" as const, enabled: true, isLocked: false, sortOrder: 21 },
+    { featureKey: "ask_omni", label: "Ask Omni AI Assistant", description: "Natural language search and AI-powered Q&A across all data", category: "intelligence" as const, enabled: true, isLocked: false, sortOrder: 22 },
+    { featureKey: "vault", label: "Intelligence Vault", description: "Document management with Google Drive integration", category: "operations" as const, enabled: true, isLocked: false, sortOrder: 30 },
+    { featureKey: "e_signing", label: "E-Signature", description: "Send documents for electronic signature via connected providers", category: "operations" as const, enabled: true, isLocked: false, sortOrder: 31 },
+    { featureKey: "hr_module", label: "HR Hub", description: "Employee management, payroll tracking, and HR documents", category: "operations" as const, enabled: true, isLocked: false, sortOrder: 32 },
+    { featureKey: "templates", label: "Document Templates", description: "Create and manage reusable document templates", category: "operations" as const, enabled: true, isLocked: false, sortOrder: 33 },
+  ];
+  for (const ft of defaults) {
+    const existing = await getFeatureToggle(ft.featureKey);
+    if (!existing) {
+      await db.insert(featureToggles).values(ft);
+    }
+  }
+}
+
+export async function seedBuiltInIntegrations() {
+  const db = await getDb();
+  if (!db) return;
+  const builtIns = [
+    { slug: "google-workspace", name: "Google Workspace", description: "Gmail, Calendar, Drive, Docs & Sheets — unified Google integration via OAuth", category: "communication" as const, type: "oauth" as const, iconColor: "#4285F4", iconLetter: "G", isBuiltIn: true, sortOrder: 1 },
+    { slug: "fathom", name: "Fathom AI", description: "Auto-sync meeting recordings, transcripts, and AI-generated summaries", category: "intelligence" as const, type: "api_key" as const, iconColor: "#8B5CF6", iconLetter: "F", isBuiltIn: true, sortOrder: 2 },
+    { slug: "plaud", name: "Plaud", description: "Ingest meeting recordings via webhook from Plaud hardware devices", category: "intelligence" as const, type: "webhook" as const, iconColor: "#6366F1", iconLetter: "P", isBuiltIn: true, sortOrder: 3 },
+    { slug: "zapier", name: "Zapier", description: "Connect to 5,000+ apps via Zapier webhooks and automation triggers", category: "productivity" as const, type: "webhook" as const, iconColor: "#FF4A00", iconLetter: "Z", isBuiltIn: true, sortOrder: 4 },
+    { slug: "whatsapp", name: "WhatsApp Business", description: "Track and log WhatsApp conversations with contacts and clients", category: "communication" as const, type: "api_key" as const, iconColor: "#25D366", iconLetter: "W", isBuiltIn: true, sortOrder: 10 },
+    { slug: "discord", name: "Discord", description: "Send notifications and log channel activity to OmniScope", category: "communication" as const, type: "api_key" as const, iconColor: "#5865F2", iconLetter: "D", isBuiltIn: true, sortOrder: 11 },
+    { slug: "slack", name: "Slack", description: "Sync messages, send alerts, and integrate workspace channels", category: "communication" as const, type: "oauth" as const, iconColor: "#E01E5A", iconLetter: "S", isBuiltIn: true, sortOrder: 12 },
+    { slug: "quickbooks", name: "QuickBooks", description: "Sync invoices, payments, and financial data for reporting", category: "finance" as const, type: "oauth" as const, iconColor: "#2CA01C", iconLetter: "Q", isBuiltIn: true, sortOrder: 20 },
+    { slug: "stripe", name: "Stripe", description: "Track payments, subscriptions, and revenue analytics", category: "finance" as const, type: "api_key" as const, iconColor: "#635BFF", iconLetter: "S", isBuiltIn: true, sortOrder: 21 },
+    { slug: "xero", name: "Xero", description: "Accounting integration for invoices, expenses, and financial reports", category: "finance" as const, type: "oauth" as const, iconColor: "#13B5EA", iconLetter: "X", isBuiltIn: true, sortOrder: 22 },
+    { slug: "notion", name: "Notion", description: "Sync pages, databases, and knowledge base content", category: "productivity" as const, type: "api_key" as const, iconColor: "#000000", iconLetter: "N", isBuiltIn: true, sortOrder: 30 },
+    { slug: "hubspot", name: "HubSpot", description: "CRM sync — contacts, deals, and pipeline management", category: "productivity" as const, type: "oauth" as const, iconColor: "#FF7A59", iconLetter: "H", isBuiltIn: true, sortOrder: 31 },
+    { slug: "salesforce", name: "Salesforce", description: "Enterprise CRM integration for contacts, opportunities, and accounts", category: "productivity" as const, type: "oauth" as const, iconColor: "#00A1E0", iconLetter: "SF", isBuiltIn: true, sortOrder: 32 },
+  ];
+  for (const int of builtIns) {
+    const existing = await getIntegrationBySlug(int.slug);
+    if (!existing) {
+      await db.insert(integrations).values({
+        ...int,
+        enabled: ["google-workspace", "fathom", "plaud", "zapier"].includes(int.slug),
+        status: ["google-workspace", "fathom", "plaud", "zapier"].includes(int.slug) ? "connected" : "disconnected",
+      });
+    }
+  }
 }
