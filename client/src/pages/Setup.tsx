@@ -18,7 +18,7 @@ import {
   Puzzle, MessageSquare, CreditCard, BarChart3, Briefcase, Bot,
   Palette, Upload, Type, Layout, Sun, Moon
 } from "lucide-react";
-import OmniAvatar, { OmniMode, OmniState } from "@/components/OmniAvatar";
+import OmniAvatar, { OmniMode, OmniState, OmniPreferences, getOmniPreferences, setOmniPreferences, STATE_OVERLAYS, OMNI_THEME_PALETTES } from "@/components/OmniAvatar";
 import { useDesign } from "@/components/PortalLayout";
 
 type Tab = "profile" | "integrations" | "features" | "webhooks" | "omni" | "appearance";
@@ -1054,6 +1054,9 @@ const OMNI_MODE_KEY = "omniscope-omni-mode";
 const OMNI_SIDEBAR_KEY = "omniscope-omni-sidebar-visible";
 
 function OmniTab() {
+  const { prefs: designPrefs } = useDesign();
+  const currentTheme = designPrefs?.theme || "obsidian";
+
   const [mode, setMode] = useState<OmniMode>(() => {
     try { return (localStorage.getItem(OMNI_MODE_KEY) as OmniMode) || "sigil"; } catch { return "sigil"; }
   });
@@ -1061,6 +1064,8 @@ function OmniTab() {
     try { return localStorage.getItem(OMNI_SIDEBAR_KEY) !== "false"; } catch { return true; }
   });
   const [previewState, setPreviewState] = useState<OmniState>("idle");
+  const [omniPrefs, setOmniPrefs] = useState<OmniPreferences>(getOmniPreferences);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   const handleModeChange = (newMode: OmniMode) => {
     setMode(newMode);
@@ -1075,19 +1080,56 @@ function OmniTab() {
     window.dispatchEvent(new StorageEvent("storage", { key: OMNI_SIDEBAR_KEY, newValue: String(visible) }));
   };
 
+  const handlePrefToggle = (key: keyof OmniPreferences) => {
+    const updated = { ...omniPrefs, [key]: !omniPrefs[key] };
+    setOmniPrefs(updated);
+    setOmniPreferences(updated);
+    toast.success(`${key === "emotionalReactions" ? "Emotional reactions" : key === "idleAnimations" ? "Idle animations" : "Proactive states"} ${updated[key] ? "enabled" : "disabled"}`);
+  };
+
   const modes: { id: OmniMode; label: string; description: string }[] = [
     { id: "sigil", label: "Sigil", description: "Concentric gold rings — institutional, geometric, premium" },
     { id: "character", label: "Character", description: "NOMI-inspired companion — expressive eyes, interactive personality" },
     { id: "hidden", label: "Hidden", description: "No floating avatar — access Omni only from sidebar or ⌘K" },
   ];
 
-  const states: { id: OmniState; label: string }[] = [
-    { id: "idle", label: "Idle" },
-    { id: "hover", label: "Hover" },
-    { id: "thinking", label: "Thinking" },
-    { id: "success", label: "Success" },
-    { id: "error", label: "Error" },
+  // All emotional states with descriptions and triggers
+  const allStates: { id: OmniState; label: string; description: string; trigger: string; color: string; category: "core" | "emotional" | "action" }[] = [
+    { id: "idle", label: "Idle", description: "Calm, breathing — ready when you are", trigger: "Default resting state", color: OMNI_THEME_PALETTES[currentTheme]?.rim || "#d4af37", category: "core" },
+    { id: "hover", label: "Hover", description: "Attentive — eyes tracking, glow intensifies", trigger: "Mouse hovers over Omni", color: OMNI_THEME_PALETTES[currentTheme]?.rim || "#d4af37", category: "core" },
+    { id: "thinking", label: "Thinking", description: "Processing your request — contemplative, focused", trigger: "AI is generating a response", color: STATE_OVERLAYS.thinking?.color || "#6366f1", category: "core" },
+    { id: "success", label: "Success", description: "Task complete — brief celebration", trigger: "Action completed successfully", color: STATE_OVERLAYS.success?.color || "#22c55e", category: "core" },
+    { id: "error", label: "Error", description: "Something went wrong — subtle concern", trigger: "An operation failed", color: STATE_OVERLAYS.error?.color || "#ef4444", category: "core" },
+    { id: "curious", label: "Curious", description: "Wide-eyed, inquisitive — tilted head", trigger: "New or unusual data detected", color: OMNI_THEME_PALETTES[currentTheme]?.rim || "#d4af37", category: "emotional" },
+    { id: "concerned", label: "Concerned", description: "Slightly worried — narrowed eyes, warm amber glow", trigger: "Overdue items detected (1-3)", color: STATE_OVERLAYS.concerned?.color || "#f59e0b", category: "emotional" },
+    { id: "focused", label: "Focused", description: "Deep concentration — narrowed eyes, blue glow", trigger: "Many high-priority items (5+)", color: STATE_OVERLAYS.focused?.color || "#3b82f6", category: "emotional" },
+    { id: "alert", label: "Alert", description: "Urgent attention needed — orange pulse", trigger: "Critical overdue items (3+)", color: STATE_OVERLAYS.alert?.color || "#f97316", category: "emotional" },
+    { id: "proud", label: "Proud", description: "Celebrating your accomplishments — sparkles", trigger: "All tasks completed for the day", color: STATE_OVERLAYS.proud?.color || "#eab308", category: "emotional" },
+    { id: "waiting", label: "Waiting", description: "Patient, calm dots — cyan glow", trigger: "Pending approvals (5+)", color: STATE_OVERLAYS.waiting?.color || "#06b6d4", category: "emotional" },
+    { id: "relaxed", label: "Relaxed", description: "Content, gentle float — soft gold", trigger: "Light workload, everything under control", color: OMNI_THEME_PALETTES[currentTheme]?.rim || "#d4af37", category: "emotional" },
+    { id: "wave", label: "Wave", description: "Friendly greeting — arm wave gesture", trigger: "First visit of the day", color: OMNI_THEME_PALETTES[currentTheme]?.rim || "#d4af37", category: "action" },
+    { id: "thumbsup", label: "Thumbs Up", description: "Approval gesture — encouraging", trigger: "Task marked as complete", color: OMNI_THEME_PALETTES[currentTheme]?.rim || "#d4af37", category: "action" },
+    { id: "celebrate", label: "Celebrate", description: "Full celebration — sparkles and ring flash", trigger: "Major milestone achieved", color: STATE_OVERLAYS.celebrate?.color || "#eab308", category: "action" },
   ];
+
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  // Toggle component for reuse
+  const Toggle = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
+    <button
+      onClick={onToggle}
+      className={`relative rounded-full transition-colors duration-200 flex-shrink-0 ${
+        enabled ? "bg-yellow-600" : "bg-zinc-700"
+      }`}
+      style={{ width: 44, height: 24 }}
+    >
+      <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-sm ${
+        enabled ? "translate-x-5" : "translate-x-0"
+      }`} />
+    </button>
+  );
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -1099,7 +1141,7 @@ function OmniTab() {
             Omni Assistant
           </CardTitle>
           <p className="text-xs text-zinc-500 mt-1">
-            Your persistent AI companion. Customize how Omni appears and behaves across the portal.
+            Your persistent AI companion. Omni reacts to your workload, tracks your cursor, and adapts its emotional state based on real-time portal data.
           </p>
         </CardHeader>
         <CardContent>
@@ -1115,38 +1157,42 @@ function OmniTab() {
               ) : (
                 <>
                   <div className="relative">
-                    <OmniAvatar mode={mode} state={previewState} size={96} badge={previewState === "idle"} />
+                    <OmniAvatar mode={mode} state={previewState} size={96} badge={previewState === "idle"} theme={currentTheme} />
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-medium text-white">
                       {mode === "sigil" ? "OmniScope Sigil" : "NOMI Companion"}
                     </p>
                     <p className="text-xs text-zinc-500 mt-1">
-                      {previewState === "idle" && "Calm, breathing — ready when you are"}
-                      {previewState === "hover" && "Attentive — eyes tracking, glow intensifies"}
-                      {previewState === "thinking" && "Processing — contemplative, focused"}
-                      {previewState === "success" && "Task complete — brief celebration"}
-                      {previewState === "error" && "Something's off — subtle concern"}
+                      {allStates.find(s => s.id === previewState)?.description || ""}
                     </p>
                   </div>
                 </>
               )}
 
+              {/* State selector — all states, grouped */}
               {mode !== "hidden" && (
-                <div className="flex gap-2">
-                  {states.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setPreviewState(s.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        previewState === s.id
-                          ? "bg-yellow-600/20 text-yellow-400 border border-yellow-600/30"
-                          : "bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300 hover:bg-zinc-800"
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {allStates.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => setPreviewState(s.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                          previewState === s.id
+                            ? "text-white border"
+                            : "bg-zinc-800/50 text-zinc-500 border border-zinc-700/30 hover:text-zinc-300 hover:bg-zinc-800"
+                        }`}
+                        style={previewState === s.id ? {
+                          backgroundColor: `${s.color}20`,
+                          borderColor: `${s.color}50`,
+                          color: s.color,
+                        } : undefined}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -1200,19 +1246,237 @@ function OmniTab() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => handleSidebarToggle(!sidebarVisible)}
-                className={`relative rounded-full transition-colors duration-200 ${
-                  sidebarVisible ? "bg-yellow-600" : "bg-zinc-700"
-                }`}
-                style={{ width: 44, height: 24 }}
-              >
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-sm ${
-                  sidebarVisible ? "translate-x-5" : "translate-x-0"
-                }`} />
-              </button>
+              <Toggle enabled={sidebarVisible} onToggle={() => handleSidebarToggle(!sidebarVisible)} />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Behavior Controls */}
+      <Card className="bg-zinc-900/40 border-zinc-800/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base text-white flex items-center gap-2">
+            <Settings className="h-5 w-5 text-yellow-500" />
+            Behavior Controls
+          </CardTitle>
+          <p className="text-xs text-zinc-500 mt-1">
+            Fine-tune how Omni behaves. Toggle individual features on or off.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Emotional Reactions Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                <Eye className="h-4 w-4 text-yellow-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Emotional Reactions</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Omni changes its expression and glow color based on its emotional state. When off, Omni stays in a calm idle state.
+                </p>
+              </div>
+            </div>
+            <Toggle enabled={omniPrefs.emotionalReactions} onToggle={() => handlePrefToggle("emotionalReactions")} />
+          </div>
+
+          {/* Idle Animations Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                <Zap className="h-4 w-4 text-cyan-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Idle Animations</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Gentle floating, occasional glances, and curiosity tilts when Omni is resting. When off, Omni stays still.
+                </p>
+              </div>
+            </div>
+            <Toggle enabled={omniPrefs.idleAnimations} onToggle={() => handlePrefToggle("idleAnimations")} />
+          </div>
+
+          {/* Proactive State Changes Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/40">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                <BarChart3 className="h-4 w-4 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Proactive State Changes</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Omni automatically reacts to your triage data — overdue tasks, pending approvals, workload levels. When off, Omni only reacts to direct interactions.
+                </p>
+              </div>
+            </div>
+            <Toggle enabled={omniPrefs.proactiveStates} onToggle={() => handlePrefToggle("proactiveStates")} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Emotional States Guide */}
+      <Card className="bg-zinc-900/40 border-zinc-800/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base text-white flex items-center gap-2">
+            <Palette className="h-5 w-5 text-yellow-500" />
+            Emotional States Guide
+          </CardTitle>
+          <p className="text-xs text-zinc-500 mt-1">
+            Omni has 15 distinct emotional states. Each state changes the eye shape, rim glow color, and animation. Click any state above in the preview to see it live.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Core States */}
+          <button
+            onClick={() => toggleSection("core")}
+            className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/40 hover:bg-zinc-800/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-yellow-500" />
+              <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Core States</span>
+              <span className="text-[10px] text-zinc-600 ml-1">Always active</span>
+            </div>
+            {expandedSection === "core" ? <ChevronUp className="h-3.5 w-3.5 text-zinc-500" /> : <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />}
+          </button>
+          {expandedSection === "core" && (
+            <div className="space-y-2 pl-1">
+              {allStates.filter(s => s.category === "core").map((s) => (
+                <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg bg-zinc-950/40 border border-zinc-800/30">
+                  <div className="h-3 w-3 rounded-full mt-0.5 flex-shrink-0" style={{ backgroundColor: s.color }} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">{s.label}</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-0.5">{s.description}</p>
+                    <p className="text-[10px] text-zinc-600 mt-1 flex items-center gap-1">
+                      <Zap className="h-2.5 w-2.5" /> Trigger: {s.trigger}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPreviewState(s.id)}
+                    className="text-[10px] text-zinc-500 hover:text-yellow-400 transition-colors px-2 py-1 rounded border border-zinc-800/40 hover:border-yellow-600/30 flex-shrink-0"
+                  >
+                    Preview
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Emotional States */}
+          <button
+            onClick={() => toggleSection("emotional")}
+            className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/40 hover:bg-zinc-800/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
+              <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Emotional States</span>
+              <span className="text-[10px] text-zinc-600 ml-1">Data-driven reactions</span>
+            </div>
+            {expandedSection === "emotional" ? <ChevronUp className="h-3.5 w-3.5 text-zinc-500" /> : <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />}
+          </button>
+          {expandedSection === "emotional" && (
+            <div className="space-y-2 pl-1">
+              {allStates.filter(s => s.category === "emotional").map((s) => (
+                <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg bg-zinc-950/40 border border-zinc-800/30">
+                  <div className="h-3 w-3 rounded-full mt-0.5 flex-shrink-0" style={{ backgroundColor: s.color }} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">{s.label}</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-0.5">{s.description}</p>
+                    <p className="text-[10px] text-zinc-600 mt-1 flex items-center gap-1">
+                      <Zap className="h-2.5 w-2.5" /> Trigger: {s.trigger}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPreviewState(s.id)}
+                    className="text-[10px] text-zinc-500 hover:text-yellow-400 transition-colors px-2 py-1 rounded border border-zinc-800/40 hover:border-yellow-600/30 flex-shrink-0"
+                  >
+                    Preview
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Action States */}
+          <button
+            onClick={() => toggleSection("action")}
+            className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/40 hover:bg-zinc-800/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Action States</span>
+              <span className="text-[10px] text-zinc-600 ml-1">Gestures & celebrations</span>
+            </div>
+            {expandedSection === "action" ? <ChevronUp className="h-3.5 w-3.5 text-zinc-500" /> : <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />}
+          </button>
+          {expandedSection === "action" && (
+            <div className="space-y-2 pl-1">
+              {allStates.filter(s => s.category === "action").map((s) => (
+                <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg bg-zinc-950/40 border border-zinc-800/30">
+                  <div className="h-3 w-3 rounded-full mt-0.5 flex-shrink-0" style={{ backgroundColor: s.color }} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">{s.label}</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-0.5">{s.description}</p>
+                    <p className="text-[10px] text-zinc-600 mt-1 flex items-center gap-1">
+                      <Zap className="h-2.5 w-2.5" /> Trigger: {s.trigger}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPreviewState(s.id)}
+                    className="text-[10px] text-zinc-500 hover:text-yellow-400 transition-colors px-2 py-1 rounded border border-zinc-800/40 hover:border-yellow-600/30 flex-shrink-0"
+                  >
+                    Preview
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Theme Color Adaptation */}
+      <Card className="bg-zinc-900/40 border-zinc-800/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base text-white flex items-center gap-2">
+            <Sun className="h-5 w-5 text-yellow-500" />
+            Theme Adaptation
+          </CardTitle>
+          <p className="text-xs text-zinc-500 mt-1">
+            Omni's rim and ambient glow automatically adapts to your active design theme. The gold eye core stays consistent as Omni's identity.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Object.entries(OMNI_THEME_PALETTES).map(([name, palette]) => (
+              <div
+                key={name}
+                className={`p-3 rounded-xl border transition-all ${
+                  name === currentTheme
+                    ? "border-yellow-600/30 bg-yellow-600/5"
+                    : "border-zinc-800/40 bg-zinc-900/30"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-6 rounded-full border border-zinc-700/50" style={{ backgroundColor: palette.rim, boxShadow: `0 0 8px ${palette.rim}40` }} />
+                  <div>
+                    <p className="text-sm font-medium text-white capitalize">{name}</p>
+                    <p className="text-[10px] text-zinc-500 font-mono">{palette.rim}</p>
+                  </div>
+                  {name === currentTheme && (
+                    <Badge className="ml-auto bg-yellow-600/20 text-yellow-500 border-yellow-600/30 text-[9px]">Active</Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-zinc-600 mt-3">
+            Change your theme in the Appearance tab to see Omni adapt.
+          </p>
         </CardContent>
       </Card>
 

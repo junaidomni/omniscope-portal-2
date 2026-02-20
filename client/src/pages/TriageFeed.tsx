@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import OmniAvatar, { OmniState } from "@/components/OmniAvatar";
+import OmniAvatar, { OmniState, getOmniPreferences } from "@/components/OmniAvatar";
 import { useOmni, useDesign } from "@/components/PortalLayout";
 import {
   AlertTriangle,
@@ -947,6 +947,9 @@ function HeroGreeting({
   // ── Event-driven Omni state machine ──
   // Derives Omni's emotional state from real triage data.
   const omniEmotionalState: OmniState = useMemo(() => {
+    // If proactive states are disabled, always return idle
+    const prefs = getOmniPreferences();
+    if (!prefs.proactiveStates) return "idle";
     // Critical: overdue items demand attention
     if (summary.totalOverdue > 3) return "alert";
     if (summary.totalOverdue > 0) return "concerned";

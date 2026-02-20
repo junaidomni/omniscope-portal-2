@@ -2331,3 +2331,30 @@
 ### Verification
 - [x] All tests pass after changes (142 triage tests passing)
 - [x] Omni renders correctly across all 5 themes (theme prop wired everywhere)
+
+## v76 — Omni Personality & Settings Panel
+### Cute & Friendly Redesign
+- [ ] Make Omni look cute and approachable (not scary/surveillance-like)
+- [ ] Softer, rounder eye shapes with friendly expressions
+- [ ] Warmer color palette for default state
+- [ ] Gentler animations (less mechanical, more organic)
+- [ ] Friendly idle expressions (slight smile, soft blinks)
+
+### Omni Settings Panel
+- [x] Build Omni section in Settings with full explanation of what Omni does
+- [x] Color legend — explain what each emotional state color means
+- [x] State guide — describe all emotional states and when they trigger
+- [x] Feature toggles — allow users to turn off specific Omni behaviors
+- [x] Toggle: Enable/disable emotional reactions
+- [x] Toggle: Enable/disable idle animations (float, glance, tilt)
+- [x] Toggle: Enable/disable proactive state changes
+- [x] Toggle: Switch between Sigil/Character/Hidden modes
+- [x] Save toggle preferences to localStorage (with cross-tab sync)
+
+## v76 — Omni Settings Panel (No Visual Changes)
+- [x] Expand OmniTab with full state/color legend explaining all emotional states
+- [x] Add color guide showing what each rim/glow color means per state
+- [x] Add feature toggles: emotional reactions, idle animations, proactive states
+- [x] Wire toggles to localStorage and have OmniAvatar respect preferences
+- [x] Add all new emotional states to the preview state selector
+- [x] Include descriptions for when each state triggers
