@@ -34,7 +34,7 @@ export const accounts = mysqlTable("accounts", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("accountName", { length: 500 }).notNull(),
   ownerUserId: int("accountOwnerUserId").notNull().references(() => users.id),
-  plan: mysqlEnum("accountPlan", ["starter", "professional", "enterprise"]).default("starter").notNull(),
+  plan: mysqlEnum("accountPlan", ["starter", "professional", "enterprise", "sovereign"]).default("starter").notNull(),
   status: mysqlEnum("accountStatus", ["active", "suspended", "cancelled"]).default("active").notNull(),
   maxOrganizations: int("accountMaxOrgs").default(5).notNull(),
   maxUsersPerOrg: int("accountMaxUsersPerOrg").default(25).notNull(),

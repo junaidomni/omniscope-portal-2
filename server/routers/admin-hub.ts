@@ -307,7 +307,7 @@ export const adminHubRouter = router({
         .where(eq(accounts.id, org.accountId));
       if (!account) throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
 
-      const planHierarchy: Record<string, number> = { starter: 0, professional: 1, enterprise: 2 };
+      const planHierarchy: Record<string, number> = { starter: 0, professional: 1, enterprise: 2, sovereign: 3 };
       const accountLevel = planHierarchy[account.plan] ?? 0;
 
       // Get all features

@@ -57,7 +57,7 @@ export default function AdminHubSettings() {
   const tokens = { cardBg, cardBorder, textPrimary, textSecondary, textMuted, inputBg, accentColor: currentAccent, isLightTheme };
 
   const settingsSections: { id: SettingsView; title: string; description: string; icon: any; ready: boolean }[] = [
-    { id: "appearance", title: "Appearance & Design", description: "Platform theme, accent colors, typography, and sidebar preferences", icon: Palette, ready: true },
+    { id: "appearance", title: "Appearance & Design", description: "Platform theme, accent colors, and sidebar preferences", icon: Palette, ready: true },
     { id: "general", title: "General", description: "Platform name, branding, and default configuration", icon: Settings, ready: false },
     { id: "security", title: "Security & Access", description: "Authentication policies, session management, and access controls", icon: Shield, ready: false },
     { id: "notifications", title: "Notifications", description: "Platform-wide notification preferences and channels", icon: Bell, ready: false },
@@ -312,43 +312,7 @@ function AppearanceSettings({ tokens, onBack }: { tokens: any; onBack: () => voi
           </div>
         </div>
 
-        {/* Typography */}
-        <div className="rounded-2xl p-6" style={{ background: tokens.cardBg, border: `1px solid ${tokens.cardBorder}` }}>
-          <div className="flex items-center gap-2 mb-1">
-            <Type className="h-4 w-4" style={{ color: tokens.accentColor }} />
-            <h3 className="text-sm font-semibold tracking-wide uppercase" style={{ color: tokens.textMuted, letterSpacing: "0.08em" }}>
-              Typography
-            </h3>
-          </div>
-          <p className="text-xs mb-4" style={{ color: tokens.textMuted }}>
-            Choose the primary font family used across the platform.
-          </p>
-          <div className="space-y-2">
-            {FONT_OPTIONS.map((font) => (
-              <button
-                key={font.id}
-                onClick={() => setFontFamily(font.id)}
-                className="w-full rounded-xl p-3.5 transition-all duration-200 text-left flex items-center gap-4"
-                style={{
-                  background: fontFamily === font.id ? `${tokens.accentColor}08` : "transparent",
-                  border: `1px solid ${fontFamily === font.id ? `${tokens.accentColor}30` : tokens.cardBorder}`,
-                }}
-              >
-                <div className="flex-1">
-                  <p className="text-sm font-medium" style={{ color: tokens.textPrimary, fontFamily: font.id }}>
-                    {font.label}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: tokens.textMuted, fontFamily: font.id }}>
-                    {font.sample}
-                  </p>
-                </div>
-                {fontFamily === font.id && (
-                  <Check className="h-4 w-4 shrink-0" style={{ color: tokens.accentColor }} />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+
 
         {/* Sidebar Layout */}
         <div className="rounded-2xl p-6" style={{ background: tokens.cardBg, border: `1px solid ${tokens.cardBorder}` }}>

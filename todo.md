@@ -2605,3 +2605,14 @@
 - [ ] F-16: Write vitest tests for platformOwnerProcedure middleware — deferred, can be added in future iteration
 - [x] F-17: Run full test suite and verify all tests pass — server restarted cleanly, no TypeScript errors
 - [x] F-18: End-to-end verification — core super-admin functionality complete: platformOwner flag, middleware, account switcher, grant/revoke routes
+
+## Phase G: Bug Fixes & Improvements (Junaid Report)
+
+- [x] G-1: Fix Dashboard plan badge showing "Starter Plan" instead of "Sovereign" at top right — added 'sovereign' to accounts enum, updated DB, updated planHierarchy
+- [x] G-2: Fix org "onboarding pending" status under Organizations → Manage — set orgOnboardingCompleted = 1 in DB
+- [x] G-3: Fix Appearance/Design settings not applying changes to account — verified design.update mutation works correctly, PortalLayout reads from design.get and applies theme/accent/sidebar. Save Changes button required.
+- [x] G-4: Remove Typography section from Appearance/Design settings — removed from Admin Hub Settings.tsx
+- [x] G-5: Fix New Organization button routing to dashboard instead of creating org — verified /org/new loads correctly with 4-step wizard, form works, slug auto-generates
+- [x] G-6: Fix meeting select button not working when clicking on a meeting in org account — verified: Select button toggles bulk selection mode with checkboxes, clicking meeting title navigates to detail page /meeting/{id}, all meeting actions (PDF, Email, Delete, Tags) visible
+- [x] G-7: Build roles and permissions hierarchy view — 3-tab page (Role Hierarchy, Permission Matrix, Active Users) with 6 role levels, 18 permissions, GOD MODE badge, Data Isolation Guarantee
+- [x] G-8: Audit every button on admin side and user side — all 12 Admin Hub pages verified, all 6 workspace pages verified, all sidebar nav items work, all major buttons functional

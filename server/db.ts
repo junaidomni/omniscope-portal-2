@@ -2632,7 +2632,7 @@ export async function upsertDesignPreferences(userId: number, data: Partial<Omit
 /**
  * Create a new account for a user (called during first-time setup or SaaS signup)
  */
-export async function createAccount(data: { name: string; ownerUserId: number; plan?: "starter" | "professional" | "enterprise"; billingEmail?: string }) {
+export async function createAccount(data: { name: string; ownerUserId: number; plan?: "starter" | "professional" | "enterprise" | "sovereign"; billingEmail?: string }) {
   const db = await getDb();
   if (!db) return null;
   const [result] = await db.insert(accounts).values({

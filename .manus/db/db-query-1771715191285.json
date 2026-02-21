@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, orgName, orgSlug, orgStatus FROM organizations;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, orgName, orgSlug, orgStatus FROM organizations;",
+  "rows": [
+    {
+      "id": "1",
+      "orgName": "OmniScope",
+      "orgSlug": "junaid-qureshi-workspace",
+      "orgStatus": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\torgName\torgSlug\torgStatus\n1\tOmniScope\tjunaid-qureshi-workspace\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}

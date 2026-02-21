@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, accountName, accountPlan, accountStatus, accountOwnerUserId FROM accounts;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, accountName, accountPlan, accountStatus, accountOwnerUserId FROM accounts;",
+  "rows": [
+    {
+      "id": "2",
+      "accountName": "Junaid Qureshi's Account",
+      "accountPlan": "sovereign",
+      "accountStatus": "active",
+      "accountOwnerUserId": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\taccountName\taccountPlan\taccountStatus\taccountOwnerUserId\n2\tJunaid Qureshi's Account\tsovereign\tactive\t1\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

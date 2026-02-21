@@ -93,7 +93,7 @@ export const contactsRouter = router({
       source: z.string().optional(),
       tags: z.string().optional(), // JSON array string
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const id = await db.createContact({
         name: input.name,
         email: input.email ?? null,
@@ -106,6 +106,7 @@ export const contactsRouter = router({
         companyId: input.companyId ?? null,
         source: input.source ?? "manual",
         tags: input.tags ?? null,
+        orgId: ctx.orgId ?? undefined,
       });
       return { id };
     }),

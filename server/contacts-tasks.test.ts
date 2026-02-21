@@ -1,6 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+
+// Mock planEnforcement to bypass plan gating in tests
+vi.mock("./planEnforcement", () => ({
+  resolvePlanForOrg: vi.fn().mockResolvedValue({
+    planKey: "professional",
+    planName: "Professional",
+    planTier: 1,
+    limits: { maxOrganizations: 3, maxUsersPerOrg: 10, maxContacts: 5000, maxMeetingsPerMonth: 200, maxStorageGb: 25 },
+    features: ["ai_insights", "email", "integrations"],
+  }),
+  enforceFeatureGate: vi.fn().mockResolvedValue(undefined),
+  enforceUsageLimit: vi.fn().mockResolvedValue(undefined),
+  checkUsageLimit: vi.fn().mockResolvedValue({ allowed: true, current: 0, max: 5000, limitType: "contacts" }),
+  isFeatureIncludedInPlan: vi.fn().mockResolvedValue({ included: true, requiredPlan: null, currentPlan: "professional" }),
+  getUsageCounts: vi.fn().mockResolvedValue({ contacts: 0, meetingsThisMonth: 0, usersInOrg: 1, organizations: 1, storageUsedGb: 0 }),
+  invalidatePlanCache: vi.fn(),
+}));
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -19,9 +36,10 @@ function createAuthContext(): { ctx: TrpcContext } {
 
   const ctx: TrpcContext = {
     user,
+    orgId: 1,
     req: {
       protocol: "https",
-      headers: {},
+      headers: { "x-org-id": "1" },
     } as TrpcContext["req"],
     res: {
       clearCookie: () => {},

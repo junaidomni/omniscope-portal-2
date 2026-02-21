@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, orgName, orgStatus, orgOnboardingCompleted FROM organizations;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, orgName, orgStatus, orgOnboardingCompleted FROM organizations;",
+  "rows": [
+    {
+      "id": "1",
+      "orgName": "OmniScope",
+      "orgStatus": "active",
+      "orgOnboardingCompleted": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\torgName\torgStatus\torgOnboardingCompleted\n1\tOmniScope\tactive\t0\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

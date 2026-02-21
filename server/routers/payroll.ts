@@ -46,6 +46,7 @@ export const payrollRouter = router({
         status: input.status,
         notes: input.notes ?? null,
         createdBy: ctx.user.id,
+        orgId: ctx.orgId ?? undefined,
       });
       return { id };
     }),

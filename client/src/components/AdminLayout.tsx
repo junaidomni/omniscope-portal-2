@@ -66,6 +66,7 @@ const adminSections: AdminNavSection[] = [
     label: "People",
     items: [
       { id: "people", icon: Users, label: "Team Members", path: "/admin-hub/people", matchPaths: ["/admin-hub/people"] },
+      { id: "roles", icon: Shield, label: "Roles & Permissions", path: "/admin-hub/roles", matchPaths: ["/admin-hub/roles"] },
     ],
   },
   {

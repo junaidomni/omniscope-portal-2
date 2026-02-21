@@ -246,6 +246,13 @@
       "when": 1771711019658,
       "tag": "0034_unknown_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1771715103252,
+      "tag": "0035_dusty_tenebrous",
+      "breakpoints": true
     }
   ]
 }

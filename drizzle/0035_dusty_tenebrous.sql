@@ -1,0 +1,1 @@
+ALTER TABLE `accounts` MODIFY COLUMN `accountPlan` enum('starter','professional','enterprise','sovereign') NOT NULL DEFAULT 'starter';
