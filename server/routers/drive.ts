@@ -3,7 +3,7 @@ import * as googleDrive from "../googleDrive";
 import { TRPCError } from "@trpc/server";
 import { getGoogleAuthUrl, isGoogleConnected, syncGoogleCalendarEvents } from "../googleCalendar";
 import { invokeLLM } from "../_core/llm";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const driveRouter = router({

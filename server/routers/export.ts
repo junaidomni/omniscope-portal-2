@@ -1,18 +1,18 @@
 import * as reportExporter from "../reportExporter";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const exportRouter = router({
-  dailySummary: protectedProcedure
+  dailySummary: orgScopedProcedure
     .input(z.object({ date: z.string().optional() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const date = input.date ? new Date(input.date) : new Date();
-      return await reportExporter.exportDailySummaryMarkdown(date);
+      return await reportExporter.exportDailySummaryMarkdown(date, ctx.orgId);
     }),
   
-  weeklySummary: protectedProcedure
+  weeklySummary: orgScopedProcedure
     .input(z.object({ weekStart: z.string().optional() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       let weekStart: Date;
       if (input.weekStart) {
         weekStart = new Date(input.weekStart);
@@ -22,14 +22,14 @@ export const exportRouter = router({
         weekStart.setDate(now.getDate() - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
       }
-      return await reportExporter.exportWeeklySummaryMarkdown(weekStart);
+      return await reportExporter.exportWeeklySummaryMarkdown(weekStart, ctx.orgId);
     }),
   
-  customRange: protectedProcedure
+  customRange: orgScopedProcedure
     .input(z.object({ startDate: z.string(), endDate: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const startDate = new Date(input.startDate);
       const endDate = new Date(input.endDate);
-      return await reportExporter.exportCustomRangeMarkdown(startDate, endDate);
+      return await reportExporter.exportCustomRangeMarkdown(startDate, endDate, ctx.orgId);
     }),
 });

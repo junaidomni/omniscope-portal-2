@@ -9,8 +9,8 @@ export interface ExportedReport {
 /**
  * Export daily summary as Markdown
  */
-export async function exportDailySummaryMarkdown(date: Date): Promise<ExportedReport> {
-  const summary = await analytics.getDailySummary(date);
+export async function exportDailySummaryMarkdown(date: Date, orgId?: number | null): Promise<ExportedReport> {
+  const summary = await analytics.getDailySummary(date, orgId);
   
   const dateStr = new Date(summary.date).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -71,8 +71,8 @@ ${m.keyHighlights.length > 0 ? `**Key Highlights:**\n${m.keyHighlights.map(h => 
 /**
  * Export weekly summary as Markdown
  */
-export async function exportWeeklySummaryMarkdown(weekStart: Date): Promise<ExportedReport> {
-  const summary = await analytics.getWeeklySummary(weekStart);
+export async function exportWeeklySummaryMarkdown(weekStart: Date, orgId?: number | null): Promise<ExportedReport> {
+  const summary = await analytics.getWeeklySummary(weekStart, orgId);
   
   const weekStartStr = new Date(summary.weekStart).toLocaleDateString('en-US', {
     month: 'long',
@@ -151,9 +151,9 @@ ${summary.keyRisks.length > 0 ? summary.keyRisks.map((r, i) => `${i + 1}. ${r}`)
 /**
  * Export custom date range report
  */
-export async function exportCustomRangeMarkdown(startDate: Date, endDate: Date): Promise<ExportedReport> {
+export async function exportCustomRangeMarkdown(startDate: Date, endDate: Date, orgId?: number | null): Promise<ExportedReport> {
   // For now, use weekly summary logic
-  const summary = await analytics.getWeeklySummary(startDate);
+  const summary = await analytics.getWeeklySummary(startDate, orgId);
   
   const startStr = startDate.toLocaleDateString('en-US', {
     month: 'long',

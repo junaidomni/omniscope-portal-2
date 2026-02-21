@@ -1,27 +1,27 @@
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const templateRouter = router({
-  list: protectedProcedure
+  list: orgScopedProcedure
     .input(z.object({
       category: z.string().optional(),
       isActive: z.boolean().optional(),
     }).optional())
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return db.listTemplates(input || undefined);
     }),
 
-  getById: protectedProcedure
+  getById: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const template = await db.getTemplateById(input.id);
       if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
       return template;
     }),
 
-  create: protectedProcedure
+  create: orgScopedProcedure
     .input(z.object({
       name: z.string().min(1),
       description: z.string().optional(),
@@ -36,7 +36,7 @@ export const templateRouter = router({
       return db.createTemplate({ ...input, createdBy: ctx.user!.id });
     }),
 
-  update: protectedProcedure
+  update: orgScopedProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -47,13 +47,13 @@ export const templateRouter = router({
       defaultRecipientRoles: z.string().optional(),
       isActive: z.boolean().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       return db.updateTemplate(id, data);
     }),
 
   // Generate a document from a template with merge fields
-  generate: protectedProcedure
+  generate: orgScopedProcedure
     .input(z.object({
       templateId: z.number(),
       mergeFields: z.record(z.string()), // { "{{client_name}}": "Wintermute", ... }

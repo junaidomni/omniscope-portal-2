@@ -1,16 +1,16 @@
 import * as db from "../db";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { z } from "zod";
 
 export const hrDocumentsRouter = router({
-  list: protectedProcedure
+  list: orgScopedProcedure
     .input(z.object({ employeeId: z.number(), category: z.string().optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getDocumentsForEmployee(input.employeeId, input.category);
     }),
 
-  upload: protectedProcedure
+  upload: orgScopedProcedure
     .input(z.object({
       employeeId: z.number(),
       title: z.string().min(1),
@@ -41,7 +41,7 @@ export const hrDocumentsRouter = router({
       return { id, url };
     }),
 
-  delete: protectedProcedure
+  delete: orgScopedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await db.deleteHrDocument(input.id);

@@ -1,7 +1,7 @@
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { z } from "zod";
 
@@ -50,7 +50,7 @@ export const contactsRouter = router({
 
   getById: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const contact = await db.getContactById(input.id);
       if (!contact) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
       return contact;
@@ -58,7 +58,7 @@ export const contactsRouter = router({
 
   getProfile: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const profile = await db.getContactProfile(input.id);
       if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
       return profile;
@@ -66,7 +66,7 @@ export const contactsRouter = router({
 
   getMeetings: orgScopedProcedure
     .input(z.object({ contactId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getMeetingsForContact(input.contactId);
     }),
 
@@ -153,7 +153,7 @@ export const contactsRouter = router({
 
   toggleStar: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const contact = await db.getContactById(input.id);
       if (!contact) throw new TRPCError({ code: "NOT_FOUND" });
       await db.updateContact(input.id, { starred: !contact.starred });
@@ -162,7 +162,7 @@ export const contactsRouter = router({
 
   getNotes: orgScopedProcedure
     .input(z.object({ contactId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getNotesForContact(input.contactId);
     }),
 
@@ -180,7 +180,7 @@ export const contactsRouter = router({
 
   deleteNote: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await db.deleteContactNote(input.id);
       return { success: true };
     }),
@@ -276,7 +276,7 @@ export const contactsRouter = router({
 
   delete: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await db.deleteContact(input.id);
       return { success: true };
     }),
@@ -743,7 +743,7 @@ IMPORTANT: Only include fields where you have high confidence from the meeting d
   // Link employee to contact
   linkEmployee: orgScopedProcedure
     .input(z.object({ contactId: z.number(), employeeId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await db.linkEmployeeToContact(input.employeeId, input.contactId);
       // Sync employee data to contact
       const employee = await db.getEmployeeById(input.employeeId);
@@ -795,7 +795,7 @@ IMPORTANT: Only include fields where you have high confidence from the meeting d
   // Contact documents
   getDocuments: orgScopedProcedure
     .input(z.object({ contactId: z.number(), category: z.string().optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getDocumentsForContact(input.contactId, input.category);
     }),
 
@@ -828,7 +828,7 @@ IMPORTANT: Only include fields where you have high confidence from the meeting d
 
   deleteDocument: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await db.deleteContactDocument(input.id);
       return { success: true };
     }),
@@ -836,7 +836,7 @@ IMPORTANT: Only include fields where you have high confidence from the meeting d
   // Get linked employee for a contact
   getLinkedEmployee: orgScopedProcedure
     .input(z.object({ contactId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getEmployeeByContactId(input.contactId);
     }),
 

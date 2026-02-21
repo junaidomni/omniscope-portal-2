@@ -1,6 +1,6 @@
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const tasksRouter = router({
@@ -20,7 +20,7 @@ export const tasksRouter = router({
 
   getById: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const task = await db.getTaskById(input.id);
       if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       return task;

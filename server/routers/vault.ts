@@ -1,7 +1,7 @@
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const vaultRouter = router({
@@ -118,13 +118,13 @@ export const vaultRouter = router({
       entityId: z.number(),
       linkType: z.enum(["primary", "related", "mentioned", "generated_for", "signed_by"]).default("primary"),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       return db.addDocumentEntityLink(input);
     }),
 
   removeEntityLink: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       return db.removeDocumentEntityLink(input.id);
     }),
 
@@ -133,7 +133,7 @@ export const vaultRouter = router({
       entityType: z.enum(["company", "contact", "meeting"]),
       entityId: z.number(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return db.getDocumentsByEntity(input.entityType, input.entityId);
     }),
 
@@ -162,7 +162,7 @@ export const vaultRouter = router({
       collection: z.string().optional(),
       parentId: z.number().nullable().optional(),
     }).optional())
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return db.listFolders(input || undefined);
     }),
 
@@ -242,7 +242,7 @@ export const vaultRouter = router({
 
   getFolderAccess: orgScopedProcedure
     .input(z.object({ folderId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return db.getFolderAccessList(input.folderId);
     }),
 
@@ -252,7 +252,7 @@ export const vaultRouter = router({
       targetType: z.enum(["document", "folder"]),
       targetId: z.number(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       if (input.targetType === "folder") {
         return db.getFolderAccessList(input.targetId);
       }
@@ -284,7 +284,7 @@ export const vaultRouter = router({
 
   revokeAccess: orgScopedProcedure
     .input(z.object({ accessId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       return db.revokeDocumentAccess(input.accessId);
     }),
 
@@ -411,7 +411,7 @@ Return JSON with: { "suggestedTitle": string, "category": string, "subcategory":
   // ── Document Notes ──
   getNotes: orgScopedProcedure
     .input(z.object({ documentId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return db.getDocumentNotes(input.documentId);
     }),
 

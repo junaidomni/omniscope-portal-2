@@ -3,7 +3,7 @@ import * as gmailService from "../gmailService";
 import { TRPCError } from "@trpc/server";
 import { getGoogleAuthUrl, isGoogleConnected, syncGoogleCalendarEvents } from "../googleCalendar";
 import { invokeLLM } from "../_core/llm";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const mailRouter = router({
@@ -131,7 +131,7 @@ export const mailRouter = router({
   // Email-to-Company Links
   getCompanyLinks: orgScopedProcedure
     .input(z.object({ threadId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getEmailCompanyLinks(input.threadId);
     }),
 
@@ -143,7 +143,7 @@ export const mailRouter = router({
 
   unlinkCompany: orgScopedProcedure
     .input(z.object({ linkId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       return await db.unlinkEmailFromCompany(input.linkId);
     }),
 
@@ -343,7 +343,7 @@ Return ONLY valid JSON. No markdown, no code blocks.`,
   // Get tasks linked to a thread
   getThreadTasks: orgScopedProcedure
     .input(z.object({ threadId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getTasksByThreadId(input.threadId);
     }),
 

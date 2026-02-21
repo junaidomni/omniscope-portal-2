@@ -1,7 +1,7 @@
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const companiesRouter = router({
@@ -71,7 +71,7 @@ export const companiesRouter = router({
       regulatoryExposure: z.string().nullable().optional(),
       entityType: z.enum(["sovereign", "private", "institutional", "family_office", "other"]).nullable().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updates } = input;
       const cleanUpdates: any = {};
       for (const [key, value] of Object.entries(updates)) {

@@ -1,6 +1,6 @@
 import * as db from "../db";
 import { invokeLLM } from "../_core/llm";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 
 export const aiInsightsRouter = router({
   followUpReminders: orgScopedProcedure.query(async ({ ctx }) => {

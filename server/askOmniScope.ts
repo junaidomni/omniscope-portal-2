@@ -34,13 +34,15 @@ export interface ChatResult {
 /**
  * Build a compact context snapshot of the entire OmniScope database
  * for the LLM to reason over. Keeps token count manageable.
+ * Accepts orgId to scope data to the user's current organization.
  */
-async function buildDatabaseContext(pageContext?: string, entityId?: string) {
+async function buildDatabaseContext(orgId?: number | null, pageContext?: string, entityId?: string) {
+  const effectiveOrgId = orgId ?? undefined;
   const [allMeetings, allTasks, allContacts, allCompanies] = await Promise.all([
-    db.getAllMeetings(),
-    db.getAllTasks(),
-    db.getAllContacts(),
-    db.getAllCompanies(),
+    db.getAllMeetings({ orgId: effectiveOrgId }),
+    db.getAllTasks({ orgId: effectiveOrgId }),
+    db.getAllContacts(effectiveOrgId),
+    db.getAllCompanies({ orgId: effectiveOrgId }),
   ]);
 
   // Meetings — compact format
@@ -126,14 +128,16 @@ async function buildDatabaseContext(pageContext?: string, entityId?: string) {
 
 /**
  * Full chat procedure — multi-turn conversation with full database context
+ * Accepts orgId to scope data to the user's current organization.
  */
 export async function chat(
   query: string,
   history: ChatMessage[] = [],
   pageContext?: string,
-  entityId?: string
+  entityId?: string,
+  orgId?: number | null
 ): Promise<ChatResult> {
-  const ctx = await buildDatabaseContext(pageContext, entityId);
+  const ctx = await buildDatabaseContext(orgId, pageContext, entityId);
 
   const systemPrompt = `You are Omni, OmniScope's intelligent assistant. You are calm, professional, and precise.
 You serve an institutional-grade intelligence platform used by family offices, sovereigns, and private capital.
@@ -241,9 +245,10 @@ RULES:
 
 /**
  * Legacy: Process natural language queries about meetings (kept for backward compatibility)
+ * Accepts orgId to scope data to the user's current organization.
  */
-export async function askOmniScope(query: string): Promise<AskOmniScopeResult> {
-  const result = await chat(query);
+export async function askOmniScope(query: string, orgId?: number | null): Promise<AskOmniScopeResult> {
+  const result = await chat(query, [], undefined, undefined, orgId);
   return {
     answer: result.answer,
     meetings: result.meetings.map(m => ({ ...m, relevanceScore: 1.0 })),
@@ -253,9 +258,10 @@ export async function askOmniScope(query: string): Promise<AskOmniScopeResult> {
 
 /**
  * Find meetings by participant name (simple search)
+ * Accepts orgId to scope data to the user's current organization.
  */
-export async function findMeetingsByParticipant(participantName: string) {
-  const allMeetings = await db.getAllMeetings();
+export async function findMeetingsByParticipant(participantName: string, orgId?: number | null) {
+  const allMeetings = await db.getAllMeetings({ orgId: orgId ?? undefined });
   
   const matches = allMeetings.filter(m => {
     const participants = JSON.parse(m.participants || '[]');
@@ -275,9 +281,10 @@ export async function findMeetingsByParticipant(participantName: string) {
 
 /**
  * Find meetings by organization name
+ * Accepts orgId to scope data to the user's current organization.
  */
-export async function findMeetingsByOrganization(organizationName: string) {
-  const allMeetings = await db.getAllMeetings();
+export async function findMeetingsByOrganization(organizationName: string, orgId?: number | null) {
+  const allMeetings = await db.getAllMeetings({ orgId: orgId ?? undefined });
   
   const matches = allMeetings.filter(m => {
     const organizations = JSON.parse(m.organizations || '[]');

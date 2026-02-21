@@ -1,6 +1,6 @@
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ export const employeesRouter = router({
 
   getById: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const emp = await db.getEmployeeById(input.id);
       if (!emp) throw new TRPCError({ code: "NOT_FOUND", message: "Employee not found" });
       // Enrich with payroll and document counts

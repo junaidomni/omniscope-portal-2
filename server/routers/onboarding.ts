@@ -1,9 +1,9 @@
 import * as db from "../db";
 import { getGoogleAuthUrl, isGoogleConnected, syncGoogleCalendarEvents } from "../googleCalendar";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 
 export const onboardingRouter = router({
-  status: protectedProcedure.query(async ({ ctx }) => {
+  status: orgScopedProcedure.query(async ({ ctx }) => {
     const googleStatus = await isGoogleConnected(ctx.user.id);
     return {
       onboardingCompleted: ctx.user.onboardingCompleted ?? false,
@@ -14,7 +14,7 @@ export const onboardingRouter = router({
     };
   }),
 
-  complete: protectedProcedure.mutation(async ({ ctx }) => {
+  complete: orgScopedProcedure.mutation(async ({ ctx }) => {
     await db.completeOnboarding(ctx.user.id);
     return { success: true };
   }),

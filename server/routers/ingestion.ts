@@ -3,13 +3,13 @@ import { TRPCError } from "@trpc/server";
 import { processIntelligenceData, validateIntelligenceData } from "../ingestion";
 import { processManualTranscript } from "../manualTranscriptProcessor";
 import { storagePut } from "../storage";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const ingestionRouter = router({
   webhook: publicProcedure
     .input(z.any())
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const data = validateIntelligenceData(input);
       if (!data) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid intelligence data format" });
       // Webhook ingestion has no user context — orgId stays undefined

@@ -193,7 +193,7 @@ export const adminHubRouter = router({
   /**
    * All users across all orgs with their memberships
    */
-  listAllUsers: hubProcedure.query(async () => {
+  listAllUsers: hubProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
@@ -233,7 +233,7 @@ export const adminHubRouter = router({
   /**
    * All integrations with their status
    */
-  listAllIntegrations: hubProcedure.query(async () => {
+  listAllIntegrations: hubProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
@@ -243,7 +243,7 @@ export const adminHubRouter = router({
   /**
    * All feature toggles
    */
-  listAllFeatureToggles: hubProcedure.query(async () => {
+  listAllFeatureToggles: hubProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 

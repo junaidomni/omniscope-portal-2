@@ -2,19 +2,19 @@ import * as db from "../db";
 import type { ProviderConfig } from "../signingAdapters";
 import { TRPCError } from "@trpc/server";
 import { getSigningAdapter, getAllAdapters, getAdapterInfo } from "../signingAdapters";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const signingRouter = router({
   // Provider management
-  listProviders: protectedProcedure
-    .query(async () => {
+  listProviders: orgScopedProcedure
+    .query(async ({ ctx }) => {
       const configured = await db.listSigningProviders();
       const allAdapters = getAdapterInfo();
       return { configured, available: allAdapters };
     }),
 
-  configureProvider: protectedProcedure
+  configureProvider: orgScopedProcedure
     .input(z.object({
       provider: z.enum(["firma", "signatureapi", "docuseal", "pandadocs", "docusign", "boldsign", "esignly"]),
       displayName: z.string(),
@@ -30,14 +30,14 @@ export const signingRouter = router({
       return db.upsertSigningProvider({ ...input, createdBy: ctx.user!.id });
     }),
 
-  removeProvider: protectedProcedure
+  removeProvider: orgScopedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return db.deleteSigningProvider(input.id);
     }),
 
   // Envelope operations
-  listEnvelopes: protectedProcedure
+  listEnvelopes: orgScopedProcedure
     .input(z.object({
       status: z.string().optional(),
       documentId: z.number().optional(),
@@ -48,7 +48,7 @@ export const signingRouter = router({
       return db.listSigningEnvelopes(input || undefined);
     }),
 
-  getEnvelope: protectedProcedure
+  getEnvelope: orgScopedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const envelope = await db.getSigningEnvelopeById(input.id);
@@ -56,7 +56,7 @@ export const signingRouter = router({
       return envelope;
     }),
 
-  sendForSignature: protectedProcedure
+  sendForSignature: orgScopedProcedure
     .input(z.object({
       documentId: z.number(),
       providerId: z.number().optional(), // uses default if not specified
@@ -142,7 +142,7 @@ export const signingRouter = router({
       return envelope;
     }),
 
-  voidEnvelope: protectedProcedure
+  voidEnvelope: orgScopedProcedure
     .input(z.object({ id: z.number(), reason: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const envelope = await db.getSigningEnvelopeById(input.id);
@@ -164,7 +164,7 @@ export const signingRouter = router({
       return { success };
     }),
 
-  refreshStatus: protectedProcedure
+  refreshStatus: orgScopedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const envelope = await db.getSigningEnvelopeById(input.id);

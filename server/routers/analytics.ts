@@ -1,22 +1,22 @@
 import * as analytics from "../analytics";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const analyticsRouter = router({
-  dashboard: protectedProcedure.query(async () => {
-    return await analytics.getDashboardMetrics();
+  dashboard: orgScopedProcedure.query(async ({ ctx }) => {
+    return await analytics.getDashboardMetrics(ctx.orgId);
   }),
   
-  dailySummary: protectedProcedure
+  dailySummary: orgScopedProcedure
     .input(z.object({ date: z.string().optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const date = input.date ? new Date(input.date) : new Date();
-      return await analytics.getDailySummary(date);
+      return await analytics.getDailySummary(date, ctx.orgId);
     }),
   
-  weeklySummary: protectedProcedure
+  weeklySummary: orgScopedProcedure
     .input(z.object({ weekStart: z.string().optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       let weekStart: Date;
       if (input.weekStart) {
         weekStart = new Date(input.weekStart);
@@ -26,6 +26,6 @@ export const analyticsRouter = router({
         weekStart.setDate(now.getDate() - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
       }
-      return await analytics.getWeeklySummary(weekStart);
+      return await analytics.getWeeklySummary(weekStart, ctx.orgId);
     }),
 });

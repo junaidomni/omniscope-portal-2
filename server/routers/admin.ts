@@ -1,7 +1,7 @@
 import * as db from "../db";
 import * as fathomIntegration from "../fathomIntegration";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -12,7 +12,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const adminRouter = router({
-  getAllUsers: adminProcedure.query(async () => {
+  getAllUsers: adminProcedure.query(async ({ ctx }) => {
     return await db.getAllUsers();
   }),
 

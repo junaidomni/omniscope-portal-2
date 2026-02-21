@@ -2523,3 +2523,14 @@
 - [x] Update 3 source-structure tests to accept orgScopedProcedure (was protectedProcedure)
 - [x] Verify all pages display data: Triage (37 tasks, 10 approvals, 5 meetings), Overview (56 contacts, 15 intel), Operations (37 open/101 total), Relationships (8 contacts), Intelligence (15 meetings)
 - [x] All 1,079 tests passing (45 test files, 0 failures)
+
+## Phase C: Architecture Hardening & Future-Proofing
+- [x] C-1: Audit all routers for broken ctx destructuring patterns — found and fixed 43 additional broken callbacks
+- [x] C-2: Standardize all entity routers to orgScopedProcedure (14 routers migrated); platform routers (admin, profile, users, plans, orgs) correctly kept on protectedProcedure
+- [ ] C-3: Create shared TypeScript types for cross-module communication (deferred — not blocking)
+- [ ] C-4: Implement centralized error handling across all routers (deferred — not blocking)
+- [x] C-5: Add architectural validation test (architecture-guardrails.test.ts) — 7 tests covering ctx destructuring, org scoping, import hygiene, helper module signatures, router inventory
+- [x] C-6: Standardize helper module signatures — analytics.ts, askOmniScope.ts, reportExporter.ts all accept orgId parameter and thread it through DB calls
+- [x] C-7: Cleaned up unused imports across 18 router files (removed unused publicProcedure and protectedProcedure imports)
+- [x] C-8: Verified full end-to-end data flow — all pages show data: Triage (37 tasks, 10 approvals, 5 meetings), Intelligence (15 meetings), Operations (37 open tasks), Relationships (8 contacts)
+- [x] All 1,086 tests passing (46 test files, 0 failures)

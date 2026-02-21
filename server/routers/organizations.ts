@@ -205,7 +205,7 @@ export const organizationsRouter = router({
    */
   checkSlug: protectedProcedure
     .input(z.object({ slug: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const available = await db.isOrgSlugAvailable(input.slug);
       return { available };
     }),

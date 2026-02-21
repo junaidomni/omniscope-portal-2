@@ -1,17 +1,17 @@
 import * as askOmniScope from "../askOmniScope";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const askRouter = router({
-  ask: protectedProcedure
+  ask: orgScopedProcedure
     .input(z.object({ query: z.string() }))
-    .mutation(async ({ input }) => {
-      return await askOmniScope.askOmniScope(input.query);
+    .mutation(async ({ ctx, input }) => {
+      return await askOmniScope.askOmniScope(input.query, ctx.orgId);
     }),
 
   // Full chat procedure with multi-turn conversation and full database context
-  chat: protectedProcedure
+  chat: orgScopedProcedure
     .input(z.object({
       query: z.string(),
       context: z.string().optional(), // current page context
@@ -21,32 +21,25 @@ export const askRouter = router({
         content: z.string(),
       })).optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       return await askOmniScope.chat(
         input.query,
         input.history || [],
         input.context,
-        input.entityId
+        input.entityId,
+        ctx.orgId
       );
     }),
   
-  findByParticipant: protectedProcedure
+  findByParticipant: orgScopedProcedure
     .input(z.object({ name: z.string() }))
-    .query(async ({ input }) => {
-      return await askOmniScope.findMeetingsByParticipant(input.name);
+    .query(async ({ ctx, input }) => {
+      return await askOmniScope.findMeetingsByParticipant(input.name, ctx.orgId);
     }),
   
-  findByOrganization: protectedProcedure
+  findByOrganization: orgScopedProcedure
     .input(z.object({ name: z.string() }))
-    .query(async ({ input }) => {
-      return await askOmniScope.findMeetingsByOrganization(input.name);
+    .query(async ({ ctx, input }) => {
+      return await askOmniScope.findMeetingsByOrganization(input.name, ctx.orgId);
     }),
-});
-
-
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-  }
-  return next({ ctx });
 });

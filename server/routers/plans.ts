@@ -4,14 +4,14 @@ import * as db from "../db";
 
 export const plansRouter = router({
   /** List all available plans (public for pricing page) */
-  list: protectedProcedure.query(async () => {
+  list: protectedProcedure.query(async ({ ctx }) => {
     return db.getAllPlans();
   }),
 
   /** Get a single plan by key with its features */
   getByKey: protectedProcedure
     .input(z.object({ key: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const plan = await db.getPlanByKey(input.key);
       if (!plan) return null;
       const features = await db.getPlanFeaturesForPlan(plan.id);

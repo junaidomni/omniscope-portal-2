@@ -1,6 +1,6 @@
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const integrationsRouter = router({
@@ -23,7 +23,7 @@ export const integrationsRouter = router({
 
   updateApiKey: orgScopedProcedure
     .input(z.object({ id: z.number(), apiKey: z.string().nullable() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await db.updateIntegrationApiKey(input.id, input.apiKey);
       return { success: true };
     }),
@@ -52,7 +52,7 @@ export const integrationsRouter = router({
 
   delete: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await db.deleteIntegration(input.id);
       return { success: true };
     }),

@@ -2,6 +2,7 @@ import * as db from "./db";
 
 /**
  * Analytics helper functions for dashboard metrics
+ * All functions accept optional orgId to scope data to a specific organization.
  */
 
 export interface DashboardMetrics {
@@ -18,7 +19,7 @@ export interface DashboardMetrics {
   recentMeetings: Array<any>;
 }
 
-export async function getDashboardMetrics(): Promise<DashboardMetrics> {
+export async function getDashboardMetrics(orgId?: number | null): Promise<DashboardMetrics> {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfWeek = new Date(now);
@@ -26,8 +27,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   startOfWeek.setHours(0, 0, 0, 0);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Get all meetings
-  const allMeetings = await db.getAllMeetings();
+  // Get all meetings scoped to org
+  const allMeetings = await db.getAllMeetings({ orgId: orgId ?? undefined });
   
   // Calculate metrics
   const meetingsToday = allMeetings.filter(m => 
@@ -54,8 +55,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     orgs.forEach((o: string) => allOrganizations.add(o));
   });
 
-  // Get task metrics
-  const allTasks = await db.getAllTasks();
+  // Get task metrics scoped to org
+  const allTasks = await db.getAllTasks({ orgId: orgId ?? undefined });
   const openTasks = allTasks.filter(t => t.status !== 'completed').length;
   const completedTasksToday = allTasks.filter(t => 
     t.status === 'completed' && 
@@ -145,7 +146,7 @@ export interface DailySummary {
   allRisks: string[];
 }
 
-export async function getDailySummary(date: Date): Promise<DailySummary> {
+export async function getDailySummary(date: Date, orgId?: number | null): Promise<DailySummary> {
   const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const endOfDay = new Date(startOfDay);
   endOfDay.setDate(endOfDay.getDate() + 1);
@@ -153,6 +154,7 @@ export async function getDailySummary(date: Date): Promise<DailySummary> {
   const meetings = await db.getAllMeetings({
     startDate: startOfDay,
     endDate: endOfDay,
+    orgId: orgId ?? undefined,
   });
 
   const allOpportunities: string[] = [];
@@ -182,8 +184,8 @@ export async function getDailySummary(date: Date): Promise<DailySummary> {
     };
   });
 
-  // Get ALL tasks (not just today's)
-  const allTasks = await db.getAllTasks();
+  // Get ALL tasks scoped to org
+  const allTasks = await db.getAllTasks({ orgId: orgId ?? undefined });
   const tasksCreated = allTasks.filter(t => 
     new Date(t.createdAt) >= startOfDay && 
     new Date(t.createdAt) < endOfDay
@@ -278,13 +280,14 @@ export interface WeeklySummary {
   }>;
 }
 
-export async function getWeeklySummary(weekStart: Date): Promise<WeeklySummary> {
+export async function getWeeklySummary(weekStart: Date, orgId?: number | null): Promise<WeeklySummary> {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   const meetings = await db.getAllMeetings({
     startDate: weekStart,
     endDate: weekEnd,
+    orgId: orgId ?? undefined,
   });
 
   // Count unique participants and organizations
@@ -312,8 +315,8 @@ export async function getWeeklySummary(weekStart: Date): Promise<WeeklySummary> 
     };
   });
 
-  // Get tasks
-  const allTasks = await db.getAllTasks();
+  // Get tasks scoped to org
+  const allTasks = await db.getAllTasks({ orgId: orgId ?? undefined });
   const tasksCreated = allTasks.filter(t => 
     new Date(t.createdAt) >= weekStart && 
     new Date(t.createdAt) < weekEnd

@@ -2,7 +2,7 @@ import * as db from "../db";
 import * as gmailService from "../gmailService";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const triageRouter = router({
@@ -240,7 +240,7 @@ export const triageRouter = router({
       notes: z.string().nullable().optional(),
       category: z.string().nullable().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { taskId, ...updates } = input;
       const cleanUpdates: any = {};
       if (updates.title) cleanUpdates.title = updates.title;
@@ -389,7 +389,7 @@ export const triageRouter = router({
   // Reject a company from triage
   rejectCompany: orgScopedProcedure
     .input(z.object({ companyId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await db.updateCompany(input.companyId, { approvalStatus: 'rejected' });
       return { success: true };
     }),

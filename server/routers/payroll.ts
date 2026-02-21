@@ -1,5 +1,5 @@
 import * as db from "../db";
-import { publicProcedure, orgScopedProcedure, protectedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
 import { z } from "zod";
 
@@ -18,7 +18,7 @@ export const payrollRouter = router({
 
   getForEmployee: orgScopedProcedure
     .input(z.object({ employeeId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return await db.getPayrollForEmployee(input.employeeId);
     }),
 
