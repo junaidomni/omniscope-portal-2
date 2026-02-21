@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Calendar, Users, Search, ChevronLeft, ChevronRight,
   FileText, Building2, Clock, Mail,
-  Trash2, TrendingUp, BarChart3
+  Trash2, TrendingUp, BarChart3, Upload
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -57,7 +57,14 @@ export default function Meetings() {
             <h1 className="text-2xl font-bold text-white">Meetings</h1>
             <p className="text-sm text-zinc-500 mt-1">Intelligence reports, calendar, and contacts</p>
           </div>
-          <TabsList className="bg-zinc-900 border border-zinc-800">
+          <div className="flex items-center gap-3">
+            <Link href="/upload-transcript">
+              <Button variant="outline" className="border-yellow-600/30 text-yellow-500 hover:bg-yellow-600/10 hover:text-yellow-400">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Transcript
+              </Button>
+            </Link>
+            <TabsList className="bg-zinc-900 border border-zinc-800">
             <TabsTrigger value="recent" className="data-[state=active]:bg-yellow-600/20 data-[state=active]:text-yellow-500">
               <Clock className="h-4 w-4 mr-2" />
               Recent
@@ -71,6 +78,7 @@ export default function Meetings() {
               People
             </TabsTrigger>
           </TabsList>
+          </div>
         </div>
 
         {/* Daily & Weekly Report Cards */}

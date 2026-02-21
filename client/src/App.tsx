@@ -64,6 +64,7 @@ function WorkspaceRouter() {
         <Route path="/vault/doc/:id" component={Intelligence} />
         <Route path="/templates" component={Intelligence} />
         <Route path="/pipeline" component={Intelligence} />
+        <Route path="/upload-transcript" component={Intelligence} />
 
         {/* Communications domain */}
         <Route path="/communications" component={Communications} />

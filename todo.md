@@ -2472,3 +2472,13 @@
 ## Bug Fixes - Admin Hub Navigation
 - [x] Fix org switcher dropdown missing from Super Admin sidebar — can't switch to org workspaces
 - [x] Fix "Back to Workspace" not working — can't enter OmniScope workspace from admin hub
+
+## Manual Transcript Upload Feature
+- [x] Build server-side transcript upload + LLM processing tRPC procedure
+- [x] Support file upload (txt, docx, pdf) and paste-text input
+- [x] Support Plaud JSON format auto-detection
+- [x] Feed transcript through existing LLM intelligence pipeline
+- [x] Generate meeting intelligence, action items, summary, and branded report
+- [x] Build frontend upload UI with drag-and-drop and text paste
+- [x] Add Upload Transcript button to Meetings page header + route in Intelligence domain
+- [x] Write tests for transcript upload pipeline (7 tests, all passing)
