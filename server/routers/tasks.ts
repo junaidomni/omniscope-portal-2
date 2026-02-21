@@ -21,6 +21,9 @@ export const tasksRouter = router({
   getById: orgScopedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("task", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       const task = await db.getTaskById(input.id);
       if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       return task;
@@ -82,7 +85,10 @@ export const tasksRouter = router({
         notes: z.string().nullable().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("task", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       const updates: any = {};
       if (input.title) updates.title = input.title;
       if (input.description !== undefined) updates.description = input.description;
@@ -101,14 +107,19 @@ export const tasksRouter = router({
 
   delete: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("task", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       await db.deleteTask(input.id);
       return { success: true };
     }),
 
   bulkDelete: orgScopedProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyBatchOwnership } = await import("../entitySecurity");
+      await verifyBatchOwnership("task", input.ids, ctx.orgId);
       for (const id of input.ids) {
         await db.deleteTask(id);
       }
@@ -126,7 +137,9 @@ export const tasksRouter = router({
         dueDate: z.string().optional(),
       }),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyBatchOwnership } = await import("../entitySecurity");
+      await verifyBatchOwnership("task", input.ids, ctx.orgId);
       const updates: any = {};
       if (input.updates.category !== undefined) updates.category = input.updates.category || null;
       if (input.updates.assignedName !== undefined) updates.assignedName = input.updates.assignedName || null;

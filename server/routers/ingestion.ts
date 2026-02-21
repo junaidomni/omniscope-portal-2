@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { processIntelligenceData, validateIntelligenceData } from "../ingestion";
 import { processManualTranscript } from "../manualTranscriptProcessor";
 import { storagePut } from "../storage";
-import { publicProcedure, orgScopedProcedure, router } from "../_core/trpc";
+import { publicProcedure, orgScopedProcedure, planGatedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const ingestionRouter = router({
@@ -17,7 +17,7 @@ export const ingestionRouter = router({
       return result;
     }),
 
-  syncFathom: orgScopedProcedure
+  syncFathom: planGatedProcedure("integrations")
     .mutation(async ({ ctx }) => {
       // Server-side cooldown: skip if last sync was < 5 minutes ago
       const now = Date.now();
@@ -35,7 +35,7 @@ export const ingestionRouter = router({
     }),
 
   /** Upload a transcript (text, Plaud JSON, or audio URL) and process through LLM pipeline */
-  uploadTranscript: orgScopedProcedure
+  uploadTranscript: planGatedProcedure("ai_insights")
     .input(z.object({
       content: z.string().min(20, "Content must be at least 20 characters"),
       inputType: z.enum(["text", "plaud_json", "audio"]),
@@ -65,7 +65,7 @@ export const ingestionRouter = router({
     }),
 
   /** Upload an audio file to S3 and return the URL for transcription */
-  uploadAudioFile: orgScopedProcedure
+  uploadAudioFile: planGatedProcedure("ai_insights")
     .input(z.object({
       fileName: z.string(),
       fileData: z.string(), // base64 encoded

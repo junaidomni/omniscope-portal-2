@@ -55,7 +55,7 @@ export const employeesRouter = router({
       currency: z.string().optional(),
       notes: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const id = await db.createEmployee({
         firstName: input.firstName,
         lastName: input.lastName,
@@ -77,6 +77,7 @@ export const employeesRouter = router({
         payFrequency: input.payFrequency ?? "monthly",
         currency: input.currency ?? "USD",
         notes: input.notes ?? null,
+        orgId: ctx.orgId ?? undefined,
       });
       return { id };
     }),

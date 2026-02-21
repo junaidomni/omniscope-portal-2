@@ -3,11 +3,11 @@ import * as gmailService from "../gmailService";
 import { TRPCError } from "@trpc/server";
 import { getGoogleAuthUrl, isGoogleConnected, syncGoogleCalendarEvents } from "../googleCalendar";
 import { invokeLLM } from "../_core/llm";
-import { orgScopedProcedure, router } from "../_core/trpc";
+import { orgScopedProcedure, planGatedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const mailRouter = router({
-  listThreads: orgScopedProcedure
+  listThreads: planGatedProcedure("email")
     .input(
       z.object({
         folder: z.enum(["inbox", "sent", "drafts", "starred", "all"]).default("inbox"),
@@ -25,13 +25,13 @@ export const mailRouter = router({
       });
     }),
 
-  getThread: orgScopedProcedure
+  getThread: planGatedProcedure("email")
     .input(z.object({ threadId: z.string() }))
     .query(async ({ ctx, input }) => {
       return await gmailService.getGmailThread(ctx.user.id, input.threadId);
     }),
 
-  send: orgScopedProcedure
+  send: planGatedProcedure("email")
     .input(
       z.object({
         to: z.array(z.string().email()),
@@ -81,7 +81,7 @@ export const mailRouter = router({
       return { success: true };
     }),
 
-  syncHeaders: orgScopedProcedure
+  syncHeaders: planGatedProcedure("email")
     .input(z.object({ maxResults: z.number().min(10).max(500).default(100) }).optional())
     .mutation(async ({ ctx, input }) => {
       return await gmailService.syncEmailHeaders(ctx.user.id, { maxResults: input?.maxResults });
@@ -164,7 +164,7 @@ export const mailRouter = router({
       };
     }),
 
-  summarizeThread: orgScopedProcedure
+  summarizeThread: planGatedProcedure("ai_insights")
     .input(z.object({ threadId: z.string(), force: z.boolean().default(false) }))
     .mutation(async ({ ctx, input }) => {
       // Check cache first (unless force refresh)

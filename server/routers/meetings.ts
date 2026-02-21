@@ -28,7 +28,10 @@ export const meetingsRouter = router({
 
   getById: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("meeting", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
       const meeting = await db.getMeetingById(input.id);
       if (!meeting) throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
       return meeting;
@@ -139,7 +142,10 @@ export const meetingsRouter = router({
         fullTranscript: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("meeting", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
       const updates: any = {};
       if (input.meetingDate) updates.meetingDate = new Date(input.meetingDate);
       if (input.primaryLead) updates.primaryLead = input.primaryLead;
@@ -159,14 +165,19 @@ export const meetingsRouter = router({
 
   delete: orgScopedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("meeting", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
       await db.deleteMeeting(input.id);
       return { success: true };
     }),
 
   bulkDelete: orgScopedProcedure
     .input(z.object({ ids: z.array(z.number()).min(1, "Select at least one meeting") }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyBatchOwnership } = await import("../entitySecurity");
+      await verifyBatchOwnership("meeting", input.ids, ctx.orgId);
       let deleted = 0;
       for (const id of input.ids) {
         try {

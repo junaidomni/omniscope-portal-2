@@ -1,17 +1,17 @@
 import * as askOmniScope from "../askOmniScope";
 import { TRPCError } from "@trpc/server";
-import { orgScopedProcedure, router } from "../_core/trpc";
+import { planGatedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
 export const askRouter = router({
-  ask: orgScopedProcedure
+  ask: planGatedProcedure("ai_insights")
     .input(z.object({ query: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return await askOmniScope.askOmniScope(input.query, ctx.orgId);
     }),
 
   // Full chat procedure with multi-turn conversation and full database context
-  chat: orgScopedProcedure
+  chat: planGatedProcedure("ai_insights")
     .input(z.object({
       query: z.string(),
       context: z.string().optional(), // current page context
@@ -31,13 +31,13 @@ export const askRouter = router({
       );
     }),
   
-  findByParticipant: orgScopedProcedure
+  findByParticipant: planGatedProcedure("ai_insights")
     .input(z.object({ name: z.string() }))
     .query(async ({ ctx, input }) => {
       return await askOmniScope.findMeetingsByParticipant(input.name, ctx.orgId);
     }),
   
-  findByOrganization: orgScopedProcedure
+  findByOrganization: planGatedProcedure("ai_insights")
     .input(z.object({ name: z.string() }))
     .query(async ({ ctx, input }) => {
       return await askOmniScope.findMeetingsByOrganization(input.name, ctx.orgId);

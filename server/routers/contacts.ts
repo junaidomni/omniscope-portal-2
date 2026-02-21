@@ -51,6 +51,9 @@ export const contactsRouter = router({
   getById: orgScopedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("contact", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
       const contact = await db.getContactById(input.id);
       if (!contact) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
       return contact;
@@ -134,7 +137,10 @@ export const contactsRouter = router({
       introducerSource: z.string().nullable().optional(),
       referralChain: z.string().nullable().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("contact", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
       const { id, ...updates } = input;
       const cleanUpdates: any = {};
       for (const [key, value] of Object.entries(updates)) {
@@ -154,6 +160,9 @@ export const contactsRouter = router({
   toggleStar: orgScopedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      const { verifyEntityOwnership } = await import("../entitySecurity");
+      const exists = await verifyEntityOwnership("contact", input.id, ctx.orgId);
+      if (!exists) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
       const contact = await db.getContactById(input.id);
       if (!contact) throw new TRPCError({ code: "NOT_FOUND" });
       await db.updateContact(input.id, { starred: !contact.starred });
