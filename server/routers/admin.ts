@@ -1,7 +1,7 @@
 import * as db from "../db";
 import * as fathomIntegration from "../fathomIntegration";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, platformOwnerProcedure } from "../_core/trpc";
 import { z } from "zod";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -12,6 +12,68 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const adminRouter = router({
+  // ============================================================================
+  // PLATFORM OWNER ROUTES (Super-Admin / God-Mode)
+  // ============================================================================
+  
+  /**
+   * List all organizations on the platform (cross-account).
+   * Only accessible to platform owners.
+   */
+  listAllOrganizations: platformOwnerProcedure.query(async () => {
+    return await db.getAllOrganizations();
+  }),
+
+  /**
+   * Get platform overview metrics (all accounts, all orgs).
+   * Only accessible to platform owners.
+   */
+  platformOverview: platformOwnerProcedure.query(async () => {
+    const accounts = await db.getAllAccounts();
+    const orgs = await db.getAllOrganizations();
+    const users = await db.getAllUsers();
+    
+    return {
+      totalAccounts: accounts.length,
+      totalOrganizations: orgs.length,
+      totalUsers: users.length,
+      accounts: accounts.map(acc => ({
+        id: acc.id,
+        name: acc.name,
+        plan: acc.plan,
+        status: acc.status,
+        organizationCount: orgs.filter(o => o.accountId === acc.id).length,
+        createdAt: acc.createdAt,
+      })),
+    };
+  }),
+
+  /**
+   * Grant platform owner access to a user.
+   * Only accessible to existing platform owners.
+   */
+  grantPlatformOwner: platformOwnerProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.updateUser(input.userId, { platformOwner: true });
+      return { success: true };
+    }),
+
+  /**
+   * Revoke platform owner access from a user.
+   * Only accessible to existing platform owners.
+   */
+  revokePlatformOwner: platformOwnerProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.updateUser(input.userId, { platformOwner: false });
+      return { success: true };
+    }),
+
+  // ============================================================================
+  // REGULAR ADMIN ROUTES
+  // ============================================================================
+  
   getAllUsers: adminProcedure.query(async ({ ctx }) => {
     return await db.getAllUsers();
   }),

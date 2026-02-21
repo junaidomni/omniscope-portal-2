@@ -2731,6 +2731,16 @@ export async function getOrganizationsByAccount(accountId: number) {
 }
 
 /**
+ * Get ALL organizations on the platform (cross-account).
+ * Only for platform owners / super-admins.
+ */
+export async function getAllOrganizations() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(organizations).orderBy(asc(organizations.name));
+}
+
+/**
  * Update organization details
  */
 export async function updateOrganization(orgId: number, data: Partial<{

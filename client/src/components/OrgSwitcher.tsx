@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useOrg, OrgInfo } from "@/contexts/OrgContext";
-import { ChevronDown, Plus, Building2, Globe, Check } from "lucide-react";
+import { ChevronDown, Plus, Building2, Globe, Check, Crown } from "lucide-react";
 import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface OrgSwitcherProps {
   collapsed: boolean;
@@ -36,9 +38,20 @@ export default function OrgSwitcher({
   onSwitchToOrg,
 }: OrgSwitcherProps) {
   const { currentOrg, memberships, switchOrg, isLoading } = useOrg();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Platform owners can see ALL organizations, not just their memberships
+  const { data: allOrgs } = trpc.admin.listAllOrganizations.useQuery(undefined, {
+    enabled: user?.platformOwner === true,
+  });
+
+  // Use all orgs for platform owners, otherwise use memberships
+  const displayOrgs = user?.platformOwner && allOrgs
+    ? allOrgs.map(org => ({ org, role: "platform_owner" as const }))
+    : memberships;
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -51,7 +64,7 @@ export default function OrgSwitcher({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  if (isLoading || memberships.length === 0) return null;
+  if (isLoading || displayOrgs.length === 0) return null;
 
   const getOrgInitials = (name: string) => {
     return name
@@ -140,7 +153,7 @@ export default function OrgSwitcher({
             }}
           >
             <OrgDropdownContent
-              memberships={memberships}
+              memberships={displayOrgs}
               currentOrg={currentOrg}
               switchOrg={handleOrgSwitch}
               accentColor={accentColor}
@@ -154,6 +167,7 @@ export default function OrgSwitcher({
               onCreateOrg={() => { setOpen(false); onCreateOrg?.(); }}
               onViewAllOrgs={() => { setOpen(false); onViewAllOrgs?.(); }}
               OrgIcon={OrgIcon}
+              isPlatformOwner={user?.platformOwner === true}
             />
           </div>
         )}
@@ -215,7 +229,7 @@ export default function OrgSwitcher({
           }}
         >
           <OrgDropdownContent
-            memberships={memberships}
+            memberships={displayOrgs}
             currentOrg={currentOrg}
             switchOrg={handleOrgSwitch}
             accentColor={accentColor}
@@ -229,6 +243,7 @@ export default function OrgSwitcher({
             onCreateOrg={() => { setOpen(false); onCreateOrg?.(); }}
             onViewAllOrgs={() => { setOpen(false); onViewAllOrgs?.(); }}
             OrgIcon={OrgIcon}
+            isPlatformOwner={user?.platformOwner === true}
           />
         </div>
       )}
@@ -252,6 +267,7 @@ function OrgDropdownContent({
   onCreateOrg,
   onViewAllOrgs,
   OrgIcon,
+  isPlatformOwner,
 }: {
   memberships: any[];
   currentOrg: OrgInfo | null;
@@ -267,6 +283,7 @@ function OrgDropdownContent({
   onCreateOrg: () => void;
   onViewAllOrgs: () => void;
   OrgIcon: React.ComponentType<{ org: OrgInfo | null; size?: number }>;
+  isPlatformOwner?: boolean;
 }) {
   const roleLabels: Record<string, string> = {
     super_admin: "Super Admin",
@@ -275,15 +292,22 @@ function OrgDropdownContent({
     manager: "Manager",
     member: "Member",
     viewer: "Viewer",
+    platform_owner: "Platform Owner",
   };
 
   return (
     <div className="py-1.5">
       {/* Header */}
-      <div className="px-3 py-2">
+      <div className="px-3 py-2 flex items-center justify-between">
         <p className="text-[10px] font-semibold tracking-[0.15em] uppercase" style={{ color: textMuted }}>
           Organizations
         </p>
+        {isPlatformOwner && (
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md" style={{ background: `${accentColor}15`, border: `1px solid ${accentColor}33` }}>
+            <Crown className="h-2.5 w-2.5" style={{ color: accentColor }} />
+            <span className="text-[9px] font-semibold" style={{ color: accentColor }}>SUPER ADMIN</span>
+          </div>
+        )}
       </div>
 
       {/* All Organizations option — navigates to admin hub */}

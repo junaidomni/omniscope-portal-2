@@ -239,6 +239,13 @@
       "when": 1771706700635,
       "tag": "0033_outstanding_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1771711019658,
+      "tag": "0034_unknown_captain_cross",
+      "breakpoints": true
     }
   ]
 }

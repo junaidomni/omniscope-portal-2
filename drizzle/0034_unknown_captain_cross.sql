@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `platformOwner` boolean DEFAULT false NOT NULL;

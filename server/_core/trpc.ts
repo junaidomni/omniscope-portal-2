@@ -124,3 +124,41 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+/**
+ * Platform Owner procedure: requires authenticated user with platformOwner = true.
+ * Bypasses orgId filtering — can view and manage all accounts on the platform.
+ * Use this for super-admin routes that need cross-org visibility.
+ */
+const requirePlatformOwner = t.middleware(async opts => {
+  const { ctx, next } = opts;
+
+  if (!ctx.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+  }
+
+  if (!ctx.user.platformOwner) {
+    throw new TRPCError({ 
+      code: "FORBIDDEN", 
+      message: "This action requires platform owner access. Contact support if you believe this is an error." 
+    });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      user: ctx.user,
+      isPlatformOwner: true, // Flag for downstream logic
+    },
+  });
+});
+
+export const platformOwnerProcedure = t.procedure.use(requirePlatformOwner);
+
+/**
+ * Helper function to check if a user is a platform owner.
+ * Use this in conditional logic where you need to bypass orgId filtering.
+ */
+export function isSuperAdmin(user: TrpcContext["user"]): boolean {
+  return user?.platformOwner === true;
+}
