@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Calendar, Users, Search, ChevronLeft, ChevronRight,
   FileText, Building2, Clock, Mail,
-  Trash2, TrendingUp, BarChart3, Upload
+  Trash2, TrendingUp, BarChart3, Upload, CheckSquare, Square, XCircle
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -139,7 +140,10 @@ export default function Meetings() {
 function RecentMeetings() {
   const { data: meetings, isLoading } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
   const utils = trpc.useUtils();
+
   const deleteMutation = trpc.meetings.delete.useMutation({
     onSuccess: () => {
       toast.success("Meeting deleted");
@@ -147,6 +151,17 @@ function RecentMeetings() {
       utils.analytics.dashboard.invalidate();
     },
     onError: () => toast.error("Failed to delete meeting"),
+  });
+
+  const bulkDeleteMutation = trpc.meetings.bulkDelete.useMutation({
+    onSuccess: (result) => {
+      toast.success(`${result.deleted} meeting${result.deleted !== 1 ? 's' : ''} deleted`);
+      setSelectedIds(new Set());
+      setIsSelectMode(false);
+      utils.meetings.list.invalidate();
+      utils.analytics.dashboard.invalidate();
+    },
+    onError: () => toast.error("Failed to delete meetings"),
   });
 
   const filteredMeetings = useMemo(() => {
@@ -166,6 +181,39 @@ function RecentMeetings() {
       );
     });
   }, [meetings, searchTerm]);
+
+  const allFilteredIds = useMemo(() => filteredMeetings.map(m => m.id), [filteredMeetings]);
+  const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.has(id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allFilteredIds));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`Delete ${selectedIds.size} meeting${selectedIds.size !== 1 ? 's' : ''} and all associated data? This cannot be undone.`)) {
+      bulkDeleteMutation.mutate({ ids: Array.from(selectedIds) });
+    }
+  };
+
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedIds(new Set());
+  };
 
   const grouped = useMemo(() => {
     const groups: Record<string, typeof filteredMeetings> = {};
@@ -204,20 +252,74 @@ function RecentMeetings() {
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
     if (ws.toDateString() === lastWeekStart.toDateString()) return "Last Week";
 
-    return `${ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${we.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    return `${ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} \u2013 ${we.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   };
 
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-        <Input
-          placeholder="Search meetings by title, name, org, or keyword..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600"
-        />
+      {/* Search bar + Select mode toggle */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Input
+            placeholder="Search meetings by title, name, org, or keyword..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600"
+          />
+        </div>
+        {!isSelectMode ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsSelectMode(true)}
+            className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 flex-shrink-0"
+          >
+            <CheckSquare className="h-4 w-4 mr-2" />
+            Select
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exitSelectMode}
+            className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 flex-shrink-0"
+          >
+            <XCircle className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+        )}
       </div>
+
+      {/* Bulk action bar */}
+      {isSelectMode && (
+        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={toggleSelectAll}
+              className="border-zinc-600 data-[state=checked]:bg-yellow-600 data-[state=checked]:border-yellow-600"
+            />
+            <span className="text-sm text-zinc-400">
+              {selectedIds.size === 0
+                ? `Select meetings (${allFilteredIds.length} total)`
+                : `${selectedIds.size} of ${allFilteredIds.length} selected`}
+            </span>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={selectedIds.size === 0 || bulkDeleteMutation.isPending}
+            className="bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-600/30"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {bulkDeleteMutation.isPending
+              ? "Deleting..."
+              : `Delete ${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`}
+          </Button>
+        </div>
+      )}
 
       {grouped.length === 0 ? (
         <div className="text-center py-16">
@@ -235,6 +337,9 @@ function RecentMeetings() {
                 <MeetingRow
                   key={meeting.id}
                   meeting={meeting}
+                  isSelectMode={isSelectMode}
+                  isSelected={selectedIds.has(meeting.id)}
+                  onToggleSelect={() => toggleSelect(meeting.id)}
                   onDelete={() => {
                     if (confirm("Delete this meeting and all associated data?")) {
                       deleteMutation.mutate({ id: meeting.id });
@@ -250,14 +355,32 @@ function RecentMeetings() {
   );
 }
 
-function MeetingRow({ meeting, onDelete }: { meeting: any; onDelete: () => void }) {
+function MeetingRow({ meeting, onDelete, isSelectMode = false, isSelected = false, onToggleSelect }: {
+  meeting: any;
+  onDelete: () => void;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+}) {
   const participants = (() => { try { return JSON.parse(meeting.participants || '[]'); } catch { return []; } })();
   const organizations = (() => { try { return JSON.parse(meeting.organizations || '[]'); } catch { return []; } })();
   const tags = trpc.meetings.getTags.useQuery({ meetingId: meeting.id });
   const displayTitle = meeting.meetingTitle || participants.join(', ') || 'Untitled Meeting';
 
   return (
-    <div className="group flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/60 hover:border-yellow-600/30 transition-all">
+    <div className={`group flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border transition-all ${
+      isSelected ? 'border-yellow-600/50 bg-yellow-600/5' : 'border-zinc-800/60 hover:border-yellow-600/30'
+    }`}>
+      {isSelectMode && (
+        <div className="flex-shrink-0">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect?.()}
+            className="border-zinc-600 data-[state=checked]:bg-yellow-600 data-[state=checked]:border-yellow-600"
+          />
+        </div>
+      )}
+
       <div className="w-14 text-center flex-shrink-0">
         <p className="text-xs text-zinc-500">
           {new Date(meeting.meetingDate).toLocaleDateString('en-US', { month: 'short' })}
@@ -298,14 +421,16 @@ function MeetingRow({ meeting, onDelete }: { meeting: any; onDelete: () => void 
         </div>
       </Link>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 hover:bg-red-400/10 flex-shrink-0"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      {!isSelectMode && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 hover:bg-red-400/10 flex-shrink-0"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }

@@ -2482,3 +2482,10 @@
 - [x] Build frontend upload UI with drag-and-drop and text paste
 - [x] Add Upload Transcript button to Meetings page header + route in Intelligence domain
 - [x] Write tests for transcript upload pipeline (7 tests, all passing)
+
+## Bulk Delete Meetings
+- [x] Add bulk delete tRPC procedure for meetings
+- [x] Add checkbox selection UI to Meetings page
+- [x] Add select all / deselect all toggle
+- [x] Add bulk delete button with confirmation dialog
+- [x] Write tests for bulk delete (9 tests, all passing)

@@ -162,4 +162,19 @@ export const meetingsRouter = router({
       await db.deleteMeeting(input.id);
       return { success: true };
     }),
+
+  bulkDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()).min(1, "Select at least one meeting") }))
+    .mutation(async ({ input }) => {
+      let deleted = 0;
+      for (const id of input.ids) {
+        try {
+          await db.deleteMeeting(id);
+          deleted++;
+        } catch (e) {
+          console.error(`[BulkDelete] Failed to delete meeting ${id}:`, e);
+        }
+      }
+      return { success: true, deleted, total: input.ids.length };
+    }),
 });
