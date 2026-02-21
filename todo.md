@@ -2540,3 +2540,16 @@
 - [x] C-4: Implement centralized error handling — server-side tRPC onError callback with severity classification, client-side QueryClient error handler with toast notifications (Sonner), enhanced ErrorBoundary with retry logic and error classification
 - [x] C-9: Optimize triage feed performance — implemented server-side MemoryCache with 5-min TTL for Gmail threads, parallel Promise.all for 6 concurrent DB queries, cached individual thread lookups, parallel suggestion enrichment. Triage feed now loads in ~2s (was ~10s)
 - [x] C-10: Full end-to-end verification — all 5 main pages verified (Triage, Overview, Intelligence, Operations, Relationships), zero browser console errors, zero failed network requests, all 1,099 tests passing across 47 test files
+
+## Phase B+: Plans & Subscription Infrastructure
+- [x] B+1: Design tier matrix — Starter ($49/mo), Professional ($149/mo), Enterprise ($499/mo), Sovereign (custom) — already seeded
+- [x] B+2: Plans table exists with 4 plans, 41 plan-feature mappings, category booleans, limits — already in schema
+- [x] B+3: Subscriptions table exists with Stripe fields, billing cycle, overrides, status — already in schema
+- [x] B+4: 4 plans + 41 features seeded — need to create subscription record for existing account
+- [x] B+5: Implement plan enforcement middleware — planEnforcement.ts with resolvePlanForOrg, enforceFeatureGate, enforceUsageLimit, getUsageCounts, checkUsageLimit, isFeatureIncludedInPlan, invalidatePlanCache
+- [x] B+6: Create planGatedProcedure in trpc.ts — extends orgScopedProcedure with featureKey check, optional usage limit check, attaches plan context to ctx
+- [ ] B+7: Gate key features behind plan tiers (AI insights, integrations, export, etc.) — deferred, middleware ready for per-route application
+- [x] B+8: Build super admin billing view — /admin-hub/billing with plan overview cards, account subscription management, plan assignment dropdown, cancel/reactivate, override limits
+- [x] B+9: Build org-facing plan display — Settings > Plan & Usage tab with current plan card, usage bars, included features grid, available plans comparison with upgrade CTAs
+- [x] B+10: Write tests — 39 tests in planEnforcement.test.ts covering module exports, middleware chain, router endpoints, billing UI, admin layout, routing, cache module, DB helpers
+- [x] B+11: End-to-end verification — all pages verified (Triage 37 tasks/10 approvals/5 meetings, Intelligence 15 meetings, Operations 37 tasks, Relationships 8 contacts, Billing 4 plans/1 account, Plan & Usage tab working). 1,138 tests passing across 48 files.

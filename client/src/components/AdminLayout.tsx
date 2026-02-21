@@ -19,6 +19,7 @@ import {
   BarChart3,
   Settings,
   Activity,
+  CreditCard,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -72,6 +73,12 @@ const adminSections: AdminNavSection[] = [
     items: [
       { id: "integrations", icon: Plug, label: "Integrations & API Keys", path: "/admin-hub/integrations", matchPaths: ["/admin-hub/integrations"] },
       { id: "features", icon: ToggleLeft, label: "Feature Flags", path: "/admin-hub/features", matchPaths: ["/admin-hub/features"] },
+    ],
+  },
+  {
+    label: "Billing",
+    items: [
+      { id: "billing", icon: CreditCard, label: "Plans & Billing", path: "/admin-hub/billing", matchPaths: ["/admin-hub/billing"] },
     ],
   },
   {

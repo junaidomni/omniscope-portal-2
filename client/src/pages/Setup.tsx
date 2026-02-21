@@ -21,7 +21,7 @@ import {
 import OmniAvatar, { OmniMode, OmniState, OmniPreferences, getOmniPreferences, setOmniPreferences, STATE_OVERLAYS, OMNI_THEME_PALETTES } from "@/components/OmniAvatar";
 import { useDesign } from "@/components/PortalLayout";
 
-type Tab = "profile" | "integrations" | "features" | "webhooks" | "omni" | "appearance";
+type Tab = "profile" | "integrations" | "features" | "webhooks" | "omni" | "appearance" | "plan";
 
 export default function Setup() {
   const search = useSearch();
@@ -50,6 +50,7 @@ export default function Setup() {
     { id: "webhooks", label: "Webhooks & API", icon: <Webhook className="h-4 w-4" />, description: "Endpoints" },
     { id: "omni", label: "Omni Assistant", icon: <Sparkles className="h-4 w-4" />, description: "AI companion" },
     { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" />, description: "Design & theme" },
+    { id: "plan", label: "Plan & Usage", icon: <CreditCard className="h-4 w-4" />, description: "Subscription" },
   ];
 
   return (
@@ -101,6 +102,7 @@ export default function Setup() {
         {activeTab === "webhooks" && <WebhooksTab />}
         {activeTab === "omni" && <OmniTab />}
         {activeTab === "appearance" && <AppearanceTab />}
+        {activeTab === "plan" && <PlanUsageTab />}
       </div>
     </div>
   );
@@ -1981,4 +1983,282 @@ function hexToRgb(hex: string): string {
   } catch {
     return "212, 175, 55";
   }
+}
+
+
+// ─── PLAN & USAGE TAB ─────────────────────────────────────────────────────────
+
+function PlanUsageTab() {
+  const { data: planData, isLoading } = trpc.plans.myPlan.useQuery();
+  const { data: allPlans } = trpc.plans.list.useQuery();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-48 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  const plan = planData?.plan;
+  const usage = planData?.usage;
+  const limits = planData?.limits;
+  const context = planData?.context;
+  const planKey = context?.planKey || "starter";
+
+  // Plan tier styling
+  const tierStyles: Record<string, { gradient: string; border: string; accent: string; label: string }> = {
+    starter: {
+      gradient: "from-zinc-800/50 to-zinc-900/80",
+      border: "border-zinc-700/40",
+      accent: "text-zinc-400",
+      label: "Starter",
+    },
+    professional: {
+      gradient: "from-blue-950/30 to-zinc-900/80",
+      border: "border-blue-800/30",
+      accent: "text-blue-400",
+      label: "Professional",
+    },
+    enterprise: {
+      gradient: "from-yellow-950/20 to-zinc-900/80",
+      border: "border-yellow-700/30",
+      accent: "text-yellow-400",
+      label: "Enterprise",
+    },
+    sovereign: {
+      gradient: "from-amber-950/30 to-zinc-900/80",
+      border: "border-amber-600/30",
+      accent: "text-amber-400",
+      label: "Sovereign",
+    },
+  };
+
+  const style = tierStyles[planKey] || tierStyles.starter;
+
+  function formatLimit(val: number | undefined): string {
+    if (val === undefined || val === null) return "—";
+    if (val === -1) return "Unlimited";
+    return val.toLocaleString();
+  }
+
+  function UsageBar({ current, max, label }: { current: number; max: number; label: string }) {
+    const isUnlimited = max === -1;
+    const pct = isUnlimited ? 0 : Math.min((current / max) * 100, 100);
+    const isWarning = !isUnlimited && pct >= 80;
+    const isDanger = !isUnlimited && pct >= 95;
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-zinc-400">{label}</span>
+          <span className={`text-sm font-medium ${isDanger ? "text-red-400" : isWarning ? "text-yellow-400" : "text-zinc-300"}`}>
+            {current.toLocaleString()} / {formatLimit(max)}
+          </span>
+        </div>
+        {!isUnlimited && (
+          <div className="h-2 rounded-full overflow-hidden bg-zinc-800">
+            <div
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{
+                width: `${pct}%`,
+                background: isDanger
+                  ? "linear-gradient(90deg, #ef4444, #dc2626)"
+                  : isWarning
+                  ? "linear-gradient(90deg, #eab308, #f59e0b)"
+                  : "linear-gradient(90deg, #22c55e, #16a34a)",
+              }}
+            />
+          </div>
+        )}
+        {isUnlimited && (
+          <div className="h-2 rounded-full overflow-hidden bg-zinc-800">
+            <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-600/30 to-emerald-500/10" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Current Plan Card */}
+      <div className={`rounded-2xl border ${style.border} bg-gradient-to-br ${style.gradient} overflow-hidden`}>
+        <div className="p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-yellow-600/20 to-yellow-600/5 border border-yellow-600/20 flex items-center justify-center">
+                  <CreditCard className="h-5 w-5 text-yellow-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Current Plan</h2>
+                  <p className="text-xs text-zinc-500">Your organization's subscription</p>
+                </div>
+              </div>
+            </div>
+            <div className={`px-4 py-2 rounded-lg border ${style.border} bg-black/20`}>
+              <span className={`text-xl font-bold ${style.accent}`}>{style.label}</span>
+            </div>
+          </div>
+
+          {plan && (
+            <div className="mt-6 grid grid-cols-3 gap-6">
+              <div>
+                <span className="text-xs text-zinc-500 uppercase tracking-wider">Monthly Price</span>
+                <div className="text-2xl font-bold text-white mt-1">
+                  {plan.priceMonthly ? `$${plan.priceMonthly}` : "Custom"}
+                  {plan.priceMonthly && <span className="text-sm font-normal text-zinc-500">/mo</span>}
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500 uppercase tracking-wider">Annual Price</span>
+                <div className="text-2xl font-bold text-white mt-1">
+                  {plan.priceAnnual ? `$${plan.priceAnnual}` : "Custom"}
+                  {plan.priceAnnual && <span className="text-sm font-normal text-zinc-500">/yr</span>}
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500 uppercase tracking-wider">Status</span>
+                <div className="mt-1">
+                  {planData?.subscription ? (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium ${
+                      planData.subscription.status === "active"
+                        ? "bg-emerald-950/40 text-emerald-400 border border-emerald-800/30"
+                        : planData.subscription.status === "trialing"
+                        ? "bg-blue-950/40 text-blue-400 border border-blue-800/30"
+                        : "bg-red-950/40 text-red-400 border border-red-800/30"
+                    }`}>
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {planData.subscription.status.charAt(0).toUpperCase() + planData.subscription.status.slice(1)}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium bg-zinc-800/60 text-zinc-400 border border-zinc-700/30">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      No subscription
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Usage Meters */}
+      {usage && limits && (
+        <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-5 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-yellow-500" />
+            Usage & Limits
+          </h3>
+          <div className="space-y-5">
+            <UsageBar
+              current={usage.contacts || 0}
+              max={limits.maxContacts || 0}
+              label="Contacts"
+            />
+            <UsageBar
+              current={usage.meetings || 0}
+              max={limits.maxMeetingsPerMonth || 0}
+              label="Meetings (this month)"
+            />
+            <UsageBar
+              current={usage.users || 0}
+              max={limits.maxUsersPerOrg || 0}
+              label="Team Members"
+            />
+            <UsageBar
+              current={usage.organizations || 0}
+              max={limits.maxOrganizations || 0}
+              label="Organizations"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Plan Features */}
+      {plan?.features && plan.features.length > 0 && (
+        <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-yellow-500" />
+            Included Features
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {plan.features.map((feature: string) => (
+              <div
+                key={feature}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/40 border border-zinc-700/20"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                <span className="text-sm text-zinc-300 capitalize">
+                  {feature.replace(/_/g, " ")}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upgrade Options */}
+      {allPlans && allPlans.length > 0 && (
+        <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-yellow-500" />
+            Available Plans
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {allPlans.map((p: any) => {
+              const isCurrent = p.key === planKey;
+              const pStyle = tierStyles[p.key] || tierStyles.starter;
+              return (
+                <div
+                  key={p.key}
+                  className={`rounded-xl border p-4 transition-all ${
+                    isCurrent
+                      ? `${pStyle.border} bg-gradient-to-br ${pStyle.gradient} ring-1 ring-yellow-600/20`
+                      : "border-zinc-800/40 bg-zinc-900/60 hover:border-zinc-700/60"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-sm font-semibold ${pStyle.accent}`}>
+                      {p.name}
+                    </span>
+                    {isCurrent && (
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-600/10 text-yellow-500 border border-yellow-600/20">
+                        Current
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xl font-bold text-white mb-3">
+                    {p.priceMonthly ? `$${p.priceMonthly}` : "Custom"}
+                    {p.priceMonthly && <span className="text-xs font-normal text-zinc-500">/mo</span>}
+                  </div>
+                  <div className="space-y-1.5 text-xs text-zinc-500">
+                    <div>{formatLimit(p.maxContacts)} contacts</div>
+                    <div>{formatLimit(p.maxMeetingsPerMonth)} meetings/mo</div>
+                    <div>{formatLimit(p.maxUsersPerOrg)} users/org</div>
+                    <div>{formatLimit(p.maxOrganizations)} organizations</div>
+                    <div>{formatLimit(p.maxStorageGb)} GB storage</div>
+                  </div>
+                  {!isCurrent && (
+                    <button
+                      className="mt-4 w-full py-2 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-800/60 border border-zinc-700/30 hover:bg-zinc-700/60 transition-colors"
+                      onClick={() => toast.info("Contact your administrator to change plans.")}
+                    >
+                      {allPlans.indexOf(p) > allPlans.findIndex((pp: any) => pp.key === planKey)
+                        ? "Upgrade"
+                        : "Downgrade"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

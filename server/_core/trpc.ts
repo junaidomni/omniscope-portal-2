@@ -73,6 +73,41 @@ export function featureGatedProcedure(featureKey: string) {
   });
 }
 
+/**
+ * Plan-gated procedure factory.
+ * Usage: planGatedProcedure("ai_insights").query(...)
+ * Checks if the feature is included in the org's subscription plan.
+ * Optionally checks usage limits before allowing mutations.
+ */
+export function planGatedProcedure(
+  featureKey: string,
+  options?: { checkLimit?: "contacts" | "meetings" | "users" | "organizations" | "storage" }
+) {
+  return orgScopedProcedure.use(async (opts) => {
+    const { ctx, next } = opts;
+    // Lazy import to avoid circular dependency
+    const { enforceFeatureGate, enforceUsageLimit, resolvePlanForOrg } = await import("../planEnforcement");
+    
+    // Check feature access against plan
+    await enforceFeatureGate(ctx.orgId, featureKey);
+    
+    // Check usage limit if specified
+    if (options?.checkLimit) {
+      await enforceUsageLimit(ctx.orgId, options.checkLimit);
+    }
+    
+    // Resolve plan context and attach to ctx
+    const planCtx = await resolvePlanForOrg(ctx.orgId);
+    
+    return next({
+      ctx: {
+        ...ctx,
+        plan: planCtx,
+      },
+    });
+  });
+}
+
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;

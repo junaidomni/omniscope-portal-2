@@ -2665,6 +2665,15 @@ export async function getAccountById(accountId: number) {
 }
 
 /**
+ * Get all accounts (admin use)
+ */
+export async function getAllAccounts() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(accounts).orderBy(accounts.id);
+}
+
+/**
  * Create a new organization under an account
  */
 export async function createOrganization(data: {
