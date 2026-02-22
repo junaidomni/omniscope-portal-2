@@ -2695,6 +2695,6 @@
 
 ### Platform Capabilities Document
 - [x] DOC-1: Audit all platform features, access levels, and roles
-- [ ] DOC-2: Create 5-6 page comprehensive platform capabilities document
-- [ ] DOC-3: Document what each access level gives you
-- [ ] DOC-4: Document how the platform helps people and organizations
+- [x] DOC-2: Create 5-6 page comprehensive platform capabilities document
+- [x] DOC-3: Document what each access level gives you
+- [x] DOC-4: Document how the platform helps people and organizations
