@@ -1,0 +1,18 @@
+{
+  "query": "SELECT a.id, a.accountName, a.accountPlan, a.accountStatus, a.accountMrrCents, a.accountHealthScore FROM accounts a;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT a.id, a.accountName, a.accountPlan, a.accountStatus, a.accountMrrCents, a.accountHealthScore FROM accounts a;",
+  "rows": [
+    {
+      "id": "2",
+      "accountName": "Junaid Qureshi's Account",
+      "accountPlan": "sovereign",
+      "accountStatus": "active",
+      "accountMrrCents": "0",
+      "accountHealthScore": "100"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\taccountName\taccountPlan\taccountStatus\taccountMrrCents\taccountHealthScore\n2\tJunaid Qureshi's Account\tsovereign\tactive\t0\t100\n",
+  "stderr": "",
+  "execution_time_ms": 363
+}

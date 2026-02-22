@@ -3,6 +3,7 @@ import * as fathomIntegration from "../fathomIntegration";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router, platformOwnerProcedure } from "../_core/trpc";
 import { z } from "zod";
+import { queryAuditLog, getAuditLogStats, exportAuditLogCSV, logAuditEvent } from "../auditLog";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== 'admin') {
@@ -28,7 +29,7 @@ export const adminRouter = router({
    * Get platform overview metrics (all accounts, all orgs).
    * Only accessible to platform owners.
    */
-  platformOverview: platformOwnerProcedure.query(async () => {
+  platformOverview: platformOwnerProcedure.query(async ({ ctx: _ctx }) => {
     const accounts = await db.getAllAccounts();
     const orgs = await db.getAllOrganizations();
     const users = await db.getAllUsers();
@@ -54,8 +55,13 @@ export const adminRouter = router({
    */
   grantPlatformOwner: platformOwnerProcedure
     .input(z.object({ userId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const targetUser = await db.getUserById(input.userId);
       await db.updateUser(input.userId, { platformOwner: true });
+      await logAuditEvent(
+        { userId: ctx.user.id, userName: ctx.user.name ?? undefined, userEmail: ctx.user.email ?? undefined },
+        { action: "platform_owner_grant", entityType: "user", entityId: input.userId, details: { targetName: targetUser?.name, targetEmail: targetUser?.email } }
+      );
       return { success: true };
     }),
 
@@ -65,9 +71,70 @@ export const adminRouter = router({
    */
   revokePlatformOwner: platformOwnerProcedure
     .input(z.object({ userId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const targetUser = await db.getUserById(input.userId);
       await db.updateUser(input.userId, { platformOwner: false });
+      await logAuditEvent(
+        { userId: ctx.user.id, userName: ctx.user.name ?? undefined, userEmail: ctx.user.email ?? undefined },
+        { action: "platform_owner_revoke", entityType: "user", entityId: input.userId, details: { targetName: targetUser?.name, targetEmail: targetUser?.email } }
+      );
       return { success: true };
+    }),
+
+  // ============================================================================
+  // AUDIT LOG ROUTES (Platform Owner Only)
+  // ============================================================================
+
+  /**
+   * Query audit log with filters and pagination.
+   */
+  auditLog: platformOwnerProcedure
+    .input(z.object({
+      userId: z.number().optional(),
+      accountId: z.number().optional(),
+      orgId: z.number().optional(),
+      action: z.string().optional(),
+      entityType: z.string().optional(),
+      startDate: z.string().optional(), // ISO date string
+      endDate: z.string().optional(),
+      search: z.string().optional(),
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().min(0).default(0),
+    }))
+    .query(async ({ input }) => {
+      return await queryAuditLog({
+        ...input,
+        startDate: input.startDate ? new Date(input.startDate) : undefined,
+        endDate: input.endDate ? new Date(input.endDate) : undefined,
+      });
+    }),
+
+  /**
+   * Get audit log summary stats.
+   */
+  auditLogStats: platformOwnerProcedure.query(async () => {
+    return await getAuditLogStats();
+  }),
+
+  /**
+   * Export audit log as CSV.
+   */
+  exportAuditLog: platformOwnerProcedure
+    .input(z.object({
+      accountId: z.number().optional(),
+      orgId: z.number().optional(),
+      action: z.string().optional(),
+      entityType: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await exportAuditLogCSV({
+        ...input,
+        startDate: input.startDate ? new Date(input.startDate) : undefined,
+        endDate: input.endDate ? new Date(input.endDate) : undefined,
+      });
     }),
 
   // ============================================================================

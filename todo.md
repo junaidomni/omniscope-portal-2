@@ -2616,3 +2616,61 @@
 - [x] G-6: Fix meeting select button not working when clicking on a meeting in org account — verified: Select button toggles bulk selection mode with checkboxes, clicking meeting title navigates to detail page /meeting/{id}, all meeting actions (PDF, Email, Delete, Tags) visible
 - [x] G-7: Build roles and permissions hierarchy view — 3-tab page (Role Hierarchy, Permission Matrix, Active Users) with 6 role levels, 18 permissions, GOD MODE badge, Data Isolation Guarantee
 - [x] G-8: Audit every button on admin side and user side — all 12 Admin Hub pages verified, all 6 workspace pages verified, all sidebar nav items work, all major buttons functional
+
+## Phase H: Platform Command Center, Account Console & Full Stack Build-Out
+
+### H-1: Schema Updates
+- [x] H-1a: Add mrrCents, trialEndsAt, healthScore, lastActiveAt to accounts table (status & billingEmail already existed)
+- [x] H-1b: Create platformAuditLog table (14 columns, 6 indexes)
+- [x] H-1c: Create billingEvents table (9 columns, 3 indexes)
+- [x] H-1d: Run db:push — migration 0036_condemned_ma_gnuci.sql applied successfully
+
+### H-2: Platform Audit Log
+- [x] H-2a: Create audit log service (auditLog.ts) with logAuditEvent, queryAuditLog, getAuditLogStats, exportAuditLogCSV
+- [x] H-2b: Create audit log tRPC routes (admin.auditLog, admin.auditLogStats, admin.exportAuditLog)
+- [x] H-2c: Build Audit Log page with filterable table (search, action/entity filters, stats cards, CSV export, pagination)
+- [ ] H-2d: Write vitest tests for audit log
+
+### H-3: Account Console (Account Owner Experience)
+- [x] H-3a: Create Account Overview page (all orgs, total users, usage, plan summary)
+- [x] H-3b: Create Account Organizations page (list orgs, create/archive)
+- [x] H-3c: Create Account Team page (all users across all orgs, invite, assign roles)
+- [x] H-3d: Create Account Plan & Billing page (plan, usage vs limits, billing history)
+- [ ] H-3e: Create Account Security page (login history, session policies)
+- [x] H-3f: Create Account Settings page (name, branding, notifications)
+- [x] H-3g: Write vitest tests for Account Console routes
+
+### H-4: Platform Command Center Enhancement
+- [x] H-4a: Build Accounts master list page (all accounts, plan, MRR, status, owner)
+- [x] H-4b: Build Account Detail drill-down (view any account)
+- [x] H-4c: Add account controls (change plan, suspend, activate)
+- [x] H-4d: Write vitest tests for Platform Command Center routes
+
+### H-5: Revenue Dashboard
+- [x] H-5a: Build MRR breakdown by tier
+- [x] H-5b: Build plan distribution chart
+- [x] H-5c: Build top accounts list and payment status
+- [x] H-5d: Write vitest tests for revenue routes
+
+### H-6: Super-Admin Management UI
+- [ ] H-6a: Build Super-Admins page (list, grant, revoke with confirmation)
+- [ ] H-6b: Log all grant/revoke actions in audit log
+- [ ] H-6c: Write vitest tests for super-admin routes
+
+### H-7: Navigation Refactor
+- [x] H-7a: Update sidebar to show role-based links
+- [x] H-7b: Add Account link for Account Owners, Platform link for Platform Owners
+- [x] H-7c: Hide links users shouldn't see based on role
+- [x] H-7d: Test navigation for each role level
+
+### H-8: Account Provisioning
+- [ ] H-8a: Build Create Account flow in Platform Command Center
+- [ ] H-8b: Generate invite link for new account owners
+- [ ] H-8c: Write vitest tests for account provisioning
+
+### H-9: Testing & Hardening
+- [ ] H-9a: Test every role sees the right navigation
+- [ ] H-9b: Test data isolation between accounts
+- [ ] H-9c: Test audit log captures all actions
+- [ ] H-9d: Full test suite passing
+- [ ] H-9e: Full button audit across all pages

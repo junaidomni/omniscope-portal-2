@@ -26,6 +26,8 @@ import {
   Loader2,
   Sparkles,
   ArrowLeft,
+  Wallet,
+  TrendingUp,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -60,6 +62,7 @@ const adminSections: AdminNavSection[] = [
     items: [
       { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", path: "/admin-hub", matchPaths: ["/admin-hub"] },
       { id: "organizations", icon: Building2, label: "Organizations", path: "/admin-hub/organizations", matchPaths: ["/admin-hub/organizations"] },
+      { id: "accounts", icon: Wallet, label: "Accounts", path: "/admin-hub/accounts", matchPaths: ["/admin-hub/accounts", "/admin-hub/account"] },
     ],
   },
   {
@@ -80,6 +83,7 @@ const adminSections: AdminNavSection[] = [
     label: "Billing",
     items: [
       { id: "billing", icon: CreditCard, label: "Plans & Billing", path: "/admin-hub/billing", matchPaths: ["/admin-hub/billing"] },
+      { id: "revenue", icon: TrendingUp, label: "Revenue", path: "/admin-hub/revenue", matchPaths: ["/admin-hub/revenue"] },
     ],
   },
   {

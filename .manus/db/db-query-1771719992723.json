@@ -1,0 +1,13 @@
+{
+  "query": "SHOW TABLES LIKE 'billing_events';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SHOW TABLES LIKE 'billing_events';",
+  "rows": [
+    {
+      "Tables_in_WN9ut9YEufdDjevBezkAVQ (billing_events)": "billing_events"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_WN9ut9YEufdDjevBezkAVQ (billing_events)\nbilling_events\n",
+  "stderr": "",
+  "execution_time_ms": 380
+}

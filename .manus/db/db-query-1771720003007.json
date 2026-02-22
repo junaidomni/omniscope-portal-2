@@ -1,0 +1,27 @@
+{
+  "query": "SELECT * FROM accounts LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT * FROM accounts LIMIT 5;",
+  "rows": [
+    {
+      "id": "2",
+      "accountName": "Junaid Qureshi's Account",
+      "accountOwnerUserId": "1",
+      "accountPlan": "sovereign",
+      "accountStatus": "active",
+      "accountMaxOrgs": "5",
+      "accountMaxUsersPerOrg": "25",
+      "accountBillingEmail": "NULL",
+      "accountMetadata": "NULL",
+      "accountCreatedAt": "2026-02-20 18:52:22",
+      "accountUpdatedAt": "2026-02-21 23:05:09",
+      "accountMrrCents": "0",
+      "accountTrialEndsAt": "NULL",
+      "accountHealthScore": "100",
+      "accountLastActiveAt": "2026-02-22 00:12:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\taccountName\taccountOwnerUserId\taccountPlan\taccountStatus\taccountMaxOrgs\taccountMaxUsersPerOrg\taccountBillingEmail\taccountMetadata\taccountCreatedAt\taccountUpdatedAt\taccountMrrCents\taccountTrialEndsAt\taccountHealthScore\taccountLastActiveAt\n2\tJunaid Qureshi's Account\t1\tsovereign\tactive\t5\t25\tNULL\tNULL\t2026-02-20 18:52:22\t2026-02-21 23:05:09\t0\tNULL\t100\t2026-02-22 00:12:00\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

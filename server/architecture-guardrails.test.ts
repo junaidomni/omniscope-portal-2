@@ -8,6 +8,7 @@ const ROUTERS_DIR = path.join(__dirname, "routers");
 const PLATFORM_ROUTERS = new Set([
   "admin.ts",
   "admin-hub.ts",
+  "account-console.ts",
   "digest.ts",
   "organizations.ts",
   "plans.ts",

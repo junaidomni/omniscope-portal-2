@@ -39,6 +39,10 @@ export const accounts = mysqlTable("accounts", {
   maxOrganizations: int("accountMaxOrgs").default(5).notNull(),
   maxUsersPerOrg: int("accountMaxUsersPerOrg").default(25).notNull(),
   billingEmail: varchar("accountBillingEmail", { length: 320 }),
+  mrrCents: int("accountMrrCents").default(0).notNull(), // Monthly recurring revenue in cents
+  trialEndsAt: timestamp("accountTrialEndsAt"), // When trial expires (null = no trial)
+  healthScore: int("accountHealthScore").default(100).notNull(), // 0-100 account health
+  lastActiveAt: timestamp("accountLastActiveAt").defaultNow().notNull(), // Last login by any user
   metadata: text("accountMetadata"), // JSON: extra account-level config
   createdAt: timestamp("accountCreatedAt").defaultNow().notNull(),
   updatedAt: timestamp("accountUpdatedAt").defaultNow().onUpdateNow().notNull(),
@@ -1674,4 +1678,66 @@ export type InsertDigestPreference = typeof digestPreferences.$inferInsert;
 export const digestPreferencesRelations = relations(digestPreferences, ({ one }) => ({
   user: one(users, { fields: [digestPreferences.userId], references: [users.id] }),
   account: one(accounts, { fields: [digestPreferences.accountId], references: [accounts.id] }),
+}));
+
+// ============================================================================
+// PLATFORM AUDIT LOG & BILLING
+// ============================================================================
+
+/**
+ * Platform Audit Log — tracks every significant action across the platform.
+ * Used for compliance, security monitoring, and platform owner visibility.
+ */
+export const platformAuditLog = mysqlTable("platform_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  userId: int("userId"),
+  userName: varchar("userName", { length: 255 }),
+  userEmail: varchar("userEmail", { length: 320 }),
+  accountId: int("accountId"),
+  accountName: varchar("accountName", { length: 500 }),
+  orgId: int("orgId"),
+  orgName: varchar("orgName", { length: 500 }),
+  action: varchar("action", { length: 100 }).notNull(), // e.g. "create", "update", "delete", "login", "plan_change", "role_change", "account_switch"
+  entityType: varchar("entityType", { length: 100 }), // e.g. "contact", "meeting", "task", "user", "organization", "account"
+  entityId: int("entityId"),
+  details: text("details"), // JSON: additional context about the action
+  ipAddress: varchar("ipAddress", { length: 45 }),
+}, (table) => ({
+  timestampIdx: index("pal_timestamp_idx").on(table.timestamp),
+  userIdx: index("pal_user_idx").on(table.userId),
+  accountIdx: index("pal_account_idx").on(table.accountId),
+  orgIdx: index("pal_org_idx").on(table.orgId),
+  actionIdx: index("pal_action_idx").on(table.action),
+  entityIdx: index("pal_entity_idx").on(table.entityType),
+}));
+
+export type PlatformAuditLogEntry = typeof platformAuditLog.$inferSelect;
+export type InsertPlatformAuditLogEntry = typeof platformAuditLog.$inferInsert;
+
+/**
+ * Billing Events — tracks plan changes, payments, credits, and refunds.
+ */
+export const billingEvents = mysqlTable("billing_events", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  type: mysqlEnum("type", ["plan_change", "payment", "refund", "credit", "trial_start", "trial_end"]).notNull(),
+  amountCents: int("amountCents").default(0).notNull(), // Amount in cents (positive = charge, negative = credit/refund)
+  fromPlan: varchar("fromPlan", { length: 50 }),
+  toPlan: varchar("toPlan", { length: 50 }),
+  description: text("description"),
+  performedBy: int("performedBy").references(() => users.id), // Who made the change (null = system)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  accountIdx: index("be_account_idx").on(table.accountId),
+  typeIdx: index("be_type_idx").on(table.type),
+  createdIdx: index("be_created_idx").on(table.createdAt),
+}));
+
+export type BillingEvent = typeof billingEvents.$inferSelect;
+export type InsertBillingEvent = typeof billingEvents.$inferInsert;
+
+export const billingEventsRelations = relations(billingEvents, ({ one }) => ({
+  account: one(accounts, { fields: [billingEvents.accountId], references: [accounts.id] }),
+  performer: one(users, { fields: [billingEvents.performedBy], references: [users.id] }),
 }));

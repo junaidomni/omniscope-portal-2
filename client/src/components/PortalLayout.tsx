@@ -16,6 +16,9 @@ import {
   Radio,
   Target,
   UserCog,
+  Crown,
+  Briefcase,
+  Building2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -539,6 +542,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   }
 
   const isAdmin = user?.role === 'admin';
+  const isPlatformOwner = (user as any)?.platformOwner === true;
   const profilePhoto = (user as any)?.profilePhotoUrl;
   const isMinimal = sidebarStyle === "minimal";
   const isCompact = sidebarStyle === "compact";
@@ -746,10 +750,47 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
             {[
               { path: "/setup", icon: Settings, label: "Settings" },
               { path: "/hr", icon: UserCog, label: "HR Hub" },
+              { path: "/account", icon: Briefcase, label: "Account" },
               ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin" }] : []),
-            ].map((item) => {
+              ...(isPlatformOwner ? [{ path: "/admin-hub", icon: Crown, label: "Platform", onClick: () => { switchOrg(null); setLocation('/admin-hub'); } }] : []),
+            ].map((item: any) => {
               const Icon = item.icon;
               const active = location === item.path || location.startsWith(item.path + '/') || location.startsWith(item.path + '?');
+              if (item.onClick) {
+                return (
+                  <button
+                    key={item.path}
+                    onClick={item.onClick}
+                    className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} gap-3 ${collapsed ? 'px-2 py-2' : isMinimal ? 'px-2.5 py-1.5' : 'px-3 py-2'} rounded-xl transition-all duration-200 group relative`}
+                    style={{
+                      background: active ? activeBg : 'transparent',
+                      color: active ? accentColor : textSecondary,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.background = hoverBg;
+                        e.currentTarget.style.color = textHover;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = textSecondary;
+                      }
+                    }}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    {active && (
+                      <div 
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-4 rounded-r-full"
+                        style={{ backgroundColor: accentColor }}
+                      />
+                    )}
+                    <Icon className="h-4 w-4 shrink-0 transition-colors duration-200" />
+                    {!collapsed && <span className={`${isMinimal ? 'text-[11px]' : 'text-xs'} truncate`}>{item.label}</span>}
+                  </button>
+                );
+              }
               return (
                 <Link key={item.path} href={item.path}>
                   <button

@@ -29,6 +29,7 @@ import ActivityLog from "./pages/ActivityLog";
 import DedupSweep from "./pages/DedupSweep";
 import OrgOnboarding from "./pages/OrgOnboarding";
 import Organizations from "./pages/Organizations";
+import AccountConsole from "./pages/AccountConsole";
 
 // Admin Hub pages
 import AdminHubDashboard from "./pages/admin-hub/Dashboard";
@@ -43,6 +44,9 @@ import AdminHubSettings from "./pages/admin-hub/Settings";
 import AdminHubOrgDetail from "./pages/admin-hub/OrgDetail";
 import AdminHubBilling from "./pages/admin-hub/Billing";
 import AdminHubRoles from "./pages/admin-hub/Roles";
+import AdminHubAccounts from "./pages/admin-hub/Accounts";
+import AdminHubAccountDetail from "./pages/admin-hub/AccountDetail";
+import AdminHubRevenue from "./pages/admin-hub/Revenue";
 
 /**
  * Workspace Router — the standard PortalLayout shell.
@@ -92,6 +96,7 @@ function WorkspaceRouter() {
         <Route path="/integrations">{() => { window.location.href = "/setup?tab=integrations"; return null; }}</Route>
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/org/new" component={OrgOnboarding} />
+        <Route path="/account" component={AccountConsole} />
         <Route path="/organizations" component={Organizations} />
         <Route path="/hr" component={HRHub} />
         <Route path="/hr/employee/:id" component={EmployeeProfile} />
@@ -128,6 +133,9 @@ function AdminHubRouter() {
         <Route path="/admin-hub/analytics" component={AdminHubAnalytics} />
         <Route path="/admin-hub/health" component={AdminHubHealth} />
         <Route path="/admin-hub/billing" component={AdminHubBilling} />
+        <Route path="/admin-hub/revenue" component={AdminHubRevenue} />
+        <Route path="/admin-hub/accounts" component={AdminHubAccounts} />
+        <Route path="/admin-hub/account/:id" component={AdminHubAccountDetail} />
         <Route path="/admin-hub/roles" component={AdminHubRoles} />
         <Route path="/admin-hub/settings" component={AdminHubSettings} />
         <Route component={AdminHubDashboard} />

@@ -39,6 +39,7 @@ import { organizationsRouter } from "./organizations";
 import { adminHubRouter } from "./admin-hub";
 import { plansRouter } from "./plans";
 import { digestRouter } from "./digest";
+import { accountConsoleRouter } from "./account-console";
 
 export const appRouter = router({
   system: systemRouter,
@@ -86,6 +87,7 @@ export const appRouter = router({
   adminHub: adminHubRouter,
   plans: plansRouter,
   digest: digestRouter,
+  accountConsole: accountConsoleRouter,
 });
 
 export type AppRouter = typeof appRouter;

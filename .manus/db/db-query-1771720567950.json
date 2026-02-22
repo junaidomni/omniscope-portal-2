@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, planKey, planName, planTier FROM plans;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, planKey, planName, planTier FROM plans;",
+  "rows": [
+    {
+      "id": "1",
+      "planKey": "starter",
+      "planName": "Starter",
+      "planTier": "0"
+    },
+    {
+      "id": "2",
+      "planKey": "professional",
+      "planName": "Professional",
+      "planTier": "1"
+    },
+    {
+      "id": "3",
+      "planKey": "enterprise",
+      "planName": "Enterprise",
+      "planTier": "2"
+    },
+    {
+      "id": "4",
+      "planKey": "sovereign",
+      "planName": "Sovereign",
+      "planTier": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tplanKey\tplanName\tplanTier\n1\tstarter\tStarter\t0\n2\tprofessional\tProfessional\t1\n3\tenterprise\tEnterprise\t2\n4\tsovereign\tSovereign\t3\n",
+  "stderr": "",
+  "execution_time_ms": 372
+}

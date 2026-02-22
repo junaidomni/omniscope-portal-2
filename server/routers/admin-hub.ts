@@ -21,8 +21,11 @@ import {
   featureToggles,
   activityLog,
   employees,
+  subscriptions,
+  plans,
+  billingEvents,
 } from "../../drizzle/schema";
-import { eq, count, desc, and, gte, like } from "drizzle-orm";
+import { eq, count, desc, and, gte, like, sql, asc } from "drizzle-orm";
 
 // Gate: only super_admin or account_owner can access
 const hubProcedure = protectedProcedure.use(async ({ ctx, next }) => {
@@ -638,4 +641,319 @@ export const adminHubRouter = router({
       await db.update(integrations).set(setObj).where(eq(integrations.id, integrationId));
       return { success: true };
     }),
+
+  // ─── ACCOUNTS MANAGEMENT ─────────────────────────────────────────────────
+
+  /**
+   * List all accounts with owner info, subscription, and org count
+   */
+  listAccounts: hubProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+    const allAccounts = await db
+      .select({
+        id: accounts.id,
+        name: accounts.name,
+        plan: accounts.plan,
+        status: accounts.status,
+        mrrCents: accounts.mrrCents,
+        healthScore: accounts.healthScore,
+        billingEmail: accounts.billingEmail,
+        maxOrganizations: accounts.maxOrganizations,
+        maxUsersPerOrg: accounts.maxUsersPerOrg,
+        createdAt: accounts.createdAt,
+        lastActiveAt: accounts.lastActiveAt,
+        ownerName: users.name,
+        ownerEmail: users.email,
+        ownerAvatar: users.profilePhotoUrl,
+      })
+      .from(accounts)
+      .innerJoin(users, eq(accounts.ownerUserId, users.id))
+      .orderBy(desc(accounts.createdAt));
+
+    // Enrich with org count and subscription status
+    const enriched = await Promise.all(
+      allAccounts.map(async (acct) => {
+        const [orgCountResult] = await db
+          .select({ count: count() })
+          .from(organizations)
+          .where(eq(organizations.accountId, acct.id));
+
+        const [sub] = await db
+          .select({
+            id: subscriptions.id,
+            status: subscriptions.status,
+            planId: subscriptions.planId,
+            billingCycle: subscriptions.billingCycle,
+            startDate: subscriptions.startDate,
+            endDate: subscriptions.endDate,
+          })
+          .from(subscriptions)
+          .where(and(eq(subscriptions.accountId, acct.id), eq(subscriptions.status, "active")))
+          .limit(1);
+
+        let planName = acct.plan;
+        if (sub) {
+          const [planRow] = await db
+            .select({ name: plans.name, key: plans.key })
+            .from(plans)
+            .where(eq(plans.id, sub.planId))
+            .limit(1);
+          if (planRow) planName = planRow.key;
+        }
+
+        return {
+          ...acct,
+          orgCount: orgCountResult?.count ?? 0,
+          subscription: sub || null,
+          resolvedPlan: planName,
+        };
+      })
+    );
+
+    return enriched;
+  }),
+
+  /**
+   * Get detailed account info for drill-down
+   */
+  getAccountDetail: hubProcedure
+    .input(z.object({ accountId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Account + owner
+      const [acctRow] = await db
+        .select({
+          id: accounts.id,
+          name: accounts.name,
+          plan: accounts.plan,
+          status: accounts.status,
+          mrrCents: accounts.mrrCents,
+          healthScore: accounts.healthScore,
+          billingEmail: accounts.billingEmail,
+          maxOrganizations: accounts.maxOrganizations,
+          maxUsersPerOrg: accounts.maxUsersPerOrg,
+          trialEndsAt: accounts.trialEndsAt,
+          metadata: accounts.metadata,
+          createdAt: accounts.createdAt,
+          lastActiveAt: accounts.lastActiveAt,
+          ownerUserId: accounts.ownerUserId,
+          ownerName: users.name,
+          ownerEmail: users.email,
+          ownerAvatar: users.profilePhotoUrl,
+        })
+        .from(accounts)
+        .innerJoin(users, eq(accounts.ownerUserId, users.id))
+        .where(eq(accounts.id, input.accountId))
+        .limit(1);
+
+      if (!acctRow) throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
+
+      // Organizations under this account
+      const orgs = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.accountId, input.accountId))
+        .orderBy(asc(organizations.name));
+
+      // Org member counts
+      const orgDetails = await Promise.all(
+        orgs.map(async (org) => {
+          const [memberCount] = await db
+            .select({ count: count() })
+            .from(orgMemberships)
+            .where(eq(orgMemberships.organizationId, org.id));
+          return {
+            id: org.id,
+            name: org.name,
+            slug: org.slug,
+            status: org.status,
+            logoUrl: org.logoUrl,
+            industry: org.industry,
+            memberCount: memberCount?.count ?? 0,
+            createdAt: org.createdAt,
+          };
+        })
+      );
+
+      // Subscription
+      const [sub] = await db
+        .select()
+        .from(subscriptions)
+        .where(and(eq(subscriptions.accountId, input.accountId), eq(subscriptions.status, "active")))
+        .limit(1);
+
+      let plan = null;
+      if (sub) {
+        const [planRow] = await db.select().from(plans).where(eq(plans.id, sub.planId)).limit(1);
+        plan = planRow || null;
+      }
+
+      // Billing events
+      const recentBilling = await db
+        .select()
+        .from(billingEvents)
+        .where(eq(billingEvents.accountId, input.accountId))
+        .orderBy(desc(billingEvents.createdAt))
+        .limit(20);
+
+      // Usage counts per org
+      const usageByOrg = await Promise.all(
+        orgs.map(async (org) => {
+          const [contactCount] = await db.select({ count: count() }).from(contacts).where(eq(contacts.orgId, org.id));
+          const [meetingCount] = await db.select({ count: count() }).from(meetings).where(eq(meetings.orgId, org.id));
+          const [taskCount] = await db.select({ count: count() }).from(tasks).where(eq(tasks.orgId, org.id));
+          const [memberCount] = await db.select({ count: count() }).from(orgMemberships).where(eq(orgMemberships.organizationId, org.id));
+          return {
+            orgId: org.id,
+            orgName: org.name,
+            contacts: contactCount?.count ?? 0,
+            meetings: meetingCount?.count ?? 0,
+            tasks: taskCount?.count ?? 0,
+            members: memberCount?.count ?? 0,
+          };
+        })
+      );
+
+      return {
+        account: acctRow,
+        organizations: orgDetails,
+        subscription: sub || null,
+        plan,
+        billingEvents: recentBilling,
+        usageByOrg,
+      };
+    }),
+
+  /**
+   * Update account status (suspend, activate, cancel)
+   */
+  updateAccountStatus: hubProcedure
+    .input(z.object({
+      accountId: z.number(),
+      status: z.enum(["active", "suspended", "cancelled"]),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.update(accounts).set({ status: input.status }).where(eq(accounts.id, input.accountId));
+      return { success: true };
+    }),
+
+  /**
+   * Update account MRR
+   */
+  updateAccountMrr: hubProcedure
+    .input(z.object({
+      accountId: z.number(),
+      mrrCents: z.number().min(0),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.update(accounts).set({ mrrCents: input.mrrCents }).where(eq(accounts.id, input.accountId));
+      return { success: true };
+    }),
+
+  /**
+   * Update account health score
+   */
+  updateAccountHealth: hubProcedure
+    .input(z.object({
+      accountId: z.number(),
+      healthScore: z.number().min(0).max(100),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.update(accounts).set({ healthScore: input.healthScore }).where(eq(accounts.id, input.accountId));
+      return { success: true };
+    }),
+
+  // ─── REVENUE DASHBOARD ───────────────────────────────────────────────────
+
+  /**
+   * Revenue overview — MRR breakdown by plan, total revenue, billing events
+   */
+  revenueOverview: hubProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+    // Total MRR by plan
+    const allAccounts = await db
+      .select({
+        plan: accounts.plan,
+        status: accounts.status,
+        mrrCents: accounts.mrrCents,
+      })
+      .from(accounts);
+
+    let totalMrr = 0;
+    let activeAccounts = 0;
+    const planBreakdown = new Map<string, { count: number; mrr: number }>();
+
+    for (const acct of allAccounts) {
+      if (acct.status === "active") {
+        activeAccounts++;
+        totalMrr += acct.mrrCents;
+      }
+      const existing = planBreakdown.get(acct.plan) || { count: 0, mrr: 0 };
+      existing.count++;
+      existing.mrr += acct.mrrCents;
+      planBreakdown.set(acct.plan, existing);
+    }
+
+    const byPlan = Array.from(planBreakdown.entries()).map(([plan, data]) => ({
+      plan,
+      count: data.count,
+      mrr: data.mrr,
+    }));
+
+    // Recent billing events across all accounts
+    const recentEvents = await db
+      .select({
+        id: billingEvents.id,
+        accountId: billingEvents.accountId,
+        type: billingEvents.type,
+        amountCents: billingEvents.amountCents,
+        fromPlan: billingEvents.fromPlan,
+        toPlan: billingEvents.toPlan,
+        description: billingEvents.description,
+        createdAt: billingEvents.createdAt,
+        accountName: accounts.name,
+      })
+      .from(billingEvents)
+      .innerJoin(accounts, eq(billingEvents.accountId, accounts.id))
+      .orderBy(desc(billingEvents.createdAt))
+      .limit(50);
+
+    // Subscription status breakdown
+    const allSubs = await db
+      .select({
+        status: subscriptions.status,
+        billingCycle: subscriptions.billingCycle,
+      })
+      .from(subscriptions);
+
+    const subStatusMap = new Map<string, number>();
+    const cycleMap = new Map<string, number>();
+    for (const sub of allSubs) {
+      subStatusMap.set(sub.status, (subStatusMap.get(sub.status) || 0) + 1);
+      cycleMap.set(sub.billingCycle, (cycleMap.get(sub.billingCycle) || 0) + 1);
+    }
+
+    return {
+      totalMrr,
+      totalArr: totalMrr * 12,
+      activeAccounts,
+      totalAccounts: allAccounts.length,
+      byPlan,
+      recentEvents,
+      subscriptionStatus: Object.fromEntries(subStatusMap),
+      billingCycles: Object.fromEntries(cycleMap),
+    };
+  }),
 });

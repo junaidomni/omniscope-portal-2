@@ -1,0 +1,30 @@
+{
+  "query": "SELECT * FROM subscriptions LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT * FROM subscriptions LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "subAccountId": "2",
+      "subPlanId": "4",
+      "subStatus": "active",
+      "subBillingCycle": "monthly",
+      "subStartDate": "2026-02-21 20:31:29",
+      "subEndDate": "NULL",
+      "subTrialEndsAt": "NULL",
+      "subCancelledAt": "NULL",
+      "subStripeCustomerId": "NULL",
+      "subStripeSubId": "NULL",
+      "subOverrideMaxOrgs": "NULL",
+      "subOverrideMaxUsers": "NULL",
+      "subOverrideMaxContacts": "NULL",
+      "subOverrideMaxStorage": "NULL",
+      "subNotes": "NULL",
+      "subCreatedAt": "2026-02-21 20:31:29",
+      "subUpdatedAt": "2026-02-21 20:31:29"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tsubAccountId\tsubPlanId\tsubStatus\tsubBillingCycle\tsubStartDate\tsubEndDate\tsubTrialEndsAt\tsubCancelledAt\tsubStripeCustomerId\tsubStripeSubId\tsubOverrideMaxOrgs\tsubOverrideMaxUsers\tsubOverrideMaxContacts\tsubOverrideMaxStorage\tsubNotes\tsubCreatedAt\tsubUpdatedAt\n1\t2\t4\tactive\tmonthly\t2026-02-21 20:31:29\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-21 20:31:29\t2026-02-21 20:31:29\n",
+  "stderr": "",
+  "execution_time_ms": 355
+}

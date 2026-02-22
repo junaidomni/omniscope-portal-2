@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes, integrations, InsertIntegration, featureToggles, InsertFeatureToggle, designPreferences, InsertDesignPreference, accounts, InsertAccount, organizations, InsertOrganization, orgMemberships, InsertOrgMembership, plans, InsertPlan, subscriptions, InsertSubscription, planFeatures, InsertPlanFeature } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes, integrations, InsertIntegration, featureToggles, InsertFeatureToggle, designPreferences, InsertDesignPreference, accounts, InsertAccount, organizations, InsertOrganization, orgMemberships, InsertOrgMembership, plans, InsertPlan, subscriptions, InsertSubscription, planFeatures, InsertPlanFeature, billingEvents, InsertBillingEvent, platformAuditLog, InsertPlatformAuditLogEntry } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -85,6 +85,13 @@ export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserById(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -2814,7 +2821,7 @@ export async function getOrgMembers(orgId: number) {
         id: users.id,
         name: users.name,
         email: users.email,
-        avatarUrl: users.avatarUrl,
+        avatarUrl: users.profilePhotoUrl,
       },
     })
     .from(orgMemberships)
@@ -3055,4 +3062,136 @@ export async function getEffectiveLimits(accountId: number) {
     maxMeetingsPerMonth: plan.maxMeetingsPerMonth,
     maxStorageGb: sub.overrideMaxStorageGb ?? plan.maxStorageGb,
   };
+}
+
+
+/**
+ * Update an account's fields
+ */
+export async function updateAccount(accountId: number, data: Partial<{
+  name: string;
+  plan: "starter" | "professional" | "enterprise" | "sovereign";
+  status: "active" | "suspended" | "cancelled";
+  billingEmail: string | null;
+  mrrCents: number;
+  healthScore: number;
+  maxOrganizations: number;
+  maxUsersPerOrg: number;
+}>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(accounts).set(data).where(eq(accounts.id, accountId));
+}
+
+/**
+ * Get account with owner user info
+ */
+export async function getAccountWithOwner(accountId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db
+    .select({
+      account: accounts,
+      owner: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        profilePhotoUrl: users.profilePhotoUrl,
+      },
+    })
+    .from(accounts)
+    .innerJoin(users, eq(accounts.ownerUserId, users.id))
+    .where(eq(accounts.id, accountId))
+    .limit(1);
+  return row || null;
+}
+
+/**
+ * Get all accounts with owner info (for platform admin)
+ */
+export async function getAllAccountsWithOwners() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      account: accounts,
+      owner: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        profilePhotoUrl: users.profilePhotoUrl,
+      },
+    })
+    .from(accounts)
+    .innerJoin(users, eq(accounts.ownerUserId, users.id))
+    .orderBy(desc(accounts.createdAt));
+}
+
+/**
+ * Get billing events for an account
+ */
+export async function getBillingEventsForAccount(accountId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(billingEvents)
+    .where(eq(billingEvents.accountId, accountId))
+    .orderBy(desc(billingEvents.createdAt))
+    .limit(limit);
+}
+
+/**
+ * Create a billing event
+ */
+export async function createBillingEvent(data: {
+  accountId: number;
+  type: "plan_change" | "payment" | "refund" | "credit" | "trial_start" | "trial_end";
+  amountCents?: number;
+  fromPlan?: string;
+  toPlan?: string;
+  description?: string;
+  performedBy?: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(billingEvents).values({
+    accountId: data.accountId,
+    type: data.type,
+    amountCents: data.amountCents ?? 0,
+    fromPlan: data.fromPlan ?? null,
+    toPlan: data.toPlan ?? null,
+    description: data.description ?? null,
+    performedBy: data.performedBy ?? null,
+  });
+  return result.insertId;
+}
+
+/**
+ * Get revenue summary across all accounts
+ */
+export async function getRevenueSummary() {
+  const db = await getDb();
+  if (!db) return { totalMrr: 0, byPlan: [], accountCount: 0 };
+  
+  const allAccounts = await db.select().from(accounts);
+  
+  let totalMrr = 0;
+  const planMap = new Map<string, { count: number; mrr: number }>();
+  
+  for (const acct of allAccounts) {
+    totalMrr += acct.mrrCents;
+    const existing = planMap.get(acct.plan) || { count: 0, mrr: 0 };
+    existing.count += 1;
+    existing.mrr += acct.mrrCents;
+    planMap.set(acct.plan, existing);
+  }
+  
+  const byPlan = Array.from(planMap.entries()).map(([plan, data]) => ({
+    plan,
+    count: data.count,
+    mrr: data.mrr,
+  }));
+  
+  return { totalMrr, byPlan, accountCount: allAccounts.length };
 }
