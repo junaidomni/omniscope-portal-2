@@ -423,7 +423,7 @@ export default function AdminBilling() {
   const totalOrgs = accounts?.reduce((sum, a) => sum + a.orgCount, 0) || 0;
 
   return (
-    <div className="space-y-8 max-w-5xl">
+    <div className="p-8 space-y-8 max-w-5xl">
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold" style={{ color: "oklch(0.92 0 0)" }}>

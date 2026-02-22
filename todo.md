@@ -2698,3 +2698,9 @@
 - [x] DOC-2: Create 5-6 page comprehensive platform capabilities document
 - [x] DOC-3: Document what each access level gives you
 - [x] DOC-4: Document how the platform helps people and organizations
+
+
+## Layout Fixes
+
+- [x] Fix Roles & Permissions page layout overlap with sidebar
+- [x] Fix Plans & Billing page layout overlap with sidebar

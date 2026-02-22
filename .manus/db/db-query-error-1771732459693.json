@@ -1,0 +1,8 @@
+{
+  "query": "SELECT o.id, o.name, o.account_id FROM organizations o ORDER BY o.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT o.id, o.name, o.account_id FROM organizations o ORDER BY o.id;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'o.name' in 'field list'"
+  ]
+}
