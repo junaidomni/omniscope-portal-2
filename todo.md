@@ -2704,3 +2704,8 @@
 
 - [x] Fix Roles & Permissions page layout overlap with sidebar
 - [x] Fix Plans & Billing page layout overlap with sidebar
+
+
+## Bug Fixes
+
+- [x] Fix "Cannot read properties of undefined (reading 'organizations')" error when new user logs in

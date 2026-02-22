@@ -227,24 +227,32 @@ function OverviewTab() {
           </Link>
         </div>
         <div className="space-y-2">
-          {data.organizations.map(org => (
-            <div
-              key={org.id}
-              className="flex items-center justify-between p-3 rounded-xl transition-all duration-200 hover:scale-[1.002]"
-              style={{ background: isLightTheme ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: `${accentColor}15`, color: accentColor }}>
-                  {org.name.charAt(0)}
+          {data.organizations && data.organizations.length > 0 ? (
+            data.organizations.map(org => (
+              <div
+                key={org.id}
+                className="flex items-center justify-between p-3 rounded-xl transition-all duration-200 hover:scale-[1.002]"
+                style={{ background: isLightTheme ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: `${accentColor}15`, color: accentColor }}>
+                    {org.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: textPrimary }}>{org.name}</p>
+                    <p className="text-[11px]" style={{ color: textMuted }}>{org.memberCount} members</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium" style={{ color: textPrimary }}>{org.name}</p>
-                  <p className="text-[11px]" style={{ color: textMuted }}>{org.memberCount} members</p>
-                </div>
+                <ChevronRight className="h-4 w-4" style={{ color: textMuted }} />
               </div>
-              <ChevronRight className="h-4 w-4" style={{ color: textMuted }} />
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <Building2 className="h-8 w-8 mx-auto mb-2" style={{ color: textMuted }} />
+              <p className="text-sm" style={{ color: textMuted }}>No organizations yet</p>
+              <p className="text-xs mt-1" style={{ color: textMuted }}>Create your first organization to get started</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
