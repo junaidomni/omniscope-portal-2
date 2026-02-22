@@ -1,8 +1,0 @@
-{
-  "query": "SELECT u.name, u.email, u.role as user_role, u.platformOwner, om.omRole as org_role, o.name as org_name FROM users u LEFT JOIN org_memberships om ON u.id = om.omUserId LEFT JOIN organizations o ON om.omOrgId = o.id ORDER BY u.id",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT u.name, u.email, u.role as user_role, u.platformOwner, om.omRole as org_role, o.name as org_name FROM users u LEFT JOIN org_memberships om ON u.id = om.omUserId LEFT JOIN organizations o ON om.omOrgId = o.id ORDER BY u.id",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'o.name' in 'field list'"
-  ]
-}

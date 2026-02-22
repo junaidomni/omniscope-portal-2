@@ -1,9 +1,0 @@
-{
-  "query": "UPDATE org_memberships SET omRole = 'account_owner' WHERE omUserId = (SELECT id FROM users WHERE email = 'junaid@omniscopex.ae')",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute UPDATE org_memberships SET omRole = 'account_owner' WHERE omUserId = (SELECT id FROM users WHERE email = 'junaid@omniscopex.ae')",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 364
-}

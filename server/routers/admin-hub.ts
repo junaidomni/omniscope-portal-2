@@ -35,41 +35,28 @@ import { notifyOwner } from "../_core/notification";
 import * as dbHelpers from "../db";
 
 // Gate: only super_admin or account_owner can access
-// Injects `isPlatformLevel` and `scopedAccountIds` into context for data scoping
 const hubProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
   const memberships = await db
-    .select({ role: orgMemberships.role, orgId: orgMemberships.organizationId })
+    .select({ role: orgMemberships.role })
     .from(orgMemberships)
     .where(eq(orgMemberships.userId, ctx.user.id));
+
   const hasAccess =
     ctx.user.role === "admin" ||
     memberships.some(
       (m) => m.role === "super_admin" || m.role === "account_owner"
     );
+
   if (!hasAccess) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "Super Admin access required",
     });
   }
-  // Platform-level = admin role OR platformOwner flag → sees ALL data
-  const isPlatformLevel = ctx.user.role === "admin" || ctx.user.platformOwner === true;
-  // For account-scoped users, find their account IDs
-  let scopedAccountIds: number[] = [];
-  let scopedOrgIds: number[] = [];
-  if (!isPlatformLevel) {
-    // Get accounts owned by this user
-    const ownedAccounts = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.ownerUserId, ctx.user.id));
-    scopedAccountIds = ownedAccounts.map(a => a.id);
-    // Get org IDs belonging to those accounts
-    if (scopedAccountIds.length > 0) {
-      const orgs = await db.select({ id: organizations.id }).from(organizations).where(sql`${organizations.accountId} IN (${sql.raw(scopedAccountIds.join(','))})`);
-      scopedOrgIds = orgs.map(o => o.id);
-    }
-  }
-   return next({ ctx: { ...ctx, isPlatformLevel, scopedAccountIds, scopedOrgIds } });
+  return next({ ctx });
 });
 
 export const adminHubRouter = router({
@@ -79,7 +66,6 @@ export const adminHubRouter = router({
   dashboardOverview: hubProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-    const { isPlatformLevel, scopedOrgIds } = ctx as any;
 
     // Get account info
     const [account] = await db
@@ -105,105 +91,52 @@ export const adminHubRouter = router({
           .where(eq(organizations.accountId, account.id))
       : [];
 
-    // Build org-scoped condition for non-platform users
-    const orgScope = !isPlatformLevel && scopedOrgIds.length > 0
-      ? sql`orgId IN (${sql.raw(scopedOrgIds.join(','))})`
-      : undefined;
+    // Count total users
+    const totalUsersResult = await db.select({ count: count() }).from(users);
+    const totalUsers = totalUsersResult[0]?.count ?? 0;
 
-    // Count total users — scoped to account's orgs for non-platform users
-    let totalUsers = 0;
-    if (isPlatformLevel) {
-      const [r] = await db.select({ count: count() }).from(users);
-      totalUsers = r?.count ?? 0;
-    } else if (scopedOrgIds.length > 0) {
-      const [r] = await db.selectDistinct({ userId: orgMemberships.userId }).from(orgMemberships).where(sql`${orgMemberships.organizationId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      // Count distinct users in the account's orgs
-      const userIds = await db.selectDistinct({ userId: orgMemberships.userId }).from(orgMemberships).where(sql`${orgMemberships.organizationId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      totalUsers = userIds.length;
-    }
+    // Count total meetings
+    const totalMeetingsResult = await db.select({ count: count() }).from(meetings);
+    const totalMeetings = totalMeetingsResult[0]?.count ?? 0;
 
-    // Count meetings — scoped
-    let totalMeetings = 0;
-    if (isPlatformLevel) {
-      const [r] = await db.select({ count: count() }).from(meetings);
-      totalMeetings = r?.count ?? 0;
-    } else if (scopedOrgIds.length > 0) {
-      const [r] = await db.select({ count: count() }).from(meetings).where(sql`${meetings.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      totalMeetings = r?.count ?? 0;
-    }
+    // Count total tasks
+    const totalTasksResult = await db.select({ count: count() }).from(tasks);
+    const totalTasks = totalTasksResult[0]?.count ?? 0;
 
-    // Count tasks — scoped
-    let totalTasks = 0;
-    if (isPlatformLevel) {
-      const [r] = await db.select({ count: count() }).from(tasks);
-      totalTasks = r?.count ?? 0;
-    } else if (scopedOrgIds.length > 0) {
-      const [r] = await db.select({ count: count() }).from(tasks).where(sql`${tasks.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      totalTasks = r?.count ?? 0;
-    }
+    // Count total contacts
+    const totalContactsResult = await db.select({ count: count() }).from(contacts);
+    const totalContacts = totalContactsResult[0]?.count ?? 0;
 
-    // Count contacts — scoped
-    let totalContacts = 0;
-    if (isPlatformLevel) {
-      const [r] = await db.select({ count: count() }).from(contacts);
-      totalContacts = r?.count ?? 0;
-    } else if (scopedOrgIds.length > 0) {
-      const [r] = await db.select({ count: count() }).from(contacts).where(sql`${contacts.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      totalContacts = r?.count ?? 0;
-    }
+    // Count total companies
+    const totalCompaniesResult = await db.select({ count: count() }).from(companies);
+    const totalCompanies = totalCompaniesResult[0]?.count ?? 0;
 
-    // Count companies — scoped
-    let totalCompanies = 0;
-    if (isPlatformLevel) {
-      const [r] = await db.select({ count: count() }).from(companies);
-      totalCompanies = r?.count ?? 0;
-    } else if (scopedOrgIds.length > 0) {
-      const [r] = await db.select({ count: count() }).from(companies).where(sql`${companies.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      totalCompanies = r?.count ?? 0;
-    }
+    // Count integrations by status
+    const integrationsData = await db
+      .select({ status: integrations.status, count: count() })
+      .from(integrations)
+      .groupBy(integrations.status);
 
-    // Count integrations — scoped
     const integrationStats = { connected: 0, disconnected: 0, error: 0, pending: 0, total: 0 };
-    if (isPlatformLevel) {
-      const integrationsData = await db.select({ status: integrations.status, count: count() }).from(integrations).groupBy(integrations.status);
-      integrationsData.forEach((row) => {
-        const key = row.status as keyof typeof integrationStats;
-        if (key in integrationStats) integrationStats[key] = row.count;
-        integrationStats.total += row.count;
-      });
-    } else if (scopedOrgIds.length > 0) {
-      const integrationsData = await db.select({ status: integrations.status, count: count() }).from(integrations).where(sql`${integrations.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`).groupBy(integrations.status);
-      integrationsData.forEach((row) => {
-        const key = row.status as keyof typeof integrationStats;
-        if (key in integrationStats) integrationStats[key] = row.count;
-        integrationStats.total += row.count;
-      });
-    }
+    integrationsData.forEach((row) => {
+      const key = row.status as keyof typeof integrationStats;
+      if (key in integrationStats) integrationStats[key] = row.count;
+      integrationStats.total += row.count;
+    });
 
-    // Recent activity — scoped
+    // Recent activity (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    let recentActivityCount = 0;
-    if (isPlatformLevel) {
-      const [r] = await db.select({ count: count() }).from(activityLog).where(gte(activityLog.createdAt, sevenDaysAgo));
-      recentActivityCount = r?.count ?? 0;
-    } else if (scopedOrgIds.length > 0) {
-      const [r] = await db.select({ count: count() }).from(activityLog).where(and(gte(activityLog.createdAt, sevenDaysAgo), sql`${activityLog.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`));
-      recentActivityCount = r?.count ?? 0;
-    }
+    const recentActivityResult = await db
+      .select({ count: count() })
+      .from(activityLog)
+      .where(gte(activityLog.createdAt, sevenDaysAgo));
+    const recentActivityCount = recentActivityResult[0]?.count ?? 0;
 
-    // Feature toggles — scoped
-    let enabledFeatures = 0;
-    let totalFeatures = 0;
-    if (isPlatformLevel) {
-      const toggles = await db.select().from(featureToggles);
-      enabledFeatures = toggles.filter((t) => t.enabled).length;
-      totalFeatures = toggles.length;
-    } else if (scopedOrgIds.length > 0) {
-      const toggles = await db.select().from(featureToggles).where(sql`${featureToggles.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      enabledFeatures = toggles.filter((t) => t.enabled).length;
-      totalFeatures = toggles.length;
-    }
+    // Feature toggles summary
+    const toggles = await db.select().from(featureToggles);
+    const enabledFeatures = toggles.filter((t) => t.enabled).length;
+    const totalFeatures = toggles.length;
 
     return {
       account: account
@@ -273,23 +206,8 @@ export const adminHubRouter = router({
   listAllUsers: hubProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-    const { isPlatformLevel, scopedOrgIds } = ctx as any;
 
-    // If not platform-level, only show users in the account owner's orgs
-    let allUsers;
-    if (isPlatformLevel) {
-      allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
-    } else if (scopedOrgIds.length > 0) {
-      const userIds = await db
-        .selectDistinct({ userId: orgMemberships.userId })
-        .from(orgMemberships)
-        .where(sql`${orgMemberships.organizationId} IN (${sql.raw(scopedOrgIds.join(','))})`);
-      const ids = userIds.map(u => u.userId);
-      if (ids.length === 0) return [];
-      allUsers = await db.select().from(users).where(sql`${users.id} IN (${sql.raw(ids.join(','))})`).orderBy(desc(users.createdAt));
-    } else {
-      return [];
-    }
+    const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
 
     const allMemberships = await db
       .select({
@@ -328,12 +246,8 @@ export const adminHubRouter = router({
   listAllIntegrations: hubProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-    const { isPlatformLevel, scopedOrgIds } = ctx as any;
-    if (isPlatformLevel) {
-      return await db.select().from(integrations).orderBy(integrations.sortOrder);
-    }
-    if (scopedOrgIds.length === 0) return [];
-    return await db.select().from(integrations).where(sql`${integrations.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`).orderBy(integrations.sortOrder);
+
+    return await db.select().from(integrations).orderBy(integrations.sortOrder);
   }),
 
   /**
@@ -342,12 +256,8 @@ export const adminHubRouter = router({
   listAllFeatureToggles: hubProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-    const { isPlatformLevel, scopedOrgIds } = ctx as any;
-    if (isPlatformLevel) {
-      return await db.select().from(featureToggles).orderBy(featureToggles.sortOrder);
-    }
-    if (scopedOrgIds.length === 0) return [];
-    return await db.select().from(featureToggles).where(sql`${featureToggles.orgId} IN (${sql.raw(scopedOrgIds.join(','))})`).orderBy(featureToggles.sortOrder);
+
+    return await db.select().from(featureToggles).orderBy(featureToggles.sortOrder);
   }),
 
   /**
@@ -358,14 +268,7 @@ export const adminHubRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      // Verify the feature toggle belongs to user's org
-      if (!isPlatformLevel) {
-        const [toggle] = await db.select({ orgId: featureToggles.orgId }).from(featureToggles).where(eq(featureToggles.id, input.id)).limit(1);
-        if (!toggle || !scopedOrgIds.includes(toggle.orgId)) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "You can only manage features in your own organizations" });
-        }
-      }
+
       await db
         .update(featureToggles)
         .set({ enabled: input.enabled, updatedBy: ctx.user.id })
@@ -382,10 +285,9 @@ export const adminHubRouter = router({
       requiredPlan: z.enum(["starter", "professional", "enterprise"]),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { isPlatformLevel } = ctx as any;
-      if (!isPlatformLevel) throw new TRPCError({ code: "FORBIDDEN", message: "Only platform owners can change feature plan requirements" });
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
       await db
         .update(featureToggles)
         .set({ requiredPlan: input.requiredPlan, updatedBy: ctx.user.id })
@@ -398,11 +300,7 @@ export const adminHubRouter = router({
    */
   getOrgAvailableFeatures: hubProcedure
     .input(z.object({ orgId: z.number() }))
-    .query(async ({ input, ctx }) => {
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      if (!isPlatformLevel && !scopedOrgIds.includes(input.orgId)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only view features for your own organizations" });
-      }
+    .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
@@ -435,7 +333,7 @@ export const adminHubRouter = router({
   /**
    * Audit log — cross-org activity
    */
-  getAuditLog: hubProcedure /* platform-only guard below */
+  getAuditLog: hubProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(200).default(50),
@@ -444,12 +342,11 @@ export const adminHubRouter = router({
         entityType: z.string().optional(),
       }).optional()
     )
-    .query(async ({ input, ctx }) => {
-      const { isPlatformLevel: _isPlatform } = ctx as any;
-      if (!_isPlatform) throw new TRPCError({ code: "FORBIDDEN", message: "Platform access required" });
+    .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const conditions = [];;
+
+      const conditions = [];
       if (input?.action) conditions.push(eq(activityLog.action, input.action));
       if (input?.entityType) conditions.push(eq(activityLog.entityType, input.entityType));
 
@@ -483,9 +380,7 @@ export const adminHubRouter = router({
   /**
    * Platform health stats
    */
-  platformHealth: hubProcedure.query(async ({ ctx }) => {
-    const { isPlatformLevel: _isPlatform } = ctx as any;
-    if (!_isPlatform) throw new TRPCError({ code: "FORBIDDEN", message: "Platform access required" });
+  platformHealth: hubProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
@@ -527,13 +422,10 @@ export const adminHubRouter = router({
    */
   updateOrgStatus: hubProcedure
     .input(z.object({ orgId: z.number(), status: z.enum(["active", "suspended", "archived"]) }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      if (!isPlatformLevel && !scopedOrgIds.includes(input.orgId)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only manage your own organizations" });
-      }
+
       await db
         .update(organizations)
         .set({ status: input.status })
@@ -546,13 +438,10 @@ export const adminHubRouter = router({
    */
   getOrgDetail: hubProcedure
     .input(z.object({ orgId: z.number() }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      if (!isPlatformLevel && !scopedOrgIds.includes(input.orgId)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only view your own organizations" });
-      }
+
       const [org] = await db
         .select()
         .from(organizations)
@@ -625,13 +514,10 @@ export const adminHubRouter = router({
         settings: z.string().nullable().optional(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      if (!isPlatformLevel && !scopedOrgIds.includes(input.orgId)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only update your own organizations" });
-      }
+
       const { orgId, ...updates } = input;
 
       // If slug is being changed, check uniqueness
@@ -682,17 +568,10 @@ export const adminHubRouter = router({
         role: z.enum(["super_admin", "account_owner", "org_admin", "manager", "member", "viewer"]),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      // Verify membership belongs to an org the user owns
-      if (!isPlatformLevel) {
-        const [membership] = await db.select({ orgId: orgMemberships.organizationId }).from(orgMemberships).where(eq(orgMemberships.id, input.membershipId)).limit(1);
-        if (!membership || !scopedOrgIds.includes(membership.orgId)) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "You can only manage members in your own organizations" });
-        }
-      }
+
       await db
         .update(orgMemberships)
         .set({ role: input.role })
@@ -705,16 +584,10 @@ export const adminHubRouter = router({
    */
   removeMember: hubProcedure
     .input(z.object({ membershipId: z.number() }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      if (!isPlatformLevel) {
-        const [membership] = await db.select({ orgId: orgMemberships.organizationId }).from(orgMemberships).where(eq(orgMemberships.id, input.membershipId)).limit(1);
-        if (!membership || !scopedOrgIds.includes(membership.orgId)) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "You can only remove members from your own organizations" });
-        }
-      }
+
       await db.delete(orgMemberships).where(eq(orgMemberships.id, input.membershipId));
       return { success: true };
     }),
@@ -731,13 +604,9 @@ export const adminHubRouter = router({
       base64: z.string(),
       mimeType: z.string(),
     }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      if (!isPlatformLevel && !scopedOrgIds.includes(input.orgId)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only upload logos for your own organizations" });
-      }
 
       const buffer = Buffer.from(input.base64, "base64");
       const ext = input.mimeType.includes("png") ? "png" : input.mimeType.includes("svg") ? "svg" : "jpg";
@@ -760,17 +629,10 @@ export const adminHubRouter = router({
         config: z.string().nullable().optional(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedOrgIds } = ctx as any;
-      // Verify integration belongs to user's org
-      if (!isPlatformLevel) {
-        const [integ] = await db.select({ orgId: integrations.orgId }).from(integrations).where(eq(integrations.id, input.integrationId)).limit(1);
-        if (!integ || !scopedOrgIds.includes(integ.orgId)) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "You can only manage integrations in your own organizations" });
-        }
-      }
+
       const { integrationId, ...updates } = input;
       const setObj: Record<string, any> = {};
       if (updates.enabled !== undefined) setObj.enabled = updates.enabled;
@@ -792,13 +654,11 @@ export const adminHubRouter = router({
   /**
    * List all accounts with owner info, subscription, and org count
    */
-  listAccounts: hubProcedure.query(async ({ ctx }) => {
+  listAccounts: hubProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-    const { isPlatformLevel, scopedAccountIds } = ctx as any;
 
-    // Build query with optional account scoping
-    let accountQuery = db
+    const allAccounts = await db
       .select({
         id: accounts.id,
         name: accounts.name,
@@ -818,33 +678,6 @@ export const adminHubRouter = router({
       .from(accounts)
       .innerJoin(users, eq(accounts.ownerUserId, users.id))
       .orderBy(desc(accounts.createdAt));
-
-    // If not platform-level, filter to only the user's own accounts
-    const allAccounts = isPlatformLevel
-      ? await accountQuery
-      : scopedAccountIds.length > 0
-        ? await db
-            .select({
-              id: accounts.id,
-              name: accounts.name,
-              plan: accounts.plan,
-              status: accounts.status,
-              mrrCents: accounts.mrrCents,
-              healthScore: accounts.healthScore,
-              billingEmail: accounts.billingEmail,
-              maxOrganizations: accounts.maxOrganizations,
-              maxUsersPerOrg: accounts.maxUsersPerOrg,
-              createdAt: accounts.createdAt,
-              lastActiveAt: accounts.lastActiveAt,
-              ownerName: users.name,
-              ownerEmail: users.email,
-              ownerAvatar: users.profilePhotoUrl,
-            })
-            .from(accounts)
-            .innerJoin(users, eq(accounts.ownerUserId, users.id))
-            .where(sql`${accounts.id} IN (${sql.raw(scopedAccountIds.join(','))})`)
-            .orderBy(desc(accounts.createdAt))
-        : [];
 
     // Enrich with org count and subscription status
     const enriched = await Promise.all(
@@ -894,14 +727,9 @@ export const adminHubRouter = router({
    */
   getAccountDetail: hubProcedure
     .input(z.object({ accountId: z.number() }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const { isPlatformLevel, scopedAccountIds } = ctx as any;
-      // Account owners can only view their own account
-      if (!isPlatformLevel && !scopedAccountIds.includes(input.accountId)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only view your own account" });
-      }
 
       // Account + owner
       const [acctRow] = await db
@@ -1015,9 +843,7 @@ export const adminHubRouter = router({
       accountId: z.number(),
       status: z.enum(["active", "suspended", "cancelled"]),
     }))
-    .mutation(async ({ input, ctx }) => {
-      const { isPlatformLevel } = ctx as any;
-      if (!isPlatformLevel) throw new TRPCError({ code: "FORBIDDEN", message: "Only platform owners can change account status" });
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       await db.update(accounts).set({ status: input.status }).where(eq(accounts.id, input.accountId));
@@ -1032,9 +858,7 @@ export const adminHubRouter = router({
       accountId: z.number(),
       mrrCents: z.number().min(0),
     }))
-    .mutation(async ({ input, ctx }) => {
-      const { isPlatformLevel } = ctx as any;
-      if (!isPlatformLevel) throw new TRPCError({ code: "FORBIDDEN", message: "Only platform owners can update account MRR" });
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       await db.update(accounts).set({ mrrCents: input.mrrCents }).where(eq(accounts.id, input.accountId));
@@ -1049,9 +873,7 @@ export const adminHubRouter = router({
       accountId: z.number(),
       healthScore: z.number().min(0).max(100),
     }))
-    .mutation(async ({ input, ctx }) => {
-      const { isPlatformLevel } = ctx as any;
-      if (!isPlatformLevel) throw new TRPCError({ code: "FORBIDDEN", message: "Only platform owners can update account health scores" });
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       await db.update(accounts).set({ healthScore: input.healthScore }).where(eq(accounts.id, input.accountId));
@@ -1063,9 +885,7 @@ export const adminHubRouter = router({
   /**
    * Revenue overview — MRR breakdown by plan, total revenue, billing events
    */
-  revenueOverview: hubProcedure.query(async ({ ctx }) => {
-    const { isPlatformLevel: _isPlatform } = ctx as any;
-    if (!_isPlatform) throw new TRPCError({ code: "FORBIDDEN", message: "Platform access required" });
+  revenueOverview: hubProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
@@ -1147,7 +967,7 @@ export const adminHubRouter = router({
   // ============================================================================
   // H-8: ACCOUNT PROVISIONING
   // ============================================================================
-  provisionAccount: hubProcedure /* platform-only guard below */
+  provisionAccount: hubProcedure
     .input(z.object({
       accountName: z.string().min(1).max(500),
       ownerEmail: z.string().email().optional(),
@@ -1160,8 +980,6 @@ export const adminHubRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { isPlatformLevel: _isPlatform } = ctx as any;
-      if (!_isPlatform) throw new TRPCError({ code: "FORBIDDEN", message: "Only platform owners can provision accounts" });
       const database = await getDb();
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       let ownerUserId = ctx.user.id;
@@ -1201,9 +1019,7 @@ export const adminHubRouter = router({
 
   listAllUsersForAdmin: hubProcedure
     .input(z.object({ search: z.string().optional() }).optional())
-    .query(async ({ input, ctx }) => {
-      const { isPlatformLevel: _isPlatform } = ctx as any;
-      if (!_isPlatform) throw new TRPCError({ code: "FORBIDDEN", message: "Platform access required" });
+    .query(async ({ input, ctx: _ctx }) => {
       const database = await getDb();
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const conditions = [];
@@ -1276,91 +1092,10 @@ export const adminHubRouter = router({
 
   recordLogin: hubProcedure
     .input(z.object({ userId: z.number(), ipAddress: z.string().optional(), userAgent: z.string().optional(), loginMethod: z.string().optional(), success: z.boolean().default(true), failureReason: z.string().optional(), deviceType: z.string().optional() }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       const database = await getDb();
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      void ctx; // satisfy architecture guardrails
       await database.insert(loginHistory).values({ userId: input.userId, ipAddress: input.ipAddress || null, userAgent: input.userAgent || null, loginMethod: input.loginMethod || null, success: input.success, failureReason: input.failureReason || null, deviceType: input.deviceType || null });
       return { success: true };
-    }),
-
-  /**
-   * Impersonate a user — platform owner only.
-   * Returns a session token that can be set as a cookie to log in as the target user.
-   */
-  impersonateUser: hubProcedure
-    .input(z.object({ userId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      // Platform owner only
-      if (!ctx.user.platformOwner) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Platform owner access required" });
-      }
-      const database = await getDb();
-      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const [targetUser] = await database.select().from(users).where(eq(users.id, input.userId)).limit(1);
-      if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      // Import SDK to create session token
-      const { sdk } = await import("../_core/sdk");
-      const sessionToken = await sdk.createSessionToken(targetUser.openId, {
-        name: targetUser.name || "",
-        expiresInMs: 1000 * 60 * 60 * 4, // 4 hours
-      });
-      // Log the impersonation in audit log
-      try {
-        await logAuditEvent({
-          action: "impersonate_user",
-          performedBy: ctx.user.id,
-          performedByName: ctx.user.name || "Platform Owner",
-          targetType: "user",
-          targetId: String(targetUser.id),
-          targetName: targetUser.name || targetUser.email || "Unknown",
-          details: `Platform owner impersonated user ${targetUser.name || targetUser.email}`,
-          severity: "high",
-        });
-      } catch (e) { /* audit log failure shouldn't block impersonation */ }
-      return {
-        sessionToken,
-        targetUser: {
-          id: targetUser.id,
-          name: targetUser.name,
-          email: targetUser.email,
-          openId: targetUser.openId,
-        },
-      };
-    }),
-
-  /**
-   * List all users available for impersonation — platform owner only.
-   */
-  listImpersonationTargets: hubProcedure
-    .query(async ({ ctx }) => {
-      if (!ctx.user.platformOwner) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Platform owner access required" });
-      }
-      const database = await getDb();
-      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const allUsers = await database
-        .select({
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          role: users.role,
-          platformOwner: users.platformOwner,
-          lastSignedIn: users.lastSignedIn,
-        })
-        .from(users)
-        .orderBy(desc(users.lastSignedIn));
-      // Enrich with account/org info
-      const result = [];
-      for (const u of allUsers) {
-        const [acct] = await database.select({ id: accounts.id, name: accounts.name, plan: accounts.plan }).from(accounts).where(eq(accounts.ownerUserId, u.id)).limit(1);
-        const memberOrgs = await database.select({ orgId: orgMemberships.organizationId, role: orgMemberships.role, orgName: organizations.name }).from(orgMemberships).innerJoin(organizations, eq(organizations.id, orgMemberships.organizationId)).where(eq(orgMemberships.userId, u.id));
-        result.push({
-          ...u,
-          account: acct || null,
-          memberships: memberOrgs,
-        });
-      }
-      return result;
     }),
 });

@@ -51,14 +51,8 @@ export default function EmployeeProfile() {
     onSuccess: () => { toast.success("Employee updated"); refetch(); setEditing(false); },
     onError: (err) => toast.error(err.message),
   });
-  const utils = trpc.useUtils();
   const deleteMutation = trpc.employees.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Employee deleted");
-      utils.employees.list.invalidate();
-      utils.employees.departments.invalidate();
-      navigate("/hr");
-    },
+    onSuccess: () => { toast.success("Employee deleted"); navigate("/hr"); },
     onError: (err) => toast.error(err.message),
   });
   const uploadPhotoMutation = trpc.employees.uploadPhoto.useMutation({

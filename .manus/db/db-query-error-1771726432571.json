@@ -1,8 +1,0 @@
-{
-  "query": "SELECT om.id, om.user_id, om.org_id, om.role, u.name, u.email, u.platform_owner, o.name as org_name, o.account_id\nFROM org_memberships om\nJOIN users u ON u.id = om.user_id\nJOIN organizations o ON o.id = om.org_id\nWHERE u.email LIKE '%junaid%' OR u.name LIKE '%Junaid%'",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT om.id, om.user_id, om.org_id, om.role, u.name, u.email, u.platform_owner, o.name as org_name, o.account_id\nFROM org_memberships om\nJOIN users u ON u.id = om.user_id\nJOIN organizations o ON o.id = om.org_id\nWHERE u.email LIKE '%junaid%' OR u.name LIKE '%Junaid%'",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'om.user_id' in 'on clause'"
-  ]
-}

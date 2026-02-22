@@ -3,7 +3,6 @@
  * 
  * Super admin view for managing account subscriptions, viewing usage,
  * assigning plans, overriding limits, and monitoring billing status.
- * Standard pricing: $499, $999, $1,999, Custom
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -24,8 +23,6 @@ import {
   AlertTriangle,
   TrendingUp,
   Loader2,
-  DollarSign,
-  Save,
 } from "lucide-react";
 
 // Plan tier colors and icons
@@ -43,6 +40,53 @@ function getPlanStyle(key: string) {
 function formatLimit(val: number): string {
   if (val === -1) return "Unlimited";
   return val.toLocaleString();
+}
+
+function UsageBar({ current, max, label }: { current: number; max: number; label: string }) {
+  const isUnlimited = max === -1;
+  const pct = isUnlimited ? 0 : Math.min((current / max) * 100, 100);
+  const isWarning = !isUnlimited && pct >= 80;
+  const isDanger = !isUnlimited && pct >= 95;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span style={{ color: "oklch(0.65 0 0)" }}>{label}</span>
+        <span style={{ color: isDanger ? "oklch(0.65 0.2 25)" : isWarning ? "oklch(0.75 0.15 85)" : "oklch(0.75 0 0)" }}>
+          {current.toLocaleString()} / {formatLimit(max)}
+        </span>
+      </div>
+      {!isUnlimited && (
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.20 0 0)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${pct}%`,
+              background: isDanger
+                ? "oklch(0.65 0.2 25)"
+                : isWarning
+                ? "oklch(0.75 0.15 85)"
+                : "oklch(0.65 0.15 160)",
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlanBadge({ planKey }: { planKey: string }) {
+  const style = getPlanStyle(planKey);
+  const Icon = style.icon;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium"
+      style={{ color: style.color, background: style.bg }}
+    >
+      <Icon size={12} />
+      {style.label}
+    </span>
+  );
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -64,179 +108,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function PlanBadge({ planKey }: { planKey: string }) {
-  const style = getPlanStyle(planKey);
-  const Icon = style.icon;
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium"
-      style={{ color: style.color, background: style.bg }}
-    >
-      <Icon size={12} />
-      {style.label}
-    </span>
-  );
-}
-
-/* ── Editable Plan Card ── */
-function EditablePlanCard({ plan, onSave, isSaving }: {
-  plan: any;
-  onSave: (planId: number, data: any) => void;
-  isSaving: boolean;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [monthly, setMonthly] = useState(plan.priceMonthly || "");
-  const [annual, setAnnual] = useState(plan.priceAnnual || "");
-
-  const style = getPlanStyle(plan.key);
-  const Icon = style.icon;
-
-  const handleSave = () => {
-    onSave(plan.id, {
-      priceMonthly: monthly === "" ? null : monthly,
-      priceAnnual: annual === "" ? null : annual,
-    });
-    setEditing(false);
-  };
-
-  return (
-    <div
-      className="rounded-lg p-5 space-y-3 relative"
-      style={{
-        background: style.bg,
-        border: `1px solid ${style.color}20`,
-      }}
-    >
-      {/* Edit toggle */}
-      <button
-        onClick={() => setEditing(!editing)}
-        className="absolute top-3 right-3 p-1.5 rounded-md hover:opacity-80 transition-opacity"
-        style={{ color: style.color, background: "oklch(0.16 0 0)" }}
-        title="Edit pricing"
-      >
-        <Edit3 size={12} />
-      </button>
-
-      <div className="flex items-center gap-2">
-        <Icon size={16} style={{ color: style.color }} />
-        <span className="font-semibold text-sm" style={{ color: style.color }}>
-          {plan.name}
-        </span>
-      </div>
-
-      {editing ? (
-        <div className="space-y-2">
-          <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: "oklch(0.55 0 0)" }}>
-              Monthly Price ($)
-            </label>
-            <input
-              type="text"
-              value={monthly}
-              onChange={(e) => setMonthly(e.target.value)}
-              placeholder="e.g. 499.00 or leave empty for Custom"
-              className="w-full text-sm rounded-md px-3 py-1.5 border-none outline-none"
-              style={{ background: "oklch(0.16 0 0)", color: "oklch(0.92 0 0)" }}
-            />
-          </div>
-          <div>
-            <label className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: "oklch(0.55 0 0)" }}>
-              Annual Price ($)
-            </label>
-            <input
-              type="text"
-              value={annual}
-              onChange={(e) => setAnnual(e.target.value)}
-              placeholder="e.g. 4990.00 or leave empty"
-              className="w-full text-sm rounded-md px-3 py-1.5 border-none outline-none"
-              style={{ background: "oklch(0.16 0 0)", color: "oklch(0.92 0 0)" }}
-            />
-          </div>
-          <div className="flex items-center gap-2 pt-1">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md hover:opacity-80 transition-opacity"
-              style={{ color: "oklch(0.75 0.15 160)", background: "oklch(0.20 0.03 160)" }}
-            >
-              {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-              Save
-            </button>
-            <button
-              onClick={() => {
-                setMonthly(plan.priceMonthly || "");
-                setAnnual(plan.priceAnnual || "");
-                setEditing(false);
-              }}
-              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md hover:opacity-80 transition-opacity"
-              style={{ color: "oklch(0.65 0.15 25)", background: "oklch(0.20 0.03 25)" }}
-            >
-              <X size={12} /> Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="text-2xl font-bold" style={{ color: "oklch(0.92 0 0)" }}>
-            {plan.priceMonthly ? `$${Number(plan.priceMonthly).toLocaleString()}` : "Custom"}
-            {plan.priceMonthly && (
-              <span className="text-xs font-normal ml-1" style={{ color: "oklch(0.55 0 0)" }}>/mo</span>
-            )}
-          </div>
-          {plan.priceAnnual && (
-            <div className="text-xs" style={{ color: "oklch(0.55 0 0)" }}>
-              ${Number(plan.priceAnnual).toLocaleString()}/yr
-            </div>
-          )}
-        </>
-      )}
-
-      <div className="space-y-1.5 text-xs pt-1" style={{ color: "oklch(0.65 0 0)" }}>
-        <div className="flex justify-between">
-          <span>Contacts</span>
-          <span style={{ color: "oklch(0.85 0 0)" }}>{formatLimit(plan.maxContacts)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Meetings/mo</span>
-          <span style={{ color: "oklch(0.85 0 0)" }}>{formatLimit(plan.maxMeetingsPerMonth)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Users/org</span>
-          <span style={{ color: "oklch(0.85 0 0)" }}>{formatLimit(plan.maxUsersPerOrg)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Organizations</span>
-          <span style={{ color: "oklch(0.85 0 0)" }}>{formatLimit(plan.maxOrganizations)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Storage</span>
-          <span style={{ color: "oklch(0.85 0 0)" }}>{formatLimit(plan.maxStorageGb)} GB</span>
-        </div>
-      </div>
-
-      {plan.features && plan.features.length > 0 && (
-        <div className="pt-2" style={{ borderTop: `1px solid ${style.color}15` }}>
-          <div className="text-[10px] font-medium mb-1.5 uppercase tracking-wider" style={{ color: "oklch(0.55 0 0)" }}>
-            Features
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {plan.features.map((f: string) => (
-              <span
-                key={f}
-                className="px-1.5 py-0.5 rounded text-[10px] capitalize"
-                style={{ background: "oklch(0.16 0 0)", color: "oklch(0.65 0 0)" }}
-              >
-                {f.replace("_", " ")}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Account Subscription Card ── */
 function AccountCard({ account, plans, onRefresh }: {
   account: any;
   plans: any[];
@@ -305,7 +176,7 @@ function AccountCard({ account, plans, onRefresh }: {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3">
           <PlanBadge planKey={planKey} />
           {subStatus !== "none" && <StatusBadge status={subStatus} />}
           {expanded ? (
@@ -327,7 +198,7 @@ function AccountCard({ account, plans, onRefresh }: {
               </h4>
               {!editingPlan && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); setEditingPlan(true); }}
+                  onClick={() => setEditingPlan(true)}
                   className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity"
                   style={{ color: "oklch(0.82 0.12 85)", background: "oklch(0.18 0.02 85)" }}
                 >
@@ -337,7 +208,7 @@ function AccountCard({ account, plans, onRefresh }: {
             </div>
 
             {editingPlan ? (
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
@@ -349,7 +220,7 @@ function AccountCard({ account, plans, onRefresh }: {
                 >
                   {plans.map((p) => (
                     <option key={p.key} value={p.key}>
-                      {p.name} — {p.priceMonthly ? `$${Number(p.priceMonthly).toLocaleString()}/mo` : "Custom"}
+                      {p.name} — {p.priceMonthly ? `$${p.priceMonthly}/mo` : "Custom"}
                     </option>
                   ))}
                 </select>
@@ -374,21 +245,21 @@ function AccountCard({ account, plans, onRefresh }: {
             ) : (
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-xs block" style={{ color: "oklch(0.55 0 0)" }}>Plan</span>
+                  <span className="text-xs" style={{ color: "oklch(0.55 0 0)" }}>Plan</span>
                   <div style={{ color: "oklch(0.85 0 0)" }}>{account.plan?.name || capitalize(planKey)}</div>
                 </div>
                 <div>
-                  <span className="text-xs block" style={{ color: "oklch(0.55 0 0)" }}>Billing</span>
+                  <span className="text-xs" style={{ color: "oklch(0.55 0 0)" }}>Billing</span>
                   <div style={{ color: "oklch(0.85 0 0)" }}>
                     {account.subscription?.billingCycle || "—"}
                   </div>
                 </div>
                 <div>
-                  <span className="text-xs block" style={{ color: "oklch(0.55 0 0)" }}>Status</span>
+                  <span className="text-xs" style={{ color: "oklch(0.55 0 0)" }}>Status</span>
                   <div>{subStatus !== "none" ? <StatusBadge status={subStatus} /> : <span style={{ color: "oklch(0.55 0 0)" }}>No subscription</span>}</div>
                 </div>
                 <div>
-                  <span className="text-xs block" style={{ color: "oklch(0.55 0 0)" }}>Since</span>
+                  <span className="text-xs" style={{ color: "oklch(0.55 0 0)" }}>Since</span>
                   <div style={{ color: "oklch(0.85 0 0)" }}>
                     {account.subscription?.startDate
                       ? new Date(account.subscription.startDate).toLocaleDateString()
@@ -402,7 +273,7 @@ function AccountCard({ account, plans, onRefresh }: {
           {/* Usage Limits */}
           {account.limits && (
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "oklch(0.55 0 0)" }}>
+              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "oklch(0.55 0 0)" }}>
                 Limits
               </h4>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -454,7 +325,7 @@ function AccountCard({ account, plans, onRefresh }: {
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-2 flex-wrap" style={{ borderTop: "1px solid oklch(0.20 0.01 85)" }}>
+          <div className="flex items-center gap-2 pt-2" style={{ borderTop: "1px solid oklch(0.20 0.01 85)" }}>
             {account.subscription && subStatus === "active" && (
               <button
                 onClick={() => {
@@ -488,23 +359,61 @@ function AccountCard({ account, plans, onRefresh }: {
   );
 }
 
+function PlanOverviewCard({ plan }: { plan: any }) {
+  const style = getPlanStyle(plan.key);
+  const Icon = style.icon;
+  return (
+    <div
+      className="rounded-lg p-4 space-y-3"
+      style={{
+        background: style.bg,
+        border: `1px solid ${style.color}20`,
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <Icon size={16} style={{ color: style.color }} />
+        <span className="font-semibold text-sm" style={{ color: style.color }}>
+          {plan.name}
+        </span>
+      </div>
+      <div className="text-lg font-bold" style={{ color: "oklch(0.92 0 0)" }}>
+        {plan.priceMonthly ? `$${plan.priceMonthly}` : "Custom"}
+        {plan.priceMonthly && <span className="text-xs font-normal" style={{ color: "oklch(0.55 0 0)" }}>/mo</span>}
+      </div>
+      <div className="space-y-1 text-xs" style={{ color: "oklch(0.65 0 0)" }}>
+        <div>{formatLimit(plan.maxContacts)} contacts</div>
+        <div>{formatLimit(plan.maxMeetingsPerMonth)} meetings/mo</div>
+        <div>{formatLimit(plan.maxUsersPerOrg)} users/org</div>
+        <div>{formatLimit(plan.maxOrganizations)} organizations</div>
+        <div>{formatLimit(plan.maxStorageGb)} GB storage</div>
+      </div>
+      {plan.features && plan.features.length > 0 && (
+        <div className="pt-2" style={{ borderTop: `1px solid ${style.color}15` }}>
+          <div className="text-xs font-medium mb-1" style={{ color: "oklch(0.55 0 0)" }}>Features</div>
+          <div className="flex flex-wrap gap-1">
+            {plan.features.map((f: string) => (
+              <span
+                key={f}
+                className="px-1.5 py-0.5 rounded text-[10px] capitalize"
+                style={{ background: "oklch(0.16 0 0)", color: "oklch(0.65 0 0)" }}
+              >
+                {f.replace("_", " ")}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* ── Main Page ── */
 export default function AdminBilling() {
-  const utils = trpc.useUtils();
   const { data: plans, isLoading: plansLoading } = trpc.plans.list.useQuery();
   const { data: accounts, isLoading: accountsLoading, refetch } = trpc.plans.listAccounts.useQuery();
-
-  const updatePlan = trpc.plans.updatePlan.useMutation({
-    onSuccess: () => {
-      toast.success("Plan pricing updated");
-      utils.plans.list.invalidate();
-    },
-    onError: (err) => toast.error(err.message),
-  });
 
   const isLoading = plansLoading || accountsLoading;
 
@@ -513,25 +422,20 @@ export default function AdminBilling() {
   const activeSubscriptions = accounts?.filter((a) => a.subscription?.status === "active").length || 0;
   const totalOrgs = accounts?.reduce((sum, a) => sum + a.orgCount, 0) || 0;
 
-  const handlePlanSave = (planId: number, data: any) => {
-    updatePlan.mutate({ planId, ...data });
-  };
-
   return (
-    <div className="p-8">
-    <div className="space-y-8 max-w-6xl mx-auto">
+    <div className="space-y-8 max-w-5xl">
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold" style={{ color: "oklch(0.92 0 0)" }}>
           Plans & Billing
         </h1>
         <p className="text-sm mt-1" style={{ color: "oklch(0.55 0 0)" }}>
-          Manage plan pricing, account subscriptions, and billing. Click the edit icon on any plan to change pricing.
+          Manage account subscriptions, view usage, and assign plans.
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Accounts", value: totalAccounts, icon: Building2 },
           { label: "Active Subscriptions", value: activeSubscriptions, icon: CreditCard },
@@ -543,7 +447,7 @@ export default function AdminBilling() {
             style={{ background: "oklch(0.14 0.005 85)", border: "1px solid oklch(0.22 0.01 85)" }}
           >
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
               style={{ background: "oklch(0.18 0.02 85)" }}
             >
               <stat.icon size={16} style={{ color: "oklch(0.82 0.12 85)" }} />
@@ -560,30 +464,19 @@ export default function AdminBilling() {
         ))}
       </div>
 
-      {/* Plan Tiers — responsive grid */}
+      {/* Plan Tiers */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold" style={{ color: "oklch(0.75 0 0)" }}>
-            Standard Pricing Tiers
-          </h2>
-          <div className="flex items-center gap-1.5 text-xs" style={{ color: "oklch(0.55 0 0)" }}>
-            <DollarSign size={12} />
-            Click edit icon to change pricing
-          </div>
-        </div>
+        <h2 className="text-sm font-semibold mb-3" style={{ color: "oklch(0.75 0 0)" }}>
+          Available Plans
+        </h2>
         {plansLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="animate-spin" size={20} style={{ color: "oklch(0.55 0 0)" }} />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-3">
             {(plans || []).map((plan) => (
-              <EditablePlanCard
-                key={plan.key}
-                plan={plan}
-                onSave={handlePlanSave}
-                isSaving={updatePlan.isPending}
-              />
+              <PlanOverviewCard key={plan.key} plan={plan} />
             ))}
           </div>
         )}
@@ -630,7 +523,6 @@ export default function AdminBilling() {
           </div>
         )}
       </div>
-    </div>
     </div>
   );
 }

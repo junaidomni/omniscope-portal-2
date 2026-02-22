@@ -1,8 +1,0 @@
-{
-  "query": "\nSELECT \n  u.id as userId, u.name, u.email, u.role, u.openId, u.platformOwner,\n  a.id as accountId, a.accountName, a.accountPlan, a.accountStatus,\n  o.id as orgId, o.orgName, o.orgStatus,\n  om.role as memberRole,\n  s.id as subId, s.subStatus, s.subPlanId\nFROM users u\nLEFT JOIN accounts a ON a.accountOwnerUserId = u.id\nLEFT JOIN organizations o ON o.orgAccountId = a.id\nLEFT JOIN org_memberships om ON om.userId = u.id AND om.organizationId = o.id\nLEFT JOIN subscriptions s ON s.subAccountId = a.id\nWHERE u.id IN (1, 2670483, 2670487, 2670488, 2670489)\nORDER BY u.id\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute \nSELECT \n  u.id as userId, u.name, u.email, u.role, u.openId, u.platformOwner,\n  a.id as accountId, a.accountName, a.accountPlan, a.accountStatus,\n  o.id as orgId, o.orgName, o.orgStatus,\n  om.role as memberRole,\n  s.id as subId, s.subStatus, s.subPlanId\nFROM users u\nLEFT JOIN accounts a ON a.accountOwnerUserId = u.id\nLEFT JOIN organizations o ON o.orgAccountId = a.id\nLEFT JOIN org_memberships om ON om.userId = u.id AND om.organizationId = o.id\nLEFT JOIN subscriptions s ON s.subAccountId = a.id\nWHERE u.id IN (1, 2670483, 2670487, 2670488, 2670489)\nORDER BY u.id\n",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 2: Unknown column 'om.userid' in 'on clause'"
-  ]
-}

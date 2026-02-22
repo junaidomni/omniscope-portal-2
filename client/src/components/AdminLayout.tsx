@@ -29,7 +29,6 @@ import {
   Wallet,
   TrendingUp,
   Crown,
-  Eye,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -93,7 +92,6 @@ const adminSections: AdminNavSection[] = [
     items: [
       { id: "super-admins", icon: Crown, label: "Super-Admins", path: "/admin-hub/super-admins", matchPaths: ["/admin-hub/super-admins"] },
       { id: "audit", icon: ScrollText, label: "Audit Log", path: "/admin-hub/audit", matchPaths: ["/admin-hub/audit"] },
-      { id: "impersonate", icon: Eye, label: "Impersonate User", path: "/admin-hub/impersonate", matchPaths: ["/admin-hub/impersonate"] },
     ],
   },
   {
@@ -193,19 +191,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const profilePhoto = (user as any)?.profilePhotoUrl;
   const isAdmin = user?.role === "admin";
-  const isPlatformOwner = !!(user as any)?.platformOwner;
-
-  // Filter nav sections based on role — account owners see a subset
-  const PLATFORM_ONLY_ITEMS = ["revenue", "super-admins", "audit", "health", "analytics", "impersonate"];
-  const filteredSections = useMemo(() => {
-    if (isPlatformOwner) return adminSections;
-    return adminSections
-      .map(section => ({
-        ...section,
-        items: section.items.filter(item => !PLATFORM_ONLY_ITEMS.includes(item.id)),
-      }))
-      .filter(section => section.items.length > 0);
-  }, [isPlatformOwner]);
 
   const refetchDesign = useCallback(() => designQuery.refetch(), [designQuery]);
 
@@ -320,7 +305,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* ─── Navigation ─── */}
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          {filteredSections.map((section, sIdx) => (
+          {adminSections.map((section, sIdx) => (
             <div key={section.label}>
               {/* Section Label */}
               {!collapsed && (
@@ -531,7 +516,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* ─── Main Content ─── */}
       <main
         className="flex-1 overflow-auto transition-all duration-300 ease-in-out"
-        style={{ marginLeft: `${sidebarWidthPx}px`, minHeight: '100vh' }}
+        style={{ marginLeft: `${sidebarWidthPx}px` }}
       >
         {children}
       </main>

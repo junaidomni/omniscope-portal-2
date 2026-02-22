@@ -1,9 +1,0 @@
-{
-  "query": "UPDATE users SET onboardingCompleted = 1 WHERE id IN (2670483, 2670487, 2670488, 2670489)",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute UPDATE users SET onboardingCompleted = 1 WHERE id IN (2670483, 2670487, 2670488, 2670489)",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 353
-}

@@ -1,8 +1,0 @@
-{
-  "query": "SELECT om.id, om.omUserId, om.omOrgId, om.omRole, u.name, u.email, u.platform_owner, o.name as org_name, o.account_id\nFROM org_memberships om\nJOIN users u ON u.id = om.omUserId\nJOIN organizations o ON o.id = om.omOrgId\nWHERE u.name LIKE '%Junaid%' OR u.email LIKE '%junaid%'",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT om.id, om.omUserId, om.omOrgId, om.omRole, u.name, u.email, u.platform_owner, o.name as org_name, o.account_id\nFROM org_memberships om\nJOIN users u ON u.id = om.omUserId\nJOIN organizations o ON o.id = om.omOrgId\nWHERE u.name LIKE '%Junaid%' OR u.email LIKE '%junaid%'",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'u.platform_owner' in 'field list'"
-  ]
-}

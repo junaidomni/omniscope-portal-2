@@ -5,7 +5,6 @@
  */
 import { trpc } from "@/lib/trpc";
 import { useDesign } from "@/components/PortalLayout";
-import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Search,
   Crown,
@@ -338,8 +337,6 @@ export default function AdminHubAccounts() {
   const utils = trpc.useUtils();
   const { data: accounts, isLoading } = trpc.adminHub.listAccounts.useQuery();
   const { isLightTheme } = useDesign();
-  const { user } = useAuth();
-  const isPlatformOwner = !!(user as any)?.platformOwner;
 
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("created");
@@ -416,19 +413,17 @@ export default function AdminHubAccounts() {
               Manage all accounts across the platform. Click an account to drill down.
             </p>
           </div>
-          {isPlatformOwner && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02]"
-              style={{
-                background: `linear-gradient(135deg, ${goldAccent}, oklch(0.65 0.14 55))`,
-                color: "oklch(0.10 0 0)",
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              Provision Account
-            </button>
-          )}
+          <button
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02]"
+            style={{
+              background: `linear-gradient(135deg, ${goldAccent}, oklch(0.65 0.14 55))`,
+              color: "oklch(0.10 0 0)",
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            Provision Account
+          </button>
         </div>
 
         {/* Summary Cards */}

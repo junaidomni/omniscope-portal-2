@@ -1,8 +1,0 @@
-{
-  "query": "SELECT id, plan_key, name, monthly_price, annual_price FROM plans ORDER BY monthly_price ASC;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, plan_key, name, monthly_price, annual_price FROM plans ORDER BY monthly_price ASC;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'plan_key' in 'field list'"
-  ]
-}

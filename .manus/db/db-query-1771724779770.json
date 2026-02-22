@@ -1,9 +1,0 @@
-{
-  "query": "UPDATE plans SET planPriceMonthly = 499.00, planPriceAnnual = 4990.00 WHERE planKey = 'starter';\nUPDATE plans SET planPriceMonthly = 999.00, planPriceAnnual = 9990.00 WHERE planKey = 'professional';\nUPDATE plans SET planPriceMonthly = 1999.00, planPriceAnnual = 19990.00 WHERE planKey = 'enterprise';\nUPDATE plans SET planPriceMonthly = NULL, planPriceAnnual = NULL WHERE planKey = 'sovereign';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute UPDATE plans SET planPriceMonthly = 499.00, planPriceAnnual = 4990.00 WHERE planKey = 'starter';\nUPDATE plans SET planPriceMonthly = 999.00, planPriceAnnual = 9990.00 WHERE planKey = 'professional';\nUPDATE plans SET planPriceMonthly = 1999.00, planPriceAnnual = 19990.00 WHERE planKey = 'enterprise';\nUPDATE plans SET planPriceMonthly = NULL, planPriceAnnual = NULL WHERE planKey = 'sovereign';",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 504
-}

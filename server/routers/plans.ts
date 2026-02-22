@@ -256,25 +256,4 @@ export const plansRouter = router({
       invalidatePlanCache();
       return { success: true };
     }),
-
-  /** Admin: Update plan pricing and limits */
-  updatePlan: adminProcedure
-    .input(z.object({
-      planId: z.number(),
-      priceMonthly: z.string().nullable().optional(),
-      priceAnnual: z.string().nullable().optional(),
-      name: z.string().optional(),
-      description: z.string().nullable().optional(),
-      maxOrganizations: z.number().optional(),
-      maxUsersPerOrg: z.number().optional(),
-      maxContacts: z.number().optional(),
-      maxMeetingsPerMonth: z.number().optional(),
-      maxStorageGb: z.number().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const { planId, ...updates } = input;
-      await db.updatePlan(planId, updates);
-      invalidatePlanCache();
-      return { success: true };
-    }),
 });

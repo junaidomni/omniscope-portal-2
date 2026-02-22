@@ -72,52 +72,6 @@ async function startServer() {
   });
   // Google Calendar API proxy
   app.use("/api", calendarRouter);
-  // Impersonation endpoint — sets httpOnly cookie server-side
-  app.get("/api/impersonate", async (req, res) => {
-    try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(400).json({ error: "Missing token parameter" });
-      }
-      // Check if current user is platform owner OR if the token itself belongs to a platform owner
-      // (the latter allows returning to admin session from an impersonated user)
-      let authorized = false;
-      try {
-        const currentUser = await sdk.authenticateRequest(req);
-        if (currentUser?.platformOwner) authorized = true;
-      } catch { /* current session may be invalid/expired */ }
-      if (!authorized) {
-        // Verify the target token belongs to a platform owner (for return-to-admin flow)
-        try {
-          const { jwtVerify } = await import("jose");
-          const { ENV } = await import("./env");
-          const secret = new TextEncoder().encode(ENV.cookieSecret);
-          const { payload } = await jwtVerify(token, secret) as any;
-          if (payload.openId) {
-            const dbModule = await import("../db");
-            const database = await dbModule.getDb();
-            if (database) {
-              const { users } = await import("../../drizzle/schema");
-              const { eq } = await import("drizzle-orm");
-              const [targetUser] = await database.select({ platformOwner: users.platformOwner }).from(users).where(eq(users.openId, payload.openId)).limit(1);
-              if (targetUser?.platformOwner) authorized = true;
-            }
-          }
-        } catch { /* token verification failed */ }
-      }
-      if (!authorized) {
-        return res.status(403).json({ error: "Platform owner access required" });
-      }
-      const { getSessionCookieOptions } = await import("./cookies");
-      const { COOKIE_NAME } = await import("@shared/const");
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 1000 * 60 * 60 * 4 }); // 4 hours
-      res.redirect(302, "/");
-    } catch (err: any) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-  });
-
   // tRPC API with centralized error handling
   app.use(
     "/api/trpc",

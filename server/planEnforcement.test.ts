@@ -162,9 +162,9 @@ describe("Admin Billing UI", () => {
     expect(content).toContain("AccountCard");
   });
 
-  it("Billing page has EditablePlanCard component", () => {
+  it("Billing page has PlanOverviewCard component", () => {
     const content = fs.readFileSync(path.join(CLIENT_DIR, "pages", "admin-hub", "Billing.tsx"), "utf-8");
-    expect(content).toContain("EditablePlanCard");
+    expect(content).toContain("PlanOverviewCard");
   });
 
   it("Billing page calls plans.listAccounts", () => {

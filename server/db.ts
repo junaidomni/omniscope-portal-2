@@ -3195,31 +3195,3 @@ export async function getRevenueSummary() {
   
   return { totalMrr, byPlan, accountCount: allAccounts.length };
 }
-
-// PLAN PRICING UPDATE
-export async function updatePlan(planId: number, data: {
-  priceMonthly?: string | null;
-  priceAnnual?: string | null;
-  name?: string;
-  description?: string | null;
-  maxOrganizations?: number;
-  maxUsersPerOrg?: number;
-  maxContacts?: number;
-  maxMeetingsPerMonth?: number;
-  maxStorageGb?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const updates: Record<string, any> = {};
-  if (data.priceMonthly !== undefined) updates.priceMonthly = data.priceMonthly;
-  if (data.priceAnnual !== undefined) updates.priceAnnual = data.priceAnnual;
-  if (data.name !== undefined) updates.name = data.name;
-  if (data.description !== undefined) updates.description = data.description;
-  if (data.maxOrganizations !== undefined) updates.maxOrganizations = data.maxOrganizations;
-  if (data.maxUsersPerOrg !== undefined) updates.maxUsersPerOrg = data.maxUsersPerOrg;
-  if (data.maxContacts !== undefined) updates.maxContacts = data.maxContacts;
-  if (data.maxMeetingsPerMonth !== undefined) updates.maxMeetingsPerMonth = data.maxMeetingsPerMonth;
-  if (data.maxStorageGb !== undefined) updates.maxStorageGb = data.maxStorageGb;
-  if (Object.keys(updates).length === 0) return;
-  await db.update(plans).set(updates).where(eq(plans.id, planId));
-}

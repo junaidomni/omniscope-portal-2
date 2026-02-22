@@ -1,8 +1,0 @@
-{
-  "query": "SELECT a.id, a.name, a.status, s.subStatus, p.plan_key FROM accounts a LEFT JOIN subscriptions s ON s.subAccountId = a.id LEFT JOIN plans p ON p.id = s.subPlanId ORDER BY a.id",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT a.id, a.name, a.status, s.subStatus, p.plan_key FROM accounts a LEFT JOIN subscriptions s ON s.subAccountId = a.id LEFT JOIN plans p ON p.id = s.subPlanId ORDER BY a.id",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'a.name' in 'field list'"
-  ]
-}
