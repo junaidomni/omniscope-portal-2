@@ -4507,6 +4507,18 @@ export async function endCall(callId: number) {
 }
 
 /**
+ * Update call with transcript/summary URLs
+ */
+export async function updateCall(callId: number, updates: { transcriptUrl?: string; summaryUrl?: string; audioUrl?: string }) {
+  if (!db) throw new Error("Database not initialized");
+  
+  await db
+    .update(callLogs)
+    .set(updates)
+    .where(eq(callLogs.id, callId));
+}
+
+/**
  * Get call history for a channel
  */
 export async function getCallHistory(channelId: number) {

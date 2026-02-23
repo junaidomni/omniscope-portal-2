@@ -685,54 +685,6 @@ export const communicationsRouter = router({
       return { channelId };
     }),
 
-  /**
-   * Create a regular channel (team channel)
-   */
-  createChannel: protectedProcedure
-    .input(z.object({
-      name: z.string().min(1),
-      description: z.string().optional(),
-      type: z.enum(["group", "announcement"]).default("group"),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user.id;
-      const orgId = ctx.orgId;
-
-      // Only admins can create team channels
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Only administrators can create team channels",
-        });
-      }
-
-      // Create channel
-      const channelId = await db.createChannel({
-        orgId,
-        type: input.type,
-        name: input.name,
-        description: input.description,
-        createdBy: userId,
-      });
-
-      if (!channelId) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create channel",
-        });
-      }
-
-      // Add creator as owner
-      await db.addChannelMember({
-        channelId,
-        userId,
-        role: "owner",
-        isGuest: false,
-      });
-
-      return { channelId };
-    }),
-
   // ============================================================================
   // DEAL ROOMS
   // ============================================================================
@@ -1179,62 +1131,6 @@ export const communicationsRouter = router({
       return {
         success: true,
         message: `Role updated to ${input.newRole}`,
-      };
-    }),
-
-  /**
-   * Remove member from channel
-   */
-  removeMember: protectedProcedure
-    .input(
-      z.object({
-        channelId: z.number(),
-        userId: z.number(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      const requesterId = ctx.user.id;
-
-      // Check if requester is member
-      const requesterMembership = await db.getChannelMembership(input.channelId, requesterId);
-      if (!requesterMembership) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You are not a member of this channel",
-        });
-      }
-
-      // Only owners and admins can remove members
-      if (requesterMembership.role !== "owner" && requesterMembership.role !== "admin") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Only owners and admins can remove members",
-        });
-      }
-
-      // Check if target user is member
-      const targetMembership = await db.getChannelMembership(input.channelId, input.userId);
-      if (!targetMembership) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "User is not a member of this channel",
-        });
-      }
-
-      // Prevent removing self
-      if (requesterId === input.userId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "You cannot remove yourself from the channel",
-        });
-      }
-
-      // Remove member
-      await db.removeChannelMember(input.channelId, input.userId);
-
-      return {
-        success: true,
-        message: "Member removed successfully",
       };
     }),
 
@@ -1740,5 +1636,178 @@ export const communicationsRouter = router({
 
       const calls = await db.getCallHistory(input.channelId);
       return calls;
+    }),
+
+  transcribeCall: protectedProcedure
+    .input(z.object({ callId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get call details
+      const call = await db.getCallById(input.callId);
+      if (!call) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Call not found",
+        });
+      }
+
+      // Check if user is member of the channel
+      const isMember = await db.isChannelMember(call.channelId, userId);
+      if (!isMember) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You must be a channel member to transcribe calls",
+        });
+      }
+
+      // Check if audio recording exists
+      if (!call.audioUrl) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No audio recording available for this call",
+        });
+      }
+
+      // Transcribe using Whisper API
+      const { transcribeAudio } = await import("../_core/voiceTranscription");
+      const transcription = await transcribeAudio({
+        audioUrl: call.audioUrl,
+        language: "en",
+        prompt: "Transcribe this call conversation",
+      });
+
+      // Store transcript as JSON
+      const transcriptData = {
+        text: transcription.text,
+        language: transcription.language,
+        segments: transcription.segments,
+        transcribedAt: Date.now(),
+      };
+
+      // Save transcript URL (in production, upload to S3)
+      const transcriptJson = JSON.stringify(transcriptData);
+      const { storagePut } = await import("../storage");
+      const { url: transcriptUrl } = await storagePut(
+        `call-transcripts/${input.callId}-${Date.now()}.json`,
+        transcriptJson,
+        "application/json"
+      );
+
+      // Update call with transcript URL
+      await db.updateCall(input.callId, { transcriptUrl });
+
+      return { transcriptUrl, transcript: transcriptData };
+    }),
+
+  generateCallSummary: protectedProcedure
+    .input(z.object({ callId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get call details
+      const call = await db.getCallById(input.callId);
+      if (!call) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Call not found",
+        });
+      }
+
+      // Check if user is member of the channel
+      const isMember = await db.isChannelMember(call.channelId, userId);
+      if (!isMember) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You must be a channel member to generate summaries",
+        });
+      }
+
+      // Check if transcript exists
+      if (!call.transcriptUrl) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Call must be transcribed first",
+        });
+      }
+
+      // Fetch transcript
+      const transcriptResponse = await fetch(call.transcriptUrl);
+      const transcript = await transcriptResponse.json();
+
+      // Generate summary using LLM
+      const { invokeLLM } = await import("../_core/llm");
+      const summaryResponse = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are an AI assistant that generates concise summaries of call transcripts. Format your response as JSON with the following structure:
+{
+  "overview": "Brief 2-3 sentence overview of the call",
+  "keyPoints": ["Key point 1", "Key point 2", ...],
+  "decisions": ["Decision 1", "Decision 2", ...],
+  "actionItems": [{"task": "Task description", "assignee": "Person name or null"}]
+}`,
+          },
+          {
+            role: "user",
+            content: `Summarize this call transcript:\n\n${transcript.text}`,
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "call_summary",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                overview: { type: "string" },
+                keyPoints: { type: "array", items: { type: "string" } },
+                decisions: { type: "array", items: { type: "string" } },
+                actionItems: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      task: { type: "string" },
+                      assignee: { type: ["string", "null"] },
+                    },
+                    required: ["task", "assignee"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["overview", "keyPoints", "decisions", "actionItems"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const summaryText = summaryResponse.choices[0].message.content;
+      const summary = JSON.parse(summaryText || "{}");
+
+      // Add metadata
+      const summaryData = {
+        ...summary,
+        generatedAt: Date.now(),
+        callDuration: call.duration,
+        participantCount: call.participants?.length || 0,
+      };
+
+      // Save summary (in production, upload to S3)
+      const summaryJson = JSON.stringify(summaryData);
+      const { storagePut } = await import("../storage");
+      const { url: summaryUrl } = await storagePut(
+        `call-summaries/${input.callId}-${Date.now()}.json`,
+        summaryJson,
+        "application/json"
+      );
+
+      // Update call with summary URL
+      await db.updateCall(input.callId, { summaryUrl });
+
+      return { summaryUrl, summary: summaryData };
     }),
 });

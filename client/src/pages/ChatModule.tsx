@@ -27,7 +27,8 @@ import {
   Edit2,
   Trash2,
   Phone,
-  Video
+  Video,
+  History
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -48,6 +49,7 @@ import { DeleteChannelDialog } from "@/components/DeleteChannelDialog";
 import { MessageSearch } from "@/components/MessageSearch";
 import { MessageReactions } from "@/components/MessageReactions";
 import { CallInterface } from "@/components/CallInterface";
+import { CallHistoryPanel } from "@/components/CallHistoryPanel";
 
 export default function ChatModule() {
   // Get current user
@@ -67,6 +69,7 @@ export default function ChatModule() {
   const [showMemberManagementDialog, setShowMemberManagementDialog] = useState(false);
   const [showDeleteChannelDialog, setShowDeleteChannelDialog] = useState(false);
   const [showMessageSearch, setShowMessageSearch] = useState(false);
+  const [showCallHistory, setShowCallHistory] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
   const [threadParentMessageId, setThreadParentMessageId] = useState<number | null>(null);
@@ -352,6 +355,14 @@ export default function ChatModule() {
                   title="Start Video Call"
                 >
                   <Video className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => setShowCallHistory(true)}
+                  title="Call History"
+                >
+                  <History className="h-4 w-4" />
                 </Button>
                 <Button 
                   size="sm" 
@@ -798,6 +809,14 @@ export default function ChatModule() {
           channelId={selectedChannelId}
           callId={activeCallId}
           onLeave={handleLeaveCall}
+        />
+      )}
+
+      {/* Call History Panel */}
+      {showCallHistory && selectedChannelId && (
+        <CallHistoryPanel
+          channelId={selectedChannelId}
+          onClose={() => setShowCallHistory(false)}
         />
       )}
     </div>

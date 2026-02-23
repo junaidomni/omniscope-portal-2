@@ -162,3 +162,37 @@
 - [ ] Add generateCallSummary procedure
 - [ ] Display transcripts and summaries in call history
 - [ ] Add action items extraction from call summaries
+
+## Call History Panel (Feb 23, 2026)
+
+- [x] Create CallHistoryPanel component showing past calls
+- [x] Display call duration, participants, timestamps
+- [x] Add call type badge (voice/video)
+- [x] Add call status indicator (completed/missed/declined)
+- [x] Show participant avatars in call history
+- [x] Add "View Details" button for each call (clickable cards)
+- [x] Integrate into channel header with History button
+- [x] Add date grouping (Today, Yesterday, This Week, etc.)
+- [x] Add empty state when no calls exist
+- [x] Show transcript/summary indicators when available
+
+## Call Transcription & AI Summaries (Feb 23, 2026)
+
+### Transcription
+- [x] Add transcribeCall backend procedure using Whisper API
+- [x] Store audio recording URL in callLogs table (audioUrl field)
+- [ ] Process audio after call ends automatically (manual trigger implemented)
+- [x] Store transcript in callLogs.transcriptUrl
+- [x] Add manual "Generate Transcript" button in CallTranscriptView
+- [x] Upload transcript JSON to S3 storage
+- [x] Display transcript with timestamped segments
+
+### AI Summaries
+- [x] Add generateCallSummary backend procedure using LLM
+- [x] Extract key points, decisions, and action items with structured JSON
+- [x] Store summary in callLogs.summaryUrl
+- [x] Display summaries in CallTranscriptView with formatted sections
+- [x] Add "Generate Summary" button (requires transcript first)
+- [x] Format summaries with sections (Overview, Key Points, Decisions, Action Items)
+- [x] Show assignees for action items
+- [x] Upload summary JSON to S3 storage
