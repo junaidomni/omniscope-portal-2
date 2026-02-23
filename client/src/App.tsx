@@ -48,6 +48,7 @@ import AdminHubRoles from "./pages/admin-hub/Roles";
 import AdminHubAccounts from "./pages/admin-hub/Accounts";
 import AdminHubAccountDetail from "./pages/admin-hub/AccountDetail";
 import AdminHubRevenue from "./pages/admin-hub/Revenue";
+import InstallPage from "./pages/InstallPage";
 import AdminHubSuperAdmins from "./pages/admin-hub/SuperAdmins";
 import PlatformOversight from "./pages/PlatformOversight";
 
@@ -96,6 +97,7 @@ function WorkspaceRouter() {
         <Route path="/pending-review" component={Relationships} />
 
         {/* Standalone pages */}
+        <Route path="/install" component={InstallPage} />
         <Route path="/ask" component={AskOmniScope} />
         <Route path="/setup" component={Setup} />
         <Route path="/integrations">{() => { window.location.href = "/setup?tab=integrations"; return null; }}</Route>

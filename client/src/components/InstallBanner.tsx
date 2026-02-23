@@ -7,7 +7,7 @@ export function InstallBanner() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [appUrl] = useState(() => window.location.origin);
+  const [installUrl] = useState(() => `${window.location.origin}/install`);
   
   useEffect(() => {
     // Check if already dismissed
@@ -23,13 +23,13 @@ export function InstallBanner() {
     if (!isDismissed && !isStandalone && !isInApp && canvasRef.current) {
       generateQRCode();
     }
-  }, [appUrl]);
+  }, [installUrl]);
   
   const generateQRCode = async () => {
     if (!canvasRef.current) return;
     
     try {
-      await QRCode.toCanvas(canvasRef.current, appUrl, {
+      await QRCode.toCanvas(canvasRef.current, installUrl, {
         width: 80,
         margin: 1,
         color: {

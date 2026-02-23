@@ -607,3 +607,28 @@
 - [x] Detect PWA installation via window.matchMedia
 - [x] Auto-hide QR code banners when installed
 - [x] Add "Already installed" state to QR components
+
+
+## Fix QR Code Installation Flow (Feb 23, 2026)
+
+### Create /install Landing Page
+- [x] Create InstallPage component with mobile/desktop detection
+- [x] Add hero section explaining PWA benefits
+- [x] Show different content for mobile vs desktop users
+- [x] Add "Install Now" button that triggers beforeinstallprompt
+- [x] Add step-by-step installation instructions
+- [x] Match OmniScope gold/black branding
+- [x] Add route to App.tsx
+
+### Post-Login Redirect Handling
+- [x] Detect if user came from /install page (via getLoginUrl returnPath)
+- [x] Store returnPath in OAuth state
+- [x] Redirect back to /install after successful login
+- [x] Auto-trigger PWA install prompt on mobile after login
+- [x] Show success message after installation
+
+### Update QR Code
+- [x] Change QR code URL from homepage to /install
+- [x] Update InstallBanner component
+- [x] Update InstallQRCode component in settings
+- [ ] Test QR code scan → login → install flow

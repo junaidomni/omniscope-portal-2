@@ -6,20 +6,20 @@ import { Button } from "./ui/button";
 
 export function InstallQRCode() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [appUrl] = useState(() => window.location.origin);
+  const [installUrl] = useState(() => `${window.location.origin}/install`);
   const [showQR, setShowQR] = useState(false);
   
   useEffect(() => {
     if (showQR && canvasRef.current) {
       generateQRCode();
     }
-  }, [showQR, appUrl]);
+  }, [showQR, installUrl]);
   
   const generateQRCode = async () => {
     if (!canvasRef.current) return;
     
     try {
-      await QRCode.toCanvas(canvasRef.current, appUrl, {
+      await QRCode.toCanvas(canvasRef.current, installUrl, {
         width: 256,
         margin: 2,
         color: {
@@ -96,7 +96,7 @@ export function InstallQRCode() {
             </div>
             
             <p className="text-xs text-center text-muted-foreground">
-              {appUrl}
+              {installUrl}
             </p>
           </>
         )}
