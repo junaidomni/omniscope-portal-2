@@ -2891,3 +2891,7 @@
 - [ ] Test guest onboarding flow with invite URL
 - [ ] Verify guests can only see their deal room
 - [ ] Test removeGuest moderation feature
+
+### Bug Fixes - Week 4
+- [x] Remove vertical dropdown from Deal Room creation (simplify to just name + description)
+- [x] Fix Intelligence tab error (filteredMeetings.map is not a function - fixed data.meetings access)

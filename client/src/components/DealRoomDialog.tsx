@@ -12,13 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,29 +21,15 @@ interface DealRoomDialogProps {
   onSuccess?: (channelId: number) => void;
 }
 
-const VERTICALS = [
-  { value: "gold", label: "Gold Trading" },
-  { value: "real-estate", label: "Real Estate" },
-  { value: "carbon-credits", label: "Carbon Credits" },
-  { value: "oil-energy", label: "Oil & Energy" },
-  { value: "stablecoin", label: "Stablecoin Liquidity" },
-  { value: "bitcoin-otc", label: "Bitcoin OTC" },
-  { value: "commodities", label: "Commodities" },
-  { value: "payment-rails", label: "Payment Rails" },
-  { value: "other", label: "Other" },
-];
-
 export function DealRoomDialog({ open, onOpenChange, onSuccess }: DealRoomDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [vertical, setVertical] = useState("");
 
   const utils = trpc.useUtils();
 
   const createDealRoomMutation = trpc.communications.createDealRoom.useMutation({
     onSuccess: (data) => {
-      toast({
-        title: "Deal Room Created",
+      toast.success("Deal Room Created", {
         description: "Your deal room has been created successfully.",
       });
       utils.communications.listChannels.invalidate();
@@ -58,21 +37,17 @@ export function DealRoomDialog({ open, onOpenChange, onSuccess }: DealRoomDialog
       handleClose();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to create deal room",
-        variant: "destructive",
       });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !vertical) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
+    if (!name.trim()) {
+      toast.error("Validation Error", {
+        description: "Please enter a room name",
       });
       return;
     }
@@ -80,14 +55,13 @@ export function DealRoomDialog({ open, onOpenChange, onSuccess }: DealRoomDialog
     createDealRoomMutation.mutate({
       name: name.trim(),
       description: description.trim() || undefined,
-      vertical,
+      vertical: "general", // Default vertical since user doesn't select
     });
   };
 
   const handleClose = () => {
     setName("");
     setDescription("");
-    setVertical("");
     onOpenChange(false);
   };
 
@@ -104,22 +78,6 @@ export function DealRoomDialog({ open, onOpenChange, onSuccess }: DealRoomDialog
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="vertical">Vertical *</Label>
-              <Select value={vertical} onValueChange={setVertical}>
-                <SelectTrigger id="vertical">
-                  <SelectValue placeholder="Select vertical" />
-                </SelectTrigger>
-                <SelectContent>
-                  {VERTICALS.map((v) => (
-                    <SelectItem key={v.value} value={v.value}>
-                      {v.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="name">Room Name *</Label>
               <Input
                 id="name"
@@ -127,6 +85,7 @@ export function DealRoomDialog({ open, onOpenChange, onSuccess }: DealRoomDialog
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={createDealRoomMutation.isPending}
+                autoFocus
               />
             </div>
 

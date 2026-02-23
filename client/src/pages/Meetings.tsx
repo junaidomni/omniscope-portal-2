@@ -139,7 +139,8 @@ export default function Meetings() {
 // RECENT MEETINGS - Compact list, newest first, grouped by week
 
 function RecentMeetings() {
-  const { data: meetings, isLoading } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
+  const { data, isLoading } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
+  const meetings = data?.meetings || [];
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -167,7 +168,6 @@ function RecentMeetings() {
   });
 
   const filteredMeetings = useMemo(() => {
-    if (!meetings) return [];
     if (!searchTerm) return meetings;
     const lower = searchTerm.toLowerCase();
     return meetings.filter(m => {
@@ -475,7 +475,8 @@ function MeetingsCalendar() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const { data: meetings } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
+  const { data } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
+  const meetings = data?.meetings || [];
 
   const getLocalDateKey = (dateStr: string | Date): string => {
     const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
@@ -609,7 +610,8 @@ function MeetingsCalendar() {
 
 function PeopleDirectory() {
   const { data: contacts, isLoading: contactsLoading, refetch: refetchContacts } = trpc.contacts.list.useQuery();
-  const { data: meetings, isLoading: meetingsLoading } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
+  const { data: meetingsData, isLoading: meetingsLoading } = trpc.meetings.list.useQuery({ limit: 100, offset: 0 });
+  const meetings = meetingsData?.meetings || [];
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
 
