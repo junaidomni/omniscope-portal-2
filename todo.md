@@ -2881,3 +2881,13 @@
 - [ ] Build guest onboarding flow (name, email, password, avatar)
 - [ ] Sync user profile changes across platform
 - [ ] Test user sync and guest onboarding
+
+### Phase 1: Week 4 Polish & Testing
+- [x] Add Briefcase icon for deal rooms in channel list
+- [x] Add amber-colored "Deal Room" badge to deal room channels
+- [x] Add deal room visual indicators in channel header
+- [ ] Test Deal Room creation via Plus button
+- [ ] Test invite link generation via Link button
+- [ ] Test guest onboarding flow with invite URL
+- [ ] Verify guests can only see their deal room
+- [ ] Test removeGuest moderation feature

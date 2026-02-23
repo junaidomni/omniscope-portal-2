@@ -20,7 +20,9 @@ import {
   Pin,
   Archive,
   X,
-  Link
+  Link,
+  Briefcase,
+  Shield
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { MentionAutocomplete } from "@/components/MentionAutocomplete";
@@ -168,6 +170,8 @@ export default function ChatModule() {
                           <MessageSquare className="h-5 w-5" />
                         ) : channel.type === "group" ? (
                           <Users className="h-5 w-5" />
+                        ) : channel.type === "deal_room" ? (
+                          <Briefcase className="h-5 w-5 text-amber-500" />
                         ) : (
                           <Hash className="h-5 w-5" />
                         )}
@@ -175,9 +179,16 @@ export default function ChatModule() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium truncate">
-                          {channel.name || "Unnamed Channel"}
-                        </span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="font-medium truncate">
+                            {channel.name || "Unnamed Channel"}
+                          </span>
+                          {channel.type === "deal_room" && (
+                            <Badge variant="outline" className="text-xs border-amber-500 text-amber-500 shrink-0">
+                              Deal Room
+                            </Badge>
+                          )}
+                        </div>
                         {channel.unreadCount > 0 && (
                           <Badge variant="default" className="h-5 min-w-[20px] flex items-center justify-center">
                             {channel.unreadCount}
@@ -219,13 +230,22 @@ export default function ChatModule() {
                       <MessageSquare className="h-5 w-5" />
                     ) : selectedChannel?.type === "group" ? (
                       <Users className="h-5 w-5" />
+                    ) : selectedChannel?.type === "deal_room" ? (
+                      <Briefcase className="h-5 w-5 text-amber-500" />
                     ) : (
                       <Hash className="h-5 w-5" />
                     )}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold">{selectedChannel?.name || "Unnamed Channel"}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">{selectedChannel?.name || "Unnamed Channel"}</h3>
+                    {selectedChannel?.type === "deal_room" && (
+                      <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">
+                        Deal Room
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {channelDetails?.members.length || 0} members
                   </p>
