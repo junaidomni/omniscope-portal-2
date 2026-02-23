@@ -52,6 +52,7 @@ export function useChannelSocket(channelId: number | null) {
   const { socket, isConnected } = useSocket();
   const [newMessage, setNewMessage] = useState<any>(null);
   const [userTyping, setUserTyping] = useState<number[]>([]);
+  const [channelInvite, setChannelInvite] = useState<any>(null);
 
   useEffect(() => {
     if (!socket || !channelId) return;
@@ -62,6 +63,11 @@ export function useChannelSocket(channelId: number | null) {
     // Listen for new messages
     socket.on("new-message", (message: any) => {
       setNewMessage(message);
+    });
+
+    // Listen for channel invites
+    socket.on("channel-invite", (invite: any) => {
+      setChannelInvite(invite);
     });
 
     // Listen for typing indicators
@@ -77,6 +83,7 @@ export function useChannelSocket(channelId: number | null) {
       // Leave channel
       socket.emit("leave-channel", channelId);
       socket.off("new-message");
+      socket.off("channel-invite");
       socket.off("user-typing");
       socket.off("user-stopped-typing");
     };
@@ -91,6 +98,7 @@ export function useChannelSocket(channelId: number | null) {
     isConnected,
     newMessage,
     userTyping,
+    channelInvite,
     emitTyping,
   };
 }

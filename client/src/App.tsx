@@ -48,6 +48,7 @@ import AdminHubAccounts from "./pages/admin-hub/Accounts";
 import AdminHubAccountDetail from "./pages/admin-hub/AccountDetail";
 import AdminHubRevenue from "./pages/admin-hub/Revenue";
 import AdminHubSuperAdmins from "./pages/admin-hub/SuperAdmins";
+import PlatformOversight from "./pages/PlatformOversight";
 
 /**
  * Workspace Router — the standard PortalLayout shell.
@@ -140,6 +141,7 @@ function AdminHubRouter() {
         <Route path="/admin-hub/account/:id" component={AdminHubAccountDetail} />
         <Route path="/admin-hub/roles" component={AdminHubRoles} />
         <Route path="/admin-hub/super-admins" component={AdminHubSuperAdmins} />
+        <Route path="/admin-hub/oversight" component={PlatformOversight} />
         <Route path="/admin-hub/settings" component={AdminHubSettings} />
         <Route component={AdminHubDashboard} />
       </Switch>

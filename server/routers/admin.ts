@@ -229,4 +229,95 @@ export const adminRouter = router({
       await fathomIntegration.deleteFathomWebhook(input.webhookId);
       return { success: true };
     }),
+
+  // ============================================================================
+  // COMMUNICATIONS OVERSIGHT (Platform Owner Only)
+  // ============================================================================
+
+  /**
+   * List all channels for an organization (platform owners only)
+   */
+  listOrgChannels: platformOwnerProcedure
+    .input(z.object({ orgId: z.number() }))
+    .query(async ({ input }) => {
+      const dbInstance = await db.getDb();
+      if (!dbInstance) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      const { channels, channelMembers } = await import("../../drizzle/schema");
+      const { eq, sql } = await import("drizzle-orm");
+
+      // Get all channels for the org with member counts
+      const orgChannels = await dbInstance
+        .select({
+          id: channels.id,
+          name: channels.name,
+          type: channels.type,
+          description: channels.description,
+          createdAt: channels.createdAt,
+          memberCount: sql<number>`(
+            SELECT COUNT(*) FROM ${channelMembers}
+            WHERE ${channelMembers.channelId} = ${channels.id}
+          )`,
+        })
+        .from(channels)
+        .where(eq(channels.orgId, input.orgId));
+
+      return orgChannels;
+    }),
+
+  /**
+   * Get messages for a channel (platform owners only)
+   */
+  getChannelMessages: platformOwnerProcedure
+    .input(
+      z.object({
+        channelId: z.number(),
+        limit: z.number().default(50),
+      })
+    )
+    .query(async ({ input }) => {
+      // Get messages using existing helper
+      const messagesWithUsers = await db.getChannelMessages(input.channelId, input.limit);
+
+      return messagesWithUsers.map((m) => ({
+        id: m.message.id,
+        content: m.message.content,
+        createdAt: m.message.createdAt,
+        user: m.user,
+      }));
+    }),
+
+  /**
+   * Log audit action for oversight (platform owners only)
+   */
+  logOversightAction: platformOwnerProcedure
+    .input(
+      z.object({
+        action: z.string(),
+        targetType: z.string(),
+        targetId: z.number(),
+        metadata: z.record(z.any()).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      await logAuditEvent(
+        { userId: ctx.user.id, userName: ctx.user.name ?? undefined, userEmail: ctx.user.email ?? undefined },
+        {
+          action: input.action,
+          entityType: input.targetType,
+          entityId: input.targetId,
+          details: input.metadata,
+        }
+      );
+
+      return {
+        success: true,
+        message: "Oversight action logged",
+      };
+    }),
 });

@@ -35,8 +35,15 @@ import { InviteLinkDialog } from "@/components/InviteLinkDialog";
 import { ChannelSidebar } from "@/components/ChannelSidebar";
 import { AddSubChannelDialog } from "@/components/AddSubChannelDialog";
 import { DirectInviteDialog } from "@/components/DirectInviteDialog";
+import { MemberManagementDialog } from "@/components/MemberManagementDialog";
+import { NotificationListener } from "@/components/NotificationListener";
 
 export default function ChatModule() {
+  // Get current user
+  const { data: user } = trpc.auth.me.useQuery();
+  
+  // Global notification listener
+  NotificationListener();
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,6 +53,7 @@ export default function ChatModule() {
   const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
   const [showAddSubChannelDialog, setShowAddSubChannelDialog] = useState(false);
   const [showDirectInviteDialog, setShowDirectInviteDialog] = useState(false);
+  const [showMemberManagementDialog, setShowMemberManagementDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -228,6 +236,14 @@ export default function ChatModule() {
                     </Button>
                   </>
                 )}
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => setShowMemberManagementDialog(true)}
+                  title="Manage Members"
+                >
+                  <Users className="h-4 w-4" />
+                </Button>
                 <Button size="sm" variant="ghost">
                   <Pin className="h-4 w-4" />
                 </Button>
@@ -473,6 +489,18 @@ export default function ChatModule() {
           onOpenChange={setShowDirectInviteDialog}
           channelId={selectedChannelId}
           channelName={selectedChannel.name || "Unnamed Channel"}
+        />
+      )}
+
+      {/* Member Management Dialog */}
+      {selectedChannelId && channelDetails && (
+        <MemberManagementDialog
+          open={showMemberManagementDialog}
+          onOpenChange={setShowMemberManagementDialog}
+          channelId={selectedChannelId}
+          channelName={selectedChannel?.name || "Unnamed Channel"}
+          members={channelDetails.members}
+          currentUserRole={channelDetails.members.find((m) => m.userId === user?.id)?.role || "member"}
         />
       )}
     </div>

@@ -87,9 +87,11 @@ export function ChannelSidebar({
     <button
       key={channel.id}
       onClick={() => onChannelSelect(channel.id)}
-      className={`w-full p-3 rounded-lg text-left hover:bg-accent transition-colors ${
+      className={`w-full p-3 rounded-lg text-left hover:bg-accent transition-colors relative ${
         selectedChannelId === channel.id ? "bg-accent" : ""
-      } ${indent ? "ml-6" : ""}`}
+      } ${indent ? "ml-6" : ""} ${
+        channel.unreadCount > 0 ? "border-l-2 border-l-amber-500" : ""
+      }`}
     >
       <div className="flex items-start gap-3">
         {!indent && (

@@ -852,4 +852,136 @@ export const communicationsRouter = router({
         results,
       };
     }),
+
+  /**
+   * Change member role in channel
+   */
+  changeMemberRole: protectedProcedure
+    .input(
+      z.object({
+        channelId: z.number(),
+        userId: z.number(),
+        newRole: z.enum(["owner", "admin", "member", "guest"]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const requesterId = ctx.user.id;
+
+      // Check if requester is member
+      const requesterMembership = await db.getChannelMembership(input.channelId, requesterId);
+      if (!requesterMembership) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not a member of this channel",
+        });
+      }
+
+      // Only owners and admins can change roles
+      if (requesterMembership.role !== "owner" && requesterMembership.role !== "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only owners and admins can change member roles",
+        });
+      }
+
+      // Check if target user is member
+      const targetMembership = await db.getChannelMembership(input.channelId, input.userId);
+      if (!targetMembership) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User is not a member of this channel",
+        });
+      }
+
+      // Prevent changing own role
+      if (requesterId === input.userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot change your own role",
+        });
+      }
+
+      // Update role in database
+      const dbInstance = await db.getDb();
+      if (!dbInstance) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      const { channelMembers } = await import("../../drizzle/schema");
+      const { eq, and } = await import("drizzle-orm");
+
+      await dbInstance
+        .update(channelMembers)
+        .set({ role: input.newRole })
+        .where(
+          and(
+            eq(channelMembers.channelId, input.channelId),
+            eq(channelMembers.userId, input.userId)
+          )
+        );
+
+      return {
+        success: true,
+        message: `Role updated to ${input.newRole}`,
+      };
+    }),
+
+  /**
+   * Remove member from channel
+   */
+  removeMember: protectedProcedure
+    .input(
+      z.object({
+        channelId: z.number(),
+        userId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const requesterId = ctx.user.id;
+
+      // Check if requester is member
+      const requesterMembership = await db.getChannelMembership(input.channelId, requesterId);
+      if (!requesterMembership) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not a member of this channel",
+        });
+      }
+
+      // Only owners and admins can remove members
+      if (requesterMembership.role !== "owner" && requesterMembership.role !== "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only owners and admins can remove members",
+        });
+      }
+
+      // Check if target user is member
+      const targetMembership = await db.getChannelMembership(input.channelId, input.userId);
+      if (!targetMembership) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User is not a member of this channel",
+        });
+      }
+
+      // Prevent removing self
+      if (requesterId === input.userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot remove yourself from the channel",
+        });
+      }
+
+      // Remove member
+      await db.removeChannelMember(input.channelId, input.userId);
+
+      return {
+        success: true,
+        message: "Member removed successfully",
+      };
+    }),
 });

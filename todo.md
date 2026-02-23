@@ -2966,3 +2966,22 @@
 - [x] Fix sidebar overflow issue (added h-full to Card for proper height constraint)
 - [x] Rename "Deal Rooms" to "Channels" throughout UI (tab, headers, badges, dialogs)
 - [ ] Test complete flow: Create channel → See it in sidebar → Add sub-channels
+
+### Communications Platform - Testing & New Features
+- [ ] Write comprehensive tests for channel creation (admin/owner permissions)
+- [ ] Test sub-channel creation (only channel owners/admins)
+- [ ] Test direct user invitations
+- [ ] Test external invite links
+- [ ] Test access control (users only see their channels)
+- [ ] Test real-time messaging in all channel types
+- [ ] Test navigation (breadcrumbs, filters, selection)
+- [x] Build member management modal (click channel to see members)
+- [x] Add role badges (owner/admin/member) in member list
+- [x] Add change role functionality (dropdown to change member roles)
+- [x] Add remove member functionality (with confirmation dialog)
+- [x] Implement notification system for channel invites (toast)
+- [x] Add unread message badge counts in sidebar
+- [x] Highlight channels with new activity (amber left border)
+- [x] Build platform owner oversight dashboard (separate admin interface)
+- [x] Platform owners can view all communications across workspaces
+- [x] Add compliance/audit logging for oversight access
