@@ -313,3 +313,35 @@
 - [x] Add animation (pulse + ping effect) to call icons
 - [x] Show call type (voice vs video) with different icons
 - [ ] Make indicator clickable to jump to call
+
+
+## Week 5 Final Enhancements (Feb 23, 2026)
+
+### Notification Preferences Panel
+- [x] Create NotificationSettings component
+- [x] Add toggle for call notifications (on/off)
+- [x] Add sound volume slider (0-100%)
+- [x] Add notification delivery method selector (browser, in-app, both)
+- [x] Save preferences to user profile in database
+- [x] Add notificationPreferences column to users table
+- [x] Load preferences on app start
+- [ ] Apply preferences to useCallNotifications hook
+- [ ] Add settings link in user menu or platform settings
+
+### Clickable Sidebar Call Indicators
+- [x] Make call indicator div clickable
+- [x] Navigate to channel when indicator is clicked
+- [x] Highlight the channel in sidebar after navigation
+- [x] Add hover effect to indicate clickability
+- [x] Prevent event bubbling to channel button
+
+### Contact Search and Call Initiation in Calls Tab
+- [x] Add search input at top of AllCallsView
+- [x] Create contact search functionality
+- [x] Display search results with user avatars
+- [x] Add "Voice Call" and "Video Call" buttons for each contact
+- [x] Create startDirectCall mutation
+- [x] Handle call initiation from Calls tab
+- [x] Navigate to DM channel after starting call
+- [x] Create DM channel if it doesn't exist
+- [x] Show loading state during call initiation

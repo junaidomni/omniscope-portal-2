@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Phone, Video, Clock, Users, Search, FileText, Sparkles, Filter } from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday, isThisWeek } from "date-fns";
 import { CallTranscriptView } from "@/components/CallTranscriptView";
+import { ContactSearchCallInitiator } from "@/components/communications/ContactSearchCallInitiator";
 
 type CallFilter = "all" | "voice" | "video" | "completed" | "missed";
 
@@ -17,6 +18,8 @@ export function AllCallsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<CallFilter>("all");
   const [selectedCall, setSelectedCall] = useState<{ id: number; transcriptUrl?: string | null; summaryUrl?: string | null } | null>(null);
+  const [contactSearchQuery, setContactSearchQuery] = useState("");
+  const [showContactSearch, setShowContactSearch] = useState(false);
 
   // Fetch all calls across all channels (no channelId filter)
   const { data: allCalls, isLoading } = trpc.communications.getCallHistory.useQuery({});
@@ -75,8 +78,23 @@ export function AllCallsView() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-6 border-b border-border">
-        <h1 className="text-2xl font-semibold mb-4">Calls</h1>
+      <div className="p-6 border-b border-border space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Calls</h1>
+          <Button
+            onClick={() => setShowContactSearch(!showContactSearch)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Phone className="h-4 w-4" />
+            Start New Call
+          </Button>
+        </div>
+        
+        {/* Contact Search Section */}
+        {showContactSearch && (
+          <ContactSearchCallInitiator onClose={() => setShowContactSearch(false)} />
+        )}
         
         {/* Search and Filters */}
         <div className="flex gap-3">

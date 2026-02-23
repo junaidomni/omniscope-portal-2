@@ -145,14 +145,21 @@ export function ChannelSidebar({
                 {channel.name || "Unnamed Channel"}
               </span>
               {hasActiveCall(channel.id) && (
-                <div className="relative flex items-center">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChannelSelect(channel.id);
+                  }}
+                  className="relative flex items-center hover:scale-110 transition-transform cursor-pointer"
+                  title="Click to join call"
+                >
                   {getCallType(channel.id) === "video" ? (
                     <Video className="h-4 w-4 text-amber-500 animate-pulse" />
                   ) : (
                     <Phone className="h-4 w-4 text-amber-500 animate-pulse" />
                   )}
                   <span className="absolute inset-0 h-4 w-4 rounded-full bg-amber-500/30 animate-ping" />
-                </div>
+                </button>
               )}
             </div>
             {channel.unreadCount > 0 && (

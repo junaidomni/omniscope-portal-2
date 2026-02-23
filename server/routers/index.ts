@@ -2,6 +2,10 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { systemRouter } from "../_core/systemRouter";
 import { publicProcedure, router } from "../_core/trpc";
 import { COOKIE_NAME } from "@shared/const";
+import { z } from "zod";
+import { getDb } from "../db";
+import { users } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 import { meetingsRouter } from "./meetings";
 import { contactsRouter } from "./contacts";
@@ -52,6 +56,24 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    updateNotificationPreferences: publicProcedure
+      .input(z.object({
+        callNotifications: z.boolean(),
+        soundVolume: z.number().min(0).max(100),
+        deliveryMethod: z.enum(["browser", "in-app", "both"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user) {
+          throw new Error("Not authenticated");
+        }
+        
+        const db = await getDb();
+        await db.update(users)
+          .set({ notificationPreferences: JSON.stringify(input) })
+          .where(eq(users.id, ctx.user.id));
+        
+        return { success: true };
+      }),
   }),
   meetings: meetingsRouter,
   contacts: contactsRouter,

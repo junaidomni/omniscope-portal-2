@@ -302,6 +302,13 @@
       "when": 1771832915985,
       "tag": "0042_worried_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "5",
+      "when": 1771837189257,
+      "tag": "0043_light_vulture",
+      "breakpoints": true
     }
   ]
 }

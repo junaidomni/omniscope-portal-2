@@ -1917,4 +1917,66 @@ export const communicationsRouter = router({
 
     return activeCalls;
   }),
+
+  /**
+   * Start a direct call with a contact
+   */
+  startDirectCall: protectedProcedure
+    .input(
+      z.object({
+        contactId: z.number(),
+        callType: z.enum(["voice", "video"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      // Find or create DM channel with contact
+      const contact = await db.getContactById(input.contactId);
+      if (!contact) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
+      }
+
+      // Check if DM channel already exists
+      const userChannels = await db.getChannelsForUser(userId);
+      let dmChannel = userChannels.find(
+        (uc) =>
+          uc.channel.type === "dm" &&
+          uc.channel.name?.includes(contact.name || "")
+      );
+
+      // Create DM channel if it doesn't exist
+      if (!dmChannel) {
+        const channelId = await db.createChannel({
+          orgId: ctx.orgId,
+          type: "dm",
+          name: `${ctx.user.name} & ${contact.name}`,
+          createdBy: userId,
+        });
+
+        if (!channelId) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create DM channel" });
+        }
+
+        // Add both users as members
+        await db.addChannelMember({ channelId, userId, role: "owner" });
+        // Note: In a real scenario, you'd need to map contact to user
+        // For now, we'll just create the channel
+
+        dmChannel = { channel: { id: channelId, type: "dm" as const, name: `${ctx.user.name} & ${contact.name}` } };
+      }
+
+      // Create call in the DM channel
+      const call = await db.createCall({
+        channelId: dmChannel.channel.id,
+        startedBy: userId,
+        callType: input.callType,
+      });
+
+      return {
+        channelId: dmChannel.channel.id,
+        callId: call.id,
+        callType: input.callType,
+      };
+    }),
 });

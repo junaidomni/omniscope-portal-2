@@ -102,6 +102,12 @@ export const contactsRouter = router({
       return await db.searchContacts(input.query, ctx.orgId ?? undefined);
     }),
 
+  searchContacts: orgScopedProcedure
+    .input(z.object({ query: z.string() }))
+    .query(async ({ input, ctx }) => {
+      return await db.searchContacts(input.query, ctx.orgId ?? undefined);
+    }),
+
   create: orgScopedProcedure
     .input(z.object({
       name: z.string().min(1),

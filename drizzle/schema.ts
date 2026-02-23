@@ -17,6 +17,7 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
   onboardingCompleted: boolean("onboardingCompleted").default(false).notNull(),
   profilePhotoUrl: text("profilePhotoUrl"),
+  notificationPreferences: text("notificationPreferences"), // JSON: { callNotifications: boolean, soundVolume: number, deliveryMethod: string }
 });
 
 export type User = typeof users.$inferSelect;
