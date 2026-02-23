@@ -1205,4 +1205,97 @@ export const communicationsRouter = router({
       const pinnedMessages = await db.getPinnedMessages(input.channelId);
       return pinnedMessages;
     }),
+
+  // ============================================================================
+  // MESSAGE EDIT/DELETE
+  // ============================================================================
+
+  /**
+   * Edit a message (own messages only, within 15 minutes)
+   */
+  editMessage: protectedProcedure
+    .input(
+      z.object({
+        messageId: z.number(),
+        content: z.string().min(1),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get message
+      const message = await db.getMessageById(input.messageId);
+      if (!message) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Message not found",
+        });
+      }
+
+      // Check ownership
+      if (message.userId !== userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only edit your own messages",
+        });
+      }
+
+      // Check 15-minute window
+      const now = new Date();
+      const createdAt = new Date(message.createdAt);
+      const diffMinutes = (now.getTime() - createdAt.getTime()) / 1000 / 60;
+      if (diffMinutes > 15) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Messages can only be edited within 15 minutes",
+        });
+      }
+
+      // Edit the message
+      await db.editMessage(input.messageId, input.content);
+
+      return { success: true };
+    }),
+
+  /**
+   * Delete a message (own messages only, within 15 minutes)
+   */
+  deleteMessage: protectedProcedure
+    .input(z.object({ messageId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get message
+      const message = await db.getMessageById(input.messageId);
+      if (!message) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Message not found",
+        });
+      }
+
+      // Check ownership
+      if (message.userId !== userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only delete your own messages",
+        });
+      }
+
+      // Check 15-minute window
+      const now = new Date();
+      const createdAt = new Date(message.createdAt);
+      const diffMinutes = (now.getTime() - createdAt.getTime()) / 1000 / 60;
+      if (diffMinutes > 15) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Messages can only be deleted within 15 minutes",
+        });
+      }
+
+      // Soft delete the message
+      await db.deleteMessage(input.messageId);
+
+      return { success: true };
+    }),
 });

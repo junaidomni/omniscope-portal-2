@@ -24,14 +24,15 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
   const utils = trpc.useUtils();
 
-  // Fetch users for DM creation
+  // Fetch users for DM and group chat creation
   const { data: users, isLoading: usersLoading } = trpc.users.list.useQuery(
     undefined,
-    { enabled: open && selectedType === "dm" }
+    { enabled: open && (selectedType === "dm" || selectedType === "group") }
   );
 
   const createDealRoom = trpc.communications.createDealRoom.useMutation({
@@ -53,6 +54,7 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
     setName("");
     setDescription("");
     setSelectedUserId(null);
+    setSelectedUserIds(new Set());
     setUserSearchQuery("");
     onOpenChange(false);
   };
@@ -75,7 +77,11 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
         vertical: "general", // Default vertical
       });
     } else if (selectedType === "group") {
-      // TODO: Implement group chat creation
+      if (selectedUserIds.size === 0) {
+        toast.error("Please select at least one person");
+        return;
+      }
+      // TODO: Implement group chat creation backend
       toast.info("Group chat creation coming soon!");
       handleClose();
     } else if (selectedType === "dm") {
@@ -154,10 +160,10 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {selectedType === "dm" ? (
+              {selectedType === "dm" || selectedType === "group" ? (
                 <>
                   <div className="grid gap-2">
-                    <Label>Select a person *</Label>
+                    <Label>{selectedType === "dm" ? "Select a person" : "Select members"} *</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -184,9 +190,29 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
                           .map((user) => (
                             <button
                               key={user.id}
-                              onClick={() => setSelectedUserId(user.id)}
+                              onClick={() => {
+                                if (selectedType === "dm") {
+                                  setSelectedUserId(user.id);
+                                } else {
+                                  setSelectedUserIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(user.id)) {
+                                      next.delete(user.id);
+                                    } else {
+                                      next.add(user.id);
+                                    }
+                                    return next;
+                                  });
+                                }
+                              }}
                               className={`w-full p-3 rounded-lg hover:bg-accent transition-colors flex items-center gap-3 ${
-                                selectedUserId === user.id ? "bg-accent border-2 border-amber-500" : ""
+                                selectedType === "dm"
+                                  ? selectedUserId === user.id
+                                    ? "bg-accent border-2 border-amber-500"
+                                    : ""
+                                  : selectedUserIds.has(user.id)
+                                  ? "bg-accent border-2 border-purple-500"
+                                  : ""
                               }`}
                             >
                               <Avatar className="h-10 w-10">
@@ -204,6 +230,24 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
                       </div>
                     )}
                   </ScrollArea>
+                  {/* Group name input (only for group chat) */}
+                  {selectedType === "group" && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="groupName">Group Name *</Label>
+                      <Input
+                        id="groupName"
+                        placeholder="e.g., Marketing Team"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  {/* Selected count for group chat */}
+                  {selectedType === "group" && selectedUserIds.size > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      {selectedUserIds.size} member{selectedUserIds.size !== 1 ? "s" : ""} selected
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="grid gap-2">

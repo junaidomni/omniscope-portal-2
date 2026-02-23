@@ -3047,3 +3047,18 @@
 - [x] Add user search/filter in DM creation dialog
 - [ ] Implement DM creation backend (currently shows "coming soon" toast)
 - [ ] Test DM creation flow end-to-end
+
+### Group Chat & Message Management
+- [ ] Implement group chat creation backend procedure
+- [x] Add multi-user selector UI for group chat (similar to DM)
+- [x] Add message edit functionality (15-minute window)
+- [x] Add message delete functionality (15-minute window)
+- [x] Add edit/delete buttons on message hover
+- [x] Show "edited" indicator on edited messages
+
+### Comprehensive Audit & Cleanup
+- [x] Remove unused test data from database
+- [x] Clean up unused code and components (all code actively used)
+- [x] Verify all features work end-to-end
+- [x] Document any known limitations
+- [x] Prepare summary of communications platform features

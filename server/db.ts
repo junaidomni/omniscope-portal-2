@@ -4237,3 +4237,36 @@ export async function getPinnedMessages(channelId: number) {
 
   return pinnedMessages;
 }
+
+/**
+ * Edit a message
+ */
+export async function editMessage(messageId: number, content: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(messages)
+    .set({
+      content,
+      isEdited: true,
+      editedAt: new Date(),
+    })
+    .where(eq(messages.id, messageId));
+}
+
+/**
+ * Delete a message (soft delete)
+ */
+export async function deleteMessage(messageId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(messages)
+    .set({
+      isDeleted: true,
+      content: "[deleted]",
+    })
+    .where(eq(messages.id, messageId));
+}

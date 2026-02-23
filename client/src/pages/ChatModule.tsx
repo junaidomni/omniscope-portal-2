@@ -23,9 +23,12 @@ import {
   Link,
   Briefcase,
   Shield,
-  UserPlus
+  UserPlus,
+  Edit2,
+  Trash2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import { MentionAutocomplete } from "@/components/MentionAutocomplete";
 import { useMentions, renderMentions } from "@/hooks/useMentions";
 import { useChannelSocket } from "@/hooks/useSocket";
@@ -59,6 +62,8 @@ export default function ChatModule() {
   const [showMemberManagementDialog, setShowMemberManagementDialog] = useState(false);
   const [showDeleteChannelDialog, setShowDeleteChannelDialog] = useState(false);
   const [showMessageSearch, setShowMessageSearch] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -68,6 +73,29 @@ export default function ChatModule() {
   
   // tRPC utils for invalidation
   const utils = trpc.useUtils();
+
+  // Edit/delete mutations
+  const editMessageMutation = trpc.communications.editMessage.useMutation({
+    onSuccess: () => {
+      utils.communications.listMessages.invalidate();
+      setEditingMessageId(null);
+      setEditContent("");
+      toast.success("Message updated");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to edit message");
+    },
+  });
+
+  const deleteMessageMutation = trpc.communications.deleteMessage.useMutation({
+    onSuccess: () => {
+      utils.communications.listMessages.invalidate();
+      toast.success("Message deleted");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete message");
+    },
+  });
   
   // Mentions autocomplete
   const {
@@ -323,10 +351,94 @@ export default function ChatModule() {
                               <Pin className={`h-3 w-3 ${message.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
                             </Button>
                           )}
+                          {/* Edit/Delete buttons (own messages only, within 15 minutes) */}
+                          {message.userId === user?.id && (() => {
+                            const now = new Date();
+                            const createdAt = new Date(message.createdAt);
+                            const diffMinutes = (now.getTime() - createdAt.getTime()) / 1000 / 60;
+                            return diffMinutes <= 15;
+                          })() && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => {
+                                  setEditingMessageId(message.id);
+                                  setEditContent(message.content);
+                                }}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                onClick={() => {
+                                  if (confirm("Delete this message?")) {
+                                    deleteMessageMutation.mutate({ messageId: message.id });
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                          {message.isEdited && (
+                            <span className="text-xs text-muted-foreground italic">(edited)</span>
+                          )}
                         </div>
-                        <div className="text-sm mt-1 whitespace-pre-wrap break-words">
-                          {renderMentions(message.content)}
-                        </div>
+                        {editingMessageId === message.id ? (
+                          <div className="flex gap-2 items-start mt-1">
+                            <Input
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="flex-1"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  if (editContent.trim()) {
+                                    editMessageMutation.mutate({
+                                      messageId: message.id,
+                                      content: editContent.trim(),
+                                    });
+                                  }
+                                } else if (e.key === "Escape") {
+                                  setEditingMessageId(null);
+                                  setEditContent("");
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (editContent.trim()) {
+                                  editMessageMutation.mutate({
+                                    messageId: message.id,
+                                    content: editContent.trim(),
+                                  });
+                                }
+                              }}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingMessageId(null);
+                                setEditContent("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-sm mt-1 whitespace-pre-wrap break-words">
+                            {renderMentions(message.content)}
+                          </div>
+                        )}
                         {/* Message Reactions */}
                         <MessageReactions messageId={message.id} currentUserId={user?.id} />
                       </div>
