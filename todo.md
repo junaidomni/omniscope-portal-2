@@ -62,3 +62,12 @@
 - [x] DM name personalization working (shows other person's name only)
 - [x] Group chat badge showing "Group" instead of "Channel"
 - [x] DMs now appear in "Direct Messages" section in sidebar
+
+## Final UI Fixes Before Week 5 (Feb 23, 2026)
+
+- [x] Fix sidebar going off page - added max-w-80, flex-shrink-0, overflow-hidden
+- [x] Change filter buttons from "All/Messages/Channels" to "Messages/Groups/Channels"
+- [x] Set "Messages" as default filter when opening chat
+- [x] Rename first "CHANNELS" section label to "GROUPS" (for group chats)
+- [x] Keep second "CHANNELS" section for actual channels (deal rooms)
+- [x] Update filter logic: Messages shows DMs+Groups, Groups shows Groups only, Channels shows Deal Rooms only

@@ -25,7 +25,7 @@ interface ChannelSidebarProps {
   onSearchMessages: () => void;
 }
 
-type FilterType = "all" | "messages" | "channels";
+type FilterType = "messages" | "groups" | "channels";
 
 export function ChannelSidebar({
   selectedChannelId,
@@ -35,7 +35,7 @@ export function ChannelSidebar({
 }: ChannelSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedDealRooms, setExpandedDealRooms] = useState<Set<number>>(new Set());
-  const [filter, setFilter] = useState<FilterType>("all");
+  const [filter, setFilter] = useState<FilterType>("messages");
 
   // Fetch all channels
   const { data: channels, isLoading: channelsLoading } = trpc.communications.listChannels.useQuery();
@@ -135,7 +135,7 @@ export function ChannelSidebar({
   );
 
   return (
-    <Card className="w-80 h-full flex flex-col">
+    <Card className="w-80 max-w-80 flex-shrink-0 h-full flex flex-col overflow-hidden">
       <div className="p-4 border-b space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Messages</h2>
@@ -160,19 +160,19 @@ export function ChannelSidebar({
         <div className="flex gap-2">
           <Button
             size="sm"
-            variant={filter === "all" ? "default" : "outline"}
-            onClick={() => setFilter("all")}
-            className="flex-1"
-          >
-            All
-          </Button>
-          <Button
-            size="sm"
             variant={filter === "messages" ? "default" : "outline"}
             onClick={() => setFilter("messages")}
             className="flex-1"
           >
             Messages
+          </Button>
+          <Button
+            size="sm"
+            variant={filter === "groups" ? "default" : "outline"}
+            onClick={() => setFilter("groups")}
+            className="flex-1"
+          >
+            Groups
           </Button>
           <Button
             size="sm"
@@ -190,11 +190,11 @@ export function ChannelSidebar({
           <div className="p-4 text-center text-muted-foreground">Loading...</div>
         ) : (
           <div className="p-2 space-y-4">
-            {/* Regular Channels */}
-            {(filter === "all" || filter === "messages") && filteredRegularChannels.length > 0 && (
+            {/* Group Chats */}
+            {(filter === "messages" || filter === "groups") && filteredRegularChannels.length > 0 && (
               <div>
                 <h3 className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Channels
+                  Groups
                 </h3>
                 <div className="space-y-1">
                   {filteredRegularChannels.map((channel) => renderChannel(channel))}
@@ -202,8 +202,8 @@ export function ChannelSidebar({
               </div>
             )}
 
-            {/* Channels */}
-            {(filter === "all" || filter === "channels") && filteredDealRooms.length > 0 && (
+            {/* Channels (Deal Rooms) */}
+            {filter === "channels" && filteredDealRooms.length > 0 && (
               <div>
                 <h3 className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Channels
@@ -261,7 +261,7 @@ export function ChannelSidebar({
             )}
 
             {/* Direct Messages */}
-            {(filter === "all" || filter === "messages") && filteredDMs.length > 0 && (
+            {filter === "messages" && filteredDMs.length > 0 && (
               <div>
                 <h3 className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Direct Messages
