@@ -26,9 +26,9 @@ export default function MobileMessages() {
   const { data: channelsData, isLoading } = trpc.communications.listChannels.useQuery();
   
   // Debug: Log channels data
-  console.log('[Mobile Messages] Channels loaded:', channelsData?.channels?.length || 0, 'channels');
+  console.log('[Mobile Messages] Channels loaded:', channelsData?.length || 0, 'channels');
   
-  const channels = channelsData?.channels || [];
+  const channels = channelsData || [];
   
   // Filter channels by type
   const dmChannels = channels.filter(c => c.type === "dm");

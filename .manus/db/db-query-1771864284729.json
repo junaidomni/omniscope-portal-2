@@ -1,0 +1,60 @@
+{
+  "query": "\nSELECT 'USERS' as table_name, COUNT(*) as count FROM users\nUNION ALL\nSELECT 'CHANNELS', COUNT(*) FROM channels\nUNION ALL\nSELECT 'CHANNEL_MEMBERS', COUNT(*) FROM channel_members\nUNION ALL\nSELECT 'MESSAGES', COUNT(*) FROM messages;\n\nSELECT id, name, email, role FROM users ORDER BY id LIMIT 10;\n\nSELECT id, channelName, channelType, channelOrgId FROM channels ORDER BY id LIMIT 10;\n\nSELECT cmUserId, cmChannelId, cmRole FROM channel_members ORDER BY id LIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute \nSELECT 'USERS' as table_name, COUNT(*) as count FROM users\nUNION ALL\nSELECT 'CHANNELS', COUNT(*) FROM channels\nUNION ALL\nSELECT 'CHANNEL_MEMBERS', COUNT(*) FROM channel_members\nUNION ALL\nSELECT 'MESSAGES', COUNT(*) FROM messages;\n\nSELECT id, name, email, role FROM users ORDER BY id LIMIT 10;\n\nSELECT id, channelName, channelType, channelOrgId FROM channels ORDER BY id LIMIT 10;\n\nSELECT cmUserId, cmChannelId, cmRole FROM channel_members ORDER BY id LIMIT 10;\n",
+  "rows": [
+    {
+      "table_name": "USERS",
+      "count": "16"
+    },
+    {
+      "table_name": "MESSAGES",
+      "count": "12"
+    },
+    {
+      "table_name": "CHANNEL_MEMBERS",
+      "count": "67"
+    },
+    {
+      "table_name": "CHANNELS",
+      "count": "77"
+    }
+  ],
+  "messages": [
+    "id\tname\temail\trole",
+    "1\tJunaid Qureshi\tjunaid@omniscopex.ae\tadmin",
+    "2850099\tJunaid Backup\tjunaid@ivgco.com\tadmin",
+    "2880001\tK Jack\tkjack646@gmail.com\tadmin",
+    "3060007\tTest User 1\ttest1@omniscopex.ae\tuser",
+    "3060008\tTest User 2\ttest2@omniscopex.ae\tuser",
+    "3060438\tTest User Deal Rooms\ttest-deal-rooms@omniscopex.ae\tadmin",
+    "3060439\tTest User 2 Deal Rooms\ttest2-deal-rooms@omniscopex.ae\tuser",
+    "3090373\tAdmin User Integration\tadmin-integration@test.com\tadmin",
+    "3090374\tRegular User Integration\tregular-integration@test.com\tuser",
+    "3090375\tGuest User Integration\tguest-integration@test.com\tuser",
+    "id\tchannelName\tchannelType\tchannelOrgId",
+    "1\tUpdated Test Channel\tgroup\tNULL",
+    "3\tEmpty Channel\tgroup\tNULL",
+    "4\tOmniScope Core Team\tgroup\tNULL",
+    "5\tOmniScope Core Team\tgroup\tNULL",
+    "6\tOmniScope Core Team\tgroup\tNULL",
+    "7\tOmniScope Core Team\tgroup\tNULL",
+    "8\tOmniScope Test\tdeal_room\t1",
+    "30009\ttest\tgroup\t1",
+    "30011\tJunaid Qureshi & K Jack\tdm\tNULL",
+    "30012\tJunaid Qureshi & Junaid Backup\tdm\tNULL",
+    "cmUserId\tcmChannelId\tcmRole",
+    "3060007\t1\towner",
+    "3060008\t1\tmember",
+    "1\t6\towner",
+    "1\t7\towner",
+    "1\t30009\towner",
+    "2880001\t30009\tmember",
+    "2850099\t30009\tmember",
+    "1\t30011\tmember",
+    "2880001\t30011\tmember",
+    "1\t30012\tmember"
+  ],
+  "stdout": "table_name\tcount\nUSERS\t16\nMESSAGES\t12\nCHANNEL_MEMBERS\t67\nCHANNELS\t77\nid\tname\temail\trole\n1\tJunaid Qureshi\tjunaid@omniscopex.ae\tadmin\n2850099\tJunaid Backup\tjunaid@ivgco.com\tadmin\n2880001\tK Jack\tkjack646@gmail.com\tadmin\n3060007\tTest User 1\ttest1@omniscopex.ae\tuser\n3060008\tTest User 2\ttest2@omniscopex.ae\tuser\n3060438\tTest User Deal Rooms\ttest-deal-rooms@omniscopex.ae\tadmin\n3060439\tTest User 2 Deal Rooms\ttest2-deal-rooms@omniscopex.ae\tuser\n3090373\tAdmin User Integration\tadmin-integration@test.com\tadmin\n3090374\tRegular User Integration\tregular-integration@test.com\tuser\n3090375\tGuest User Integration\tguest-integration@test.com\tuser\nid\tchannelName\tchannelType\tchannelOrgId\n1\tUpdated Test Channel\tgroup\tNULL\n3\tEmpty Channel\tgroup\tNULL\n4\tOmniScope Core Team\tgroup\tNULL\n5\tOmniScope Core Team\tgroup\tNULL\n6\tOmniScope Core Team\tgroup\tNULL\n7\tOmniScope Core Team\tgroup\tNULL\n8\tOmniScope Test\tdeal_room\t1\n30009\ttest\tgroup\t1\n30011\tJunaid Qureshi & K Jack\tdm\tNULL\n30012\tJunaid Qureshi & Junaid Backup\tdm\tNULL\ncmUserId\tcmChannelId\tcmRole\n3060007\t1\towner\n3060008\t1\tmember\n1\t6\towner\n1\t7\towner\n1\t30009\towner\n2880001\t30009\tmember\n2850099\t30009\tmember\n1\t30011\tmember\n2880001\t30011\tmember\n1\t30012\tmember\n",
+  "stderr": "",
+  "execution_time_ms": 513
+}

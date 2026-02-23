@@ -1,0 +1,24 @@
+{
+  "query": "\nSELECT 'USERS' as table_name, COUNT(*) as count FROM users\nUNION ALL\nSELECT 'CHANNELS', COUNT(*) FROM channels\nUNION ALL\nSELECT 'CHANNEL_MEMBERS', COUNT(*) FROM channel_members\nUNION ALL\nSELECT 'MESSAGES', COUNT(*) FROM messages;\n\nSELECT id, name, email FROM users LIMIT 10;\n\nSELECT id, chName, chType FROM channels LIMIT 10;\n\nSELECT cmUserId, cmChannelId, cmRole FROM channel_members LIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute \nSELECT 'USERS' as table_name, COUNT(*) as count FROM users\nUNION ALL\nSELECT 'CHANNELS', COUNT(*) FROM channels\nUNION ALL\nSELECT 'CHANNEL_MEMBERS', COUNT(*) FROM channel_members\nUNION ALL\nSELECT 'MESSAGES', COUNT(*) FROM messages;\n\nSELECT id, name, email FROM users LIMIT 10;\n\nSELECT id, chName, chType FROM channels LIMIT 10;\n\nSELECT cmUserId, cmChannelId, cmRole FROM channel_members LIMIT 10;\n",
+  "returncode": 1,
+  "logs": [
+    "table_name\tcount",
+    "MESSAGES\t12",
+    "USERS\t16",
+    "CHANNELS\t77",
+    "CHANNEL_MEMBERS\t67",
+    "id\tname\temail",
+    "1\tJunaid Qureshi\tjunaid@omniscopex.ae",
+    "2850099\tJunaid Backup\tjunaid@ivgco.com",
+    "2880001\tK Jack\tkjack646@gmail.com",
+    "3060007\tTest User 1\ttest1@omniscopex.ae",
+    "3060008\tTest User 2\ttest2@omniscopex.ae",
+    "3060438\tTest User Deal Rooms\ttest-deal-rooms@omniscopex.ae",
+    "3060439\tTest User 2 Deal Rooms\ttest2-deal-rooms@omniscopex.ae",
+    "3090373\tAdmin User Integration\tadmin-integration@test.com",
+    "3090374\tRegular User Integration\tregular-integration@test.com",
+    "3090375\tGuest User Integration\tguest-integration@test.com",
+    "ERROR 1054 (42S22) at line 12: Unknown column 'chname' in 'field list'"
+  ]
+}
