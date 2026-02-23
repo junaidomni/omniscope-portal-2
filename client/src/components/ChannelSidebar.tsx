@@ -40,6 +40,10 @@ export function ChannelSidebar({
   
   // Fetch deal rooms
   const { data: dealRooms } = trpc.communications.listDealRooms.useQuery();
+  
+  // Find parent deal room of selected channel (if it's a sub-channel)
+  const selectedChannel = channels?.find((c) => c.id === selectedChannelId);
+  const parentDealRoomId = selectedChannel?.parentChannelId || null;
 
   // Toggle deal room expansion
   const toggleDealRoom = (dealRoomId: number) => {
@@ -217,7 +221,9 @@ export function ChannelSidebar({
                           <button
                             onClick={() => onChannelSelect(dealRoom.id)}
                             className={`flex-1 p-2 rounded-lg text-left hover:bg-accent transition-colors ${
-                              selectedChannelId === dealRoom.id ? "bg-accent" : ""
+                              selectedChannelId === dealRoom.id || parentDealRoomId === dealRoom.id
+                                ? "bg-accent"
+                                : ""
                             }`}
                           >
                             <div className="flex items-center gap-2">

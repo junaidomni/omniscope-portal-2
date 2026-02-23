@@ -2951,3 +2951,9 @@
 - [ ] Add change role functionality (member → admin, admin → member)
 - [ ] Add remove member functionality (with confirmation)
 - [ ] Test: Create deal room → Add sub-channels → Invite internal users → Invite external via link → Manage members
+
+### Critical Navigation Fix
+- [x] Fix deal room sidebar - make parent deal room clickable (not just sub-channels)
+- [x] Add breadcrumb navigation in channel header (Deal Room > #sub-channel)
+- [x] Keep parent deal room highlighted when viewing sub-channels
+- [x] Ensure deal rooms have their own chat space (they do - click the deal room name)

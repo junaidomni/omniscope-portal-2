@@ -128,6 +128,11 @@ export default function ChatModule() {
   );
 
   const selectedChannel = channels?.find((c) => c.id === selectedChannelId);
+  
+  // Find parent deal room if viewing a sub-channel
+  const parentDealRoom = selectedChannel?.parentChannelId
+    ? channels?.find((c) => c.id === selectedChannel.parentChannelId)
+    : null;
 
   return (
     <div className="flex h-[calc(100vh-12rem)] gap-4">
@@ -168,7 +173,21 @@ export default function ChatModule() {
                 </Avatar>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">{selectedChannel?.name || "Unnamed Channel"}</h3>
+                    {/* Breadcrumb if viewing sub-channel */}
+                    {parentDealRoom ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setSelectedChannelId(parentDealRoom.id)}
+                          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {parentDealRoom.name}
+                        </button>
+                        <span className="text-muted-foreground">/</span>
+                        <h3 className="font-semibold">#{selectedChannel?.name || "Unnamed Channel"}</h3>
+                      </div>
+                    ) : (
+                      <h3 className="font-semibold">{selectedChannel?.name || "Unnamed Channel"}</h3>
+                    )}
                     {selectedChannel?.type === "deal_room" && (
                       <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">
                         Deal Room
