@@ -425,12 +425,60 @@ export const communicationsRouter = router({
         nextCursor = nextItem?.message.id;
       }
 
+      // Add reply counts to messages
+      const messagesWithReplyCounts = await Promise.all(
+        messagesList.map(async (m) => {
+          const replyCount = await db.getReplyCount(m.message.id);
+          return {
+            ...m.message,
+            user: m.user,
+            replyCount,
+          };
+        })
+      );
+
       return {
-        messages: messagesList.map((m) => ({
-          ...m.message,
-          user: m.user,
-        })),
+        messages: messagesWithReplyCounts,
         nextCursor,
+      };
+    }),
+
+  /**
+   * Get thread messages (replies to a parent message)
+   */
+  getThread: protectedProcedure
+    .input(
+      z.object({
+        parentMessageId: z.number(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get parent message to check channel membership
+      const parentMessage = await db.getMessageById(input.parentMessageId);
+      if (!parentMessage) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Parent message not found",
+        });
+      }
+
+      // Check if user is member of the channel
+      const isMember = await db.isChannelMember(parentMessage.channelId, userId);
+      if (!isMember) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not a member of this channel",
+        });
+      }
+
+      // Get thread messages
+      const threadMessages = await db.getThreadMessages(input.parentMessageId);
+
+      return {
+        parentMessage,
+        replies: threadMessages,
       };
     }),
 

@@ -4182,6 +4182,54 @@ export async function getMessageById(messageId: number) {
 }
 
 /**
+ * Get reply count for a message
+ */
+export async function getReplyCount(messageId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.replyToId, messageId),
+        eq(messages.isDeleted, false)
+      )
+    );
+
+  return result?.count || 0;
+}
+
+/**
+ * Get thread messages (replies to a parent message)
+ */
+export async function getThreadMessages(parentMessageId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const threadMessages = await db
+    .select({
+      message: messages,
+      user: users,
+    })
+    .from(messages)
+    .leftJoin(users, eq(messages.userId, users.id))
+    .where(
+      and(
+        eq(messages.replyToId, parentMessageId),
+        eq(messages.isDeleted, false)
+      )
+    )
+    .orderBy(asc(messages.createdAt));
+
+  return threadMessages.map((tm) => ({
+    ...tm.message,
+    user: tm.user,
+  }));
+}
+
+/**
  * Pin a message
  */
 export async function pinMessage(messageId: number) {

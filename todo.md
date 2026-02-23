@@ -93,3 +93,30 @@
 - [x] Frontend: Calculate total unread per filter (Messages, Groups, Channels)
 - [x] Frontend: Display total unread count on filter buttons with red badges
 - [x] Style badges with proper colors and positioning
+
+## Message Threading, Pinned Messages UI, & Search (Feb 23, 2026)
+
+### Message Threading
+- [x] Backend: Add parentMessageId column to messages table (already existed as replyToId)
+- [x] Backend: Add getThread procedure to fetch thread messages
+- [x] Backend: Add getReplyCount function to count replies
+- [x] Backend: Update sendMessage to accept parentMessageId (already existed)
+- [x] Frontend: Add "Reply" button to messages (hover to show)
+- [x] Frontend: Show thread indicator (reply count) on parent messages
+- [x] Frontend: Thread view modal/panel showing all replies
+- [x] Frontend: Reply input in thread view
+
+### Pinned Messages UI Refinement
+- [x] Frontend: Create pinned messages banner at top of channel
+- [x] Frontend: Show pinned message content with user attribution
+- [x] Frontend: Add "View all pinned" button if multiple pins (expand/collapse)
+- [x] Frontend: Improve pin/unpin button visibility and UX (X button to unpin)
+- [x] Frontend: Amber/gold theme for pinned messages banner
+
+### Message Search
+- [x] Backend: searchMessages procedure already exists with full-text search
+- [x] Backend: Support filters (channelId, userId, dateRange) already exists
+- [x] Frontend: Search input in chat header already exists
+- [x] Frontend: Search results modal with message previews already exists
+- [x] Frontend: Click result to jump to message in channel already exists
+- [x] Frontend: Sender, channel, and date range filters already exist

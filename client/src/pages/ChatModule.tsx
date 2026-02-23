@@ -37,6 +37,8 @@ import { CreateChannelDialog } from "@/components/CreateChannelDialog";
 import { InviteLinkDialog } from "@/components/InviteLinkDialog";
 import { ChannelSidebar } from "@/components/ChannelSidebar";
 import { AddSubChannelDialog } from "@/components/AddSubChannelDialog";
+import { ThreadView } from "@/components/ThreadView";
+import { PinnedMessagesBanner } from "@/components/PinnedMessagesBanner";
 import { DirectInviteDialog } from "@/components/DirectInviteDialog";
 import { MemberManagementDialog } from "@/components/MemberManagementDialog";
 import { NotificationListener } from "@/components/NotificationListener";
@@ -64,6 +66,7 @@ export default function ChatModule() {
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [threadParentMessageId, setThreadParentMessageId] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -323,6 +326,9 @@ export default function ChatModule() {
               </div>
             </div>
 
+            {/* Pinned Messages Banner */}
+            <PinnedMessagesBanner channelId={selectedChannelId} />
+
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               {!messagesData?.messages.length ? (
@@ -444,6 +450,28 @@ export default function ChatModule() {
                             {renderMentions(message.content)}
                           </div>
                         )}
+                        {/* Thread Indicator & Reply Button */}
+                        <div className="flex items-center gap-2 mt-2">
+                          {message.replyCount > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                              onClick={() => setThreadParentMessageId(message.id)}
+                            >
+                              <MessageSquare className="h-3 w-3 mr-1" />
+                              {message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setThreadParentMessageId(message.id)}
+                          >
+                            Reply
+                          </Button>
+                        </div>
                         {/* Message Reactions */}
                         <MessageReactions messageId={message.id} currentUserId={user?.id} />
                       </div>
@@ -703,6 +731,14 @@ export default function ChatModule() {
           // TODO: Scroll to message
         }}
       />
+      {/* Thread View Dialog */}
+      {selectedChannelId && (
+        <ThreadView
+          parentMessageId={threadParentMessageId}
+          channelId={selectedChannelId}
+          onClose={() => setThreadParentMessageId(null)}
+        />
+      )}
     </div>
   );
 }
