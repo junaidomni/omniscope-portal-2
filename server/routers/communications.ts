@@ -497,6 +497,14 @@ export const communicationsRouter = router({
       const userId = ctx.user.id;
       const orgId = ctx.user.orgId;
 
+      // Only admins and platform owners can create deal rooms
+      if (ctx.user.role !== "admin" && !ctx.user.platformOwner) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only administrators can create deal rooms",
+        });
+      }
+
       // Create deal room container (top-level)
       const dealRoomId = await db.createChannel({
         orgId,
@@ -714,12 +722,20 @@ export const communicationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.user.id;
 
-      // Check if user is member of parent deal room
-      const isMember = await db.isChannelMember(input.parentChannelId, userId);
-      if (!isMember) {
+      // Check if user is owner/admin of parent deal room
+      const membership = await db.getChannelMembership(input.parentChannelId, userId);
+      if (!membership) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "You must be a member of the deal room to create sub-channels",
+          message: "You are not a member of this deal room",
+        });
+      }
+
+      // Only owners and admins can create sub-channels
+      if (membership.role !== "owner" && membership.role !== "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only deal room owners and admins can create sub-channels",
         });
       }
 
@@ -788,5 +804,52 @@ export const communicationsRouter = router({
       }
 
       return await db.getSubChannels(input.dealRoomId);
+    }),
+
+  /**
+   * Directly invite internal users to a channel (no invite link needed)
+   */
+  inviteUsers: protectedProcedure
+    .input(z.object({
+      channelId: z.number(),
+      userIds: z.array(z.number()),
+      role: z.enum(["member", "admin"]).default("member"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const requesterId = ctx.user.id;
+
+      // Check if requester is owner/admin of the channel
+      const membership = await db.getChannelMembership(input.channelId, requesterId);
+      if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only channel owners/admins can invite users",
+        });
+      }
+
+      // Add each user to the channel
+      const results = await Promise.all(
+        input.userIds.map(async (userId) => {
+          try {
+            await db.addChannelMember({
+              channelId: input.channelId,
+              userId,
+              role: input.role,
+              isGuest: false,
+            });
+            return { userId, success: true };
+          } catch (error) {
+            return { userId, success: false, error: String(error) };
+          }
+        })
+      );
+
+      const successCount = results.filter((r) => r.success).length;
+      return {
+        success: true,
+        invited: successCount,
+        total: input.userIds.length,
+        results,
+      };
     }),
 });

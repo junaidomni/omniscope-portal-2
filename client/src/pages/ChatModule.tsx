@@ -31,6 +31,8 @@ import { useChannelSocket } from "@/hooks/useSocket";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { CreateChannelDialog } from "@/components/CreateChannelDialog";
 import { InviteLinkDialog } from "@/components/InviteLinkDialog";
+import { ChannelSidebar } from "@/components/ChannelSidebar";
+import { AddSubChannelDialog } from "@/components/AddSubChannelDialog";
 
 export default function ChatModule() {
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
@@ -40,6 +42,7 @@ export default function ChatModule() {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showCreateChannelDialog, setShowCreateChannelDialog] = useState(false);
   const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
+  const [showAddSubChannelDialog, setShowAddSubChannelDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -126,88 +129,11 @@ export default function ChatModule() {
   return (
     <div className="flex h-[calc(100vh-12rem)] gap-4">
       {/* Left Column: Channel List */}
-      <Card className="w-80 flex flex-col">
-        <div className="p-4 border-b space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Messages</h2>
-            <Button size="sm" variant="ghost" onClick={() => setShowCreateChannelDialog(true)}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search channels..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
-        <ScrollArea className="flex-1">
-          {channelsLoading ? (
-            <div className="p-4 text-center text-muted-foreground">Loading...</div>
-          ) : filteredChannels?.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              No channels yet. Start a conversation!
-            </div>
-          ) : (
-            <div className="p-2 space-y-1">
-              {filteredChannels?.map((channel) => (
-                <button
-                  key={channel.id}
-                  onClick={() => handleChannelSelect(channel.id)}
-                  className={`w-full p-3 rounded-lg text-left hover:bg-accent transition-colors ${
-                    selectedChannelId === channel.id ? "bg-accent" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10 flex-shrink-0">
-                      <AvatarImage src={channel.avatar || undefined} />
-                      <AvatarFallback>
-                        {channel.type === "dm" ? (
-                          <MessageSquare className="h-5 w-5" />
-                        ) : channel.type === "group" ? (
-                          <Users className="h-5 w-5" />
-                        ) : channel.type === "deal_room" ? (
-                          <Briefcase className="h-5 w-5 text-amber-500" />
-                        ) : (
-                          <Hash className="h-5 w-5" />
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="font-medium truncate">
-                            {channel.name || "Unnamed Channel"}
-                          </span>
-                          {channel.type === "deal_room" && (
-                            <Badge variant="outline" className="text-xs border-amber-500 text-amber-500 shrink-0">
-                              Deal Room
-                            </Badge>
-                          )}
-                        </div>
-                        {channel.unreadCount > 0 && (
-                          <Badge variant="default" className="h-5 min-w-[20px] flex items-center justify-center">
-                            {channel.unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {channel.lastMessageAt
-                          ? formatDistanceToNow(new Date(channel.lastMessageAt), { addSuffix: true })
-                          : "No messages"}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-      </Card>
+      <ChannelSidebar
+        selectedChannelId={selectedChannelId}
+        onChannelSelect={handleChannelSelect}
+        onCreateChannel={() => setShowCreateChannelDialog(true)}
+      />
 
       {/* Center Column: Message Thread */}
       <Card className="flex-1 flex flex-col">
@@ -253,14 +179,24 @@ export default function ChatModule() {
               </div>
               <div className="flex items-center gap-2">
                 {selectedChannel?.type === "deal_room" && (
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => setShowInviteLinkDialog(true)}
-                    title="Generate Invite Link"
-                  >
-                    <Link className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => setShowAddSubChannelDialog(true)}
+                      title="Add Channel"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => setShowInviteLinkDialog(true)}
+                      title="Generate Invite Link"
+                    >
+                      <Link className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
                 <Button size="sm" variant="ghost">
                   <Pin className="h-4 w-4" />
@@ -484,6 +420,19 @@ export default function ChatModule() {
           onOpenChange={setShowInviteLinkDialog}
           channelId={selectedChannelId}
           channelName={selectedChannel.name || "Unnamed Channel"}
+        />
+      )}
+
+      {/* Add Sub-Channel Dialog */}
+      {selectedChannelId && selectedChannel?.type === "deal_room" && (
+        <AddSubChannelDialog
+          open={showAddSubChannelDialog}
+          onOpenChange={setShowAddSubChannelDialog}
+          dealRoomId={selectedChannelId}
+          dealRoomName={selectedChannel.name || "Unnamed Deal Room"}
+          onChannelCreated={(channelId) => {
+            setSelectedChannelId(channelId);
+          }}
         />
       )}
     </div>

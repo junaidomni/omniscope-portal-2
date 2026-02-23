@@ -2924,3 +2924,22 @@
 - [ ] Restructure sidebar to show: Workspace → Channels, Deal Rooms → Sub-channels, DMs
 - [ ] Add collapsible sections for workspace and each deal room
 - [ ] Test: Create deal room → Add sub-channels → Invite users → Send messages
+
+### Phase 4: Complete Deal Room UI + Permissions
+- [x] Add role check to createDealRoom (only admins/owners can create)
+- [x] Add role check to createSubChannel (only deal room owners/admins)
+- [x] Restructure ChatModule sidebar to show collapsible deal rooms
+- [x] Show sub-channels nested under each deal room
+- [x] Add "Add Channel" button in deal room header (conditional on role)
+- [x] Integrate AddSubChannelDialog into ChatModule
+- [ ] Build invite to deal room flow (adds user to all sub-channels)
+- [ ] Build invite to specific channel flow (adds user to one sub-channel only)
+- [ ] Test: Admin creates deal room → Add sub-channels → Invite users → Verify permissions
+
+### Phase 5: Enhanced Invite System + Sidebar Filters
+- [x] Add backend procedure for inviting internal users directly (without link)
+- [ ] Update InviteLinkDialog to support channel-specific invites (not just deal room)
+- [ ] Create DirectInviteDialog for selecting internal users to add
+- [x] Add filter tabs to sidebar (All, Messages, Deal Rooms)
+- [x] Update ChannelSidebar to filter based on selected tab
+- [ ] Test: Invite internal user → Invite external via link → Filter sidebar
