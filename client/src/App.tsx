@@ -52,6 +52,16 @@ import InstallPage from "./pages/InstallPage";
 import AdminHubSuperAdmins from "./pages/admin-hub/SuperAdmins";
 import PlatformOversight from "./pages/PlatformOversight";
 
+// Mobile pages
+import MobileLayout from "./components/MobileLayout";
+import MobileMessages from "./pages/mobile/Messages";
+import MobileChatConversation from "./pages/mobile/ChatConversation";
+import MobileCalls from "./pages/mobile/Calls";
+import MobileProfile from "./pages/mobile/Profile";
+
+// Mobile detection
+import { shouldUseMobileUI } from "./lib/mobile";
+
 /**
  * Workspace Router — the standard PortalLayout shell.
  * Active when a specific org is selected.
@@ -153,6 +163,29 @@ function AdminHubRouter() {
 }
 
 /**
+ * Mobile Router — simplified mobile UI with bottom navigation
+ */
+function MobileRouter() {
+  return (
+    <MobileLayout>
+      <Switch>
+        <Route path="/mobile/messages" component={MobileMessages} />
+        <Route path="/mobile/chat/:channelId" component={MobileChatConversation} />
+        <Route path="/mobile/calls" component={MobileCalls} />
+        <Route path="/mobile/profile" component={MobileProfile} />
+        <Route path="/mobile/*">
+          {() => {
+            const [, setLocation] = useLocation();
+            setTimeout(() => setLocation("/mobile/messages"), 0);
+            return null;
+          }}
+        </Route>
+      </Switch>
+    </MobileLayout>
+  );
+}
+
+/**
  * Shell Switcher — determines which shell to render based on
  * the current org context and the URL path.
  */
@@ -165,7 +198,18 @@ function ShellSwitcher() {
     return <InstallPage />;
   }
   
+  // Mobile routes - check BEFORE useOrg() to avoid auth issues
+  if (location.startsWith("/mobile")) {
+    return <MobileRouter />;
+  }
+  
   const { currentOrg, isLoading } = useOrg();
+  
+  // If on mobile/PWA and not on mobile route, redirect to mobile UI
+  if (shouldUseMobileUI() && !location.startsWith("/mobile") && !location.startsWith("/admin-hub")) {
+    setTimeout(() => setLocation("/mobile/messages"), 0);
+    return null;
+  }
 
   // While org context is loading, show nothing to prevent flash
   if (isLoading) return null;

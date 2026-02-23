@@ -682,3 +682,42 @@
 - [x] Added dev-only reset button to clear localStorage dismissal
 - [x] Banner only shows in Calls tab (working as designed)
 - [ ] User needs to test: navigate to /install directly to verify no redirect
+
+
+## Week 7: Mobile-First PWA Experience (Feb 23, 2026)
+
+### Mobile Detection & Routing
+- [x] Add utility to detect PWA/standalone mode
+- [x] Add utility to detect mobile device (screen size + touch)
+- [x] Create MobileRouter component for simplified mobile UI
+- [x] Update App.tsx to route to MobileRouter when on mobile/PWA
+- [x] Keep desktop UI for web browser access
+- [x] Auto-redirect mobile/PWA users to /mobile/messages
+
+### Mobile UI Design
+- [x] Create MobileLayout component with bottom navigation
+- [x] Bottom nav tabs: Messages, Calls, Profile
+- [x] Mobile-optimized chat interface (full screen, touch-friendly)
+- [x] Mobile-optimized calls interface
+- [x] Simple profile/settings page for mobile
+- [x] Hide complex features (dashboard, analytics, admin panels)
+- [x] Use larger touch targets (min 44px)
+- [x] Optimize for one-handed use
+- [x] Black & gold theme consistent with desktop
+
+### Mobile Chat Features
+- [ ] Full-screen chat list with search
+- [ ] Full-screen conversation view
+- [ ] Swipe gestures (back to list, reply, etc.)
+- [ ] Mobile-optimized message composer
+- [ ] Voice message recording
+- [ ] Image/file upload from mobile
+- [ ] Push notifications integration
+
+### Testing & Polish
+- [ ] Test on actual iOS device
+- [ ] Test on actual Android device
+- [ ] Test PWA installation flow
+- [ ] Test offline functionality
+- [ ] Optimize performance for mobile
+- [ ] Save checkpoint
