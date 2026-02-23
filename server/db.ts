@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes, integrations, InsertIntegration, featureToggles, InsertFeatureToggle, designPreferences, InsertDesignPreference, accounts, InsertAccount, organizations, InsertOrganization, orgMemberships, InsertOrgMembership, plans, InsertPlan, subscriptions, InsertSubscription, planFeatures, InsertPlanFeature, billingEvents, InsertBillingEvent, platformAuditLog, InsertPlatformAuditLogEntry, loginHistory, InsertLoginHistory, channels, channelMembers, messages, messageReactions, messageAttachments, userPresence, typingIndicators, callLogs, callParticipants, channelInvites } from "../drizzle/schema";
+import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes, integrations, InsertIntegration, featureToggles, InsertFeatureToggle, designPreferences, InsertDesignPreference, accounts, InsertAccount, organizations, InsertOrganization, orgMemberships, InsertOrgMembership, plans, InsertPlan, subscriptions, InsertSubscription, planFeatures, InsertPlanFeature, billingEvents, InsertBillingEvent, platformAuditLog, InsertPlatformAuditLogEntry, loginHistory, InsertLoginHistory, workspaces, InsertWorkspace, Workspace, channels, channelMembers, messages, messageReactions, messageAttachments, userPresence, typingIndicators, callLogs, callParticipants, channelInvites } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -3305,7 +3305,8 @@ export async function getChannelMembership(channelId: number, userId: number) {
  * Create a new channel
  */
 export async function createChannel(data: {
-  orgId: number | null;
+  orgId: number;
+  workspaceId?: number;
   type: "dm" | "group" | "deal_room" | "announcement";
   name?: string;
   description?: string;
@@ -3317,6 +3318,7 @@ export async function createChannel(data: {
   
   const [result] = await db.insert(channels).values({
     orgId: data.orgId,
+    workspaceId: data.workspaceId ?? null,
     type: data.type,
     name: data.name ?? null,
     description: data.description ?? null,
@@ -3780,4 +3782,140 @@ export async function incrementInviteUsedCount(inviteId: number) {
     .update(channelInvites)
     .set({ usedCount: sql`${channelInvites.usedCount} + 1` })
     .where(eq(channelInvites.id, inviteId));
+}
+
+
+// ============================================================================
+// WORKSPACE OPERATIONS
+// ============================================================================
+
+/**
+ * Create a new workspace
+ */
+export async function createWorkspace(data: {
+  orgId: number;
+  name: string;
+  description?: string;
+  avatar?: string;
+  isDefault?: boolean;
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const [result] = await db.insert(workspaces).values({
+    orgId: data.orgId,
+    name: data.name,
+    description: data.description,
+    avatar: data.avatar,
+    isDefault: data.isDefault ?? false,
+    createdBy: data.createdBy,
+  });
+  
+  return Number(result.insertId);
+}
+
+/**
+ * Get all workspaces for an organization
+ */
+export async function getWorkspacesForOrg(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(workspaces)
+    .where(eq(workspaces.orgId, orgId))
+    .orderBy(desc(workspaces.isDefault), asc(workspaces.name));
+}
+
+/**
+ * Get workspace by ID
+ */
+export async function getWorkspaceById(workspaceId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(workspaces)
+    .where(eq(workspaces.id, workspaceId))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Get or create default workspace for organization
+ */
+export async function getOrCreateDefaultWorkspace(orgId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Check if default workspace exists
+  const existing = await db
+    .select()
+    .from(workspaces)
+    .where(and(
+      eq(workspaces.orgId, orgId),
+      eq(workspaces.isDefault, true)
+    ))
+    .limit(1);
+  
+  if (existing[0]) {
+    return existing[0];
+  }
+  
+  // Get org name for workspace name
+  const org = await db
+    .select({ name: organizations.name })
+    .from(organizations)
+    .where(eq(organizations.id, orgId))
+    .limit(1);
+  
+  const orgName = org[0]?.name || "OmniScope";
+  
+  // Create default workspace
+  const workspaceId = await createWorkspace({
+    orgId,
+    name: orgName,
+    description: `Default workspace for ${orgName}`,
+    isDefault: true,
+    createdBy: userId,
+  });
+  
+  if (!workspaceId) return null;
+  
+  return await getWorkspaceById(workspaceId);
+}
+
+/**
+ * Get channels for a workspace
+ */
+export async function getChannelsForWorkspace(workspaceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(channels)
+    .where(eq(channels.workspaceId, workspaceId))
+    .orderBy(asc(channels.name));
+}
+
+/**
+ * Update workspace
+ */
+export async function updateWorkspace(workspaceId: number, data: {
+  name?: string;
+  description?: string;
+  avatar?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db
+    .update(workspaces)
+    .set(data)
+    .where(eq(workspaces.id, workspaceId));
 }

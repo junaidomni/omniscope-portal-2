@@ -2895,3 +2895,19 @@
 ### Bug Fixes - Week 4
 - [x] Remove vertical dropdown from Deal Room creation (simplify to just name + description)
 - [x] Fix Intelligence tab error (filteredMeetings.map is not a function - fixed data.meetings access)
+
+### Phase 2: Workspace-Based Communications Architecture
+- [x] Update database schema: Add workspaces table, link channels to workspaces
+- [x] Add channel-level permissions (invite to workspace vs specific channel)
+- [x] Update channel_members table to support channel-specific access
+- [ ] Build workspace management procedures (create, list, addMember)
+- [ ] Build channel invite procedures (inviteToChannel, inviteToWorkspace)
+- [ ] Add platform owner visibility (owners can view all channels/DMs without being members)
+- [ ] Restructure Chat UI sidebar to show workspace hierarchy
+- [ ] Add workspace selector/switcher in UI
+- [ ] Update channel list to group by workspace
+- [ ] Build admin dashboard for platform owners
+- [ ] Add global search across all communications (admin only)
+- [ ] Add conversation export for compliance
+- [ ] Test workspace creation and channel invites
+- [ ] Test owner visibility without joining conversations

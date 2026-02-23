@@ -281,6 +281,13 @@
       "when": 1771813070405,
       "tag": "0039_fair_ben_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1771820271999,
+      "tag": "0040_thick_northstar",
+      "breakpoints": true
     }
   ]
 }

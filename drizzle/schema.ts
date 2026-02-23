@@ -1770,8 +1770,29 @@ export const loginHistoryRelations = relations(loginHistory, ({ one }) => ({
 
 
 // ============================================================================
-// COMMUNICATIONS PLATFORM
+// COMMUNICATIONS
 // ============================================================================
+
+/**
+ * Workspaces - top-level container for channels (e.g., "OmniScope")
+ */
+export const workspaces = mysqlTable("workspaces", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("workspaceOrgId").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: varchar("workspaceName", { length: 500 }).notNull(),
+  description: text("workspaceDescription"),
+  avatar: varchar("workspaceAvatar", { length: 1000 }),
+  isDefault: boolean("workspaceIsDefault").default(false).notNull(), // One default workspace per org
+  createdBy: int("workspaceCreatedBy").notNull().references(() => users.id),
+  createdAt: timestamp("workspaceCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("workspaceUpdatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  orgIdx: index("workspace_org_idx").on(table.orgId),
+  createdByIdx: index("workspace_created_by_idx").on(table.createdBy),
+}));
+
+export type Workspace = typeof workspaces.$inferSelect;
+export type InsertWorkspace = typeof workspaces.$inferInsert;
 
 /**
  * Channels - DMs, group chats, and deal rooms
@@ -1779,6 +1800,7 @@ export const loginHistoryRelations = relations(loginHistory, ({ one }) => ({
 export const channels = mysqlTable("channels", {
   id: int("id").autoincrement().primaryKey(),
   orgId: int("channelOrgId").references(() => organizations.id, { onDelete: "cascade" }), // NULL for cross-org DMs
+  workspaceId: int("channelWorkspaceId").references(() => workspaces.id, { onDelete: "cascade" }), // NULL for DMs
   type: mysqlEnum("channelType", ["dm", "group", "deal_room", "announcement"]).notNull(),
   name: varchar("channelName", { length: 500 }),
   description: text("channelDescription"),

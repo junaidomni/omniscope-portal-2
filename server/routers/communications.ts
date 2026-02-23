@@ -507,7 +507,12 @@ export const communicationsRouter = router({
       });
 
       // Add creator as owner
-      await db.addChannelMember(channelId, userId, "owner", false);
+      await db.addChannelMember({
+        channelId,
+        userId,
+        role: "owner",
+        isGuest: false,
+      });
 
       return { channelId };
     }),
