@@ -738,3 +738,31 @@
 - [ ] Notifications page for mobile
 - [ ] Privacy page for mobile
 - [ ] Help page for mobile
+
+
+## Mobile-Desktop Feature Parity (Feb 23, 2026)
+
+### Messages Organization
+- [x] Add tabbed navigation to mobile Messages (DMs / Groups / Channels)
+- [x] Filter channels by type in each tab
+- [x] Show unread counts on each tab
+- [x] Match desktop Communications domain structure
+
+### Create Functionality
+- [ ] Add "New DM" button and dialog
+- [ ] Add "New Group" button and dialog
+- [ ] Add "New Channel" button and dialog
+- [ ] Reuse existing tRPC procedures from desktop
+
+### Delete Functionality
+- [x] Add delete button on channel list items
+- [x] Add delete confirmation dialog
+- [x] Sync deletions across mobile and desktop (uses same tRPC mutation)
+- [x] Handle active chat deletion gracefully
+
+### Real-time Sync
+- [ ] Test channel creation on mobile → appears on desktop
+- [ ] Test channel creation on desktop → appears on mobile
+- [ ] Test channel deletion on mobile → removed from desktop
+- [ ] Test channel deletion on desktop → removed from mobile
+- [ ] Verify message sync works bidirectionally
