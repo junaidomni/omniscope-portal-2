@@ -3035,3 +3035,9 @@
 - [ ] Send typing event when user types (debounced)
 - [ ] Show "User is typing..." indicator in channel
 - [ ] Clear typing indicator after 3 seconds of inactivity
+
+### Critical Bug Fixes
+- [x] Delete duplicate "Test Org Deal Rooms" organizations from database
+- [x] Fix user search in DirectInviteDialog (was using wrong procedure name getChannelDetails → getChannel)
+- [ ] Add validation to prevent accidental organization creation
+- [x] Ensure only "OmniScope" organization exists

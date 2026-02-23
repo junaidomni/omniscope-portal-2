@@ -35,7 +35,7 @@ export function DirectInviteDialog({
   );
 
   // Fetch current channel members to exclude them
-  const { data: channelDetails } = trpc.communications.getChannelDetails.useQuery(
+  const { data: channelDetails } = trpc.communications.getChannel.useQuery(
     { channelId },
     { enabled: open }
   );
@@ -43,7 +43,7 @@ export function DirectInviteDialog({
   const inviteUsersMutation = trpc.communications.inviteUsers.useMutation({
     onSuccess: (data) => {
       toast.success(`Invited ${data.invited} of ${data.total} users`);
-      utils.communications.getChannelDetails.invalidate({ channelId });
+      utils.communications.getChannel.invalidate({ channelId });
       utils.communications.listChannels.invalidate();
       onOpenChange(false);
       setSelectedUserIds(new Set());
