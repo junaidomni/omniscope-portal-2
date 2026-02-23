@@ -158,15 +158,17 @@ function AdminHubRouter() {
  */
 function ShellSwitcher() {
   const [location, setLocation] = useLocation();
+  
+  // /install route is PUBLIC — no authentication required
+  // Check BEFORE calling useOrg() to avoid triggering auth
+  if (location === "/install") {
+    return <InstallPage />;
+  }
+  
   const { currentOrg, isLoading } = useOrg();
 
   // While org context is loading, show nothing to prevent flash
   if (isLoading) return null;
-
-  // /install route is PUBLIC — no authentication required
-  if (location === "/install") {
-    return <InstallPage />;
-  }
 
   // /admin-hub/* routes ALWAYS render the AdminLayout regardless of org context.
   // The admin hub is a standalone shell — you can view it while an org is selected.

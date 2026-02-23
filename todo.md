@@ -662,3 +662,20 @@
 - [x] Verify InstallBanner placement in component tree
 - [x] Add padding wrapper for proper spacing
 - [x] Test QR code visibility in Chat tab
+
+
+## Systematic PWA Installation Fixes (Feb 23, 2026)
+
+### Fix /install Route Redirect
+- [x] Trace App.tsx routing structure completely
+- [x] Verify /install is outside PortalLayout/auth wrapper
+- [x] Check if ShellSwitcher is forcing authentication
+- [x] Test /install route in incognito/logged-out state
+- [x] Fixed by moving /install check BEFORE useOrg() call in ShellSwitcher
+- [x] /install page now loads without authentication (HTTP 200)
+
+### Find Communications Chat Component
+- [x] Identified Communications uses ChatModule for /chat route
+- [x] InstallBanner already added to ChatModule (line 419-421)
+- [x] Console logs show InstallBanner rendering and generating QR codes
+- [ ] Investigate why banner might not be visible to user (localStorage dismissal? PWA already installed? CSS issue?)

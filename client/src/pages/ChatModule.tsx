@@ -418,6 +418,18 @@ export default function ChatModule() {
             {/* Install Banner */}
             <div className="px-4 pt-2">
               <InstallBanner />
+              {/* Debug: Clear dismissal flag */}
+              {process.env.NODE_ENV === 'development' && (
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('omniscope-install-banner-dismissed');
+                    window.location.reload();
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground mt-1"
+                >
+                  [Dev] Reset Install Banner
+                </button>
+              )}
             </div>
             
             {/* Pinned Messages Banner */}
