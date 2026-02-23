@@ -3202,6 +3202,25 @@ export async function getRevenueSummary() {
 // ============================================================================
 
 /**
+ * Get ALL channels in an organization (for platform owners)
+ */
+export async function getAllChannels(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allChannels = await db
+    .select({
+      channel: channels,
+      membership: sql`NULL`.as('membership'),
+    })
+    .from(channels)
+    .where(eq(channels.orgId, orgId))
+    .orderBy(desc(channels.lastMessageAt));
+  
+  return allChannels;
+}
+
+/**
  * Get all channels for a user
  */
 export async function getChannelsForUser(userId: number) {
@@ -4075,4 +4094,146 @@ export async function searchMessages(params: {
     .limit(50);
 
   return results;
+}
+
+/**
+ * Add a reaction to a message
+ */
+export async function addReaction(params: {
+  messageId: number;
+  userId: number;
+  emoji: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    await db.insert(messageReactions).values({
+      messageId: params.messageId,
+      userId: params.userId,
+      emoji: params.emoji,
+    });
+  } catch (error) {
+    // Ignore duplicate key errors (user already reacted with this emoji)
+    console.log("[DB] Reaction already exists");
+  }
+}
+
+/**
+ * Remove a reaction from a message
+ */
+export async function removeReaction(params: {
+  messageId: number;
+  userId: number;
+  emoji: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .delete(messageReactions)
+    .where(
+      and(
+        eq(messageReactions.messageId, params.messageId),
+        eq(messageReactions.userId, params.userId),
+        eq(messageReactions.emoji, params.emoji)
+      )
+    );
+}
+
+/**
+ * Get all reactions for a message
+ */
+export async function getReactions(messageId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const reactions = await db
+    .select({
+      id: messageReactions.id,
+      emoji: messageReactions.emoji,
+      userId: messageReactions.userId,
+      userName: users.name,
+      userAvatar: users.profilePhotoUrl,
+      createdAt: messageReactions.createdAt,
+    })
+    .from(messageReactions)
+    .innerJoin(users, eq(messageReactions.userId, users.id))
+    .where(eq(messageReactions.messageId, messageId))
+    .orderBy(messageReactions.createdAt);
+
+  return reactions;
+}
+
+/**
+ * Get message by ID
+ */
+export async function getMessageById(messageId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [message] = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1);
+
+  return message || null;
+}
+
+/**
+ * Pin a message
+ */
+export async function pinMessage(messageId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(messages)
+    .set({ isPinned: true })
+    .where(eq(messages.id, messageId));
+}
+
+/**
+ * Unpin a message
+ */
+export async function unpinMessage(messageId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(messages)
+    .set({ isPinned: false })
+    .where(eq(messages.id, messageId));
+}
+
+/**
+ * Get pinned messages for a channel
+ */
+export async function getPinnedMessages(channelId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const pinnedMessages = await db
+    .select({
+      id: messages.id,
+      content: messages.content,
+      createdAt: messages.createdAt,
+      user: {
+        id: users.id,
+        name: users.name,
+        profilePhotoUrl: users.profilePhotoUrl,
+      },
+    })
+    .from(messages)
+    .innerJoin(users, eq(messages.userId, users.id))
+    .where(
+      and(
+        eq(messages.channelId, channelId),
+        eq(messages.isPinned, true)
+      )
+    )
+    .orderBy(desc(messages.createdAt));
+
+  return pinnedMessages;
 }

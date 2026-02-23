@@ -17,7 +17,12 @@ export const communicationsRouter = router({
    */
   listChannels: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
-    const userChannels = await db.getChannelsForUser(userId);
+    const isPlatformOwner = ctx.user.role === "admin";
+    
+    // Platform owners see ALL channels, regular users see only their channels
+    const userChannels = isPlatformOwner 
+      ? await db.getAllChannels(ctx.orgId)
+      : await db.getChannelsForUser(userId);
     
     // Enrich with unread counts
     const enriched = await Promise.all(
@@ -41,14 +46,17 @@ export const communicationsRouter = router({
     .input(z.object({ channelId: z.number() }))
     .query(async ({ input, ctx }) => {
       const userId = ctx.user.id;
+      const isPlatformOwner = ctx.user.role === "admin";
 
-      // Check if user is member of this channel
-      const isMember = await db.isChannelMember(input.channelId, userId);
-      if (!isMember) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You are not a member of this channel",
-        });
+      // Check if user is member of this channel (platform owners bypass this)
+      if (!isPlatformOwner) {
+        const isMember = await db.isChannelMember(input.channelId, userId);
+        if (!isMember) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not a member of this channel",
+          });
+        }
       }
 
       // Get channel details
@@ -1054,5 +1062,147 @@ export const communicationsRouter = router({
       });
 
       return results;
+    }),
+
+  // ============================================================================
+  // MESSAGE REACTIONS
+  // ============================================================================
+
+  /**
+   * Add a reaction to a message
+   */
+  addReaction: protectedProcedure
+    .input(
+      z.object({
+        messageId: z.number(),
+        emoji: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Add reaction
+      await db.addReaction({
+        messageId: input.messageId,
+        userId,
+        emoji: input.emoji,
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Remove a reaction from a message
+   */
+  removeReaction: protectedProcedure
+    .input(
+      z.object({
+        messageId: z.number(),
+        emoji: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Remove reaction
+      await db.removeReaction({
+        messageId: input.messageId,
+        userId,
+        emoji: input.emoji,
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Get reactions for a message
+   */
+  getReactions: protectedProcedure
+    .input(z.object({ messageId: z.number() }))
+    .query(async ({ input }) => {
+      const reactions = await db.getReactions(input.messageId);
+      return reactions;
+    }),
+
+  // ============================================================================
+  // MESSAGE PINNING
+  // ============================================================================
+
+  /**
+   * Pin a message (owner/admin only)
+   */
+  pinMessage: protectedProcedure
+    .input(z.object({ messageId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get message to find channel
+      const message = await db.getMessageById(input.messageId);
+      if (!message) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Message not found",
+        });
+      }
+
+      // Check if user is owner or admin of the channel
+      const membership = await db.getChannelMembership(message.channelId, userId);
+      const isPlatformOwner = ctx.user.role === "admin";
+      
+      if (!isPlatformOwner && (!membership || (membership.role !== "owner" && membership.role !== "admin"))) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only channel owners and admins can pin messages",
+        });
+      }
+
+      // Pin the message
+      await db.pinMessage(input.messageId);
+
+      return { success: true };
+    }),
+
+  /**
+   * Unpin a message (owner/admin only)
+   */
+  unpinMessage: protectedProcedure
+    .input(z.object({ messageId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get message to find channel
+      const message = await db.getMessageById(input.messageId);
+      if (!message) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Message not found",
+        });
+      }
+
+      // Check if user is owner or admin of the channel
+      const membership = await db.getChannelMembership(message.channelId, userId);
+      const isPlatformOwner = ctx.user.role === "admin";
+      
+      if (!isPlatformOwner && (!membership || (membership.role !== "owner" && membership.role !== "admin"))) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only channel owners and admins can unpin messages",
+        });
+      }
+
+      // Unpin the message
+      await db.unpinMessage(input.messageId);
+
+      return { success: true };
+    }),
+
+  /**
+   * Get pinned messages for a channel
+   */
+  getPinnedMessages: protectedProcedure
+    .input(z.object({ channelId: z.number() }))
+    .query(async ({ input }) => {
+      const pinnedMessages = await db.getPinnedMessages(input.channelId);
+      return pinnedMessages;
     }),
 });

@@ -3007,3 +3007,31 @@
   * Platform owner permissions working
   * Message search with filters functional
   * File sharing already implemented
+
+### Platform Owner Full Access
+- [x] Fix platform owner access - allow viewing ALL channels even if not a member
+- [x] Show all channels in sidebar for platform owners (uses getAllChannels)
+- [x] Add platform owner override to getChannel procedure
+- [x] Add platform owner override to listChannels procedure
+- [ ] Add "Admin View" badge to channels platform owner is not a member of
+- [ ] Add one-click "Join Channel" button for platform owners on non-member channels
+
+### Message Reactions
+- [x] Add reactions table to schema (already exists)
+- [x] Add addReaction and removeReaction procedures
+- [x] Add reaction picker UI below each message
+- [x] Show reaction counts with user avatars on hover
+- [ ] Real-time reaction updates via WebSocket (optional enhancement)
+
+### Message Pinning
+- [x] Add isPinned field to messages table (already exists)
+- [x] Add pinMessage and unpinMessage procedures (owner/admin only)
+- [ ] Show pinned messages section at top of channel (optional enhancement)
+- [x] Add pin icon button for owners/admins
+- [x] Add unpin functionality (click pin again to unpin)
+
+### Typing Indicators
+- [ ] Add typing event to WebSocket
+- [ ] Send typing event when user types (debounced)
+- [ ] Show "User is typing..." indicator in channel
+- [ ] Clear typing indicator after 3 seconds of inactivity

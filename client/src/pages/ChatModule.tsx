@@ -39,6 +39,7 @@ import { MemberManagementDialog } from "@/components/MemberManagementDialog";
 import { NotificationListener } from "@/components/NotificationListener";
 import { DeleteChannelDialog } from "@/components/DeleteChannelDialog";
 import { MessageSearch } from "@/components/MessageSearch";
+import { MessageReactions } from "@/components/MessageReactions";
 
 export default function ChatModule() {
   // Get current user
@@ -117,6 +118,21 @@ export default function ChatModule() {
     },
   });
 
+  // Pin/unpin message mutations
+  const pinMessageMutation = trpc.communications.pinMessage.useMutation({
+    onSuccess: () => {
+      utils.communications.listMessages.invalidate();
+      utils.communications.getPinnedMessages.invalidate();
+    },
+  });
+
+  const unpinMessageMutation = trpc.communications.unpinMessage.useMutation({
+    onSuccess: () => {
+      utils.communications.listMessages.invalidate();
+      utils.communications.getPinnedMessages.invalidate();
+    },
+  });
+
   const handleSendMessage = () => {
     if ((!messageInput.trim() && attachments.length === 0) || !selectedChannelId) return;
 
@@ -133,6 +149,14 @@ export default function ChatModule() {
     setSelectedChannelId(channelId);
     // Mark as read
     markReadMutation.mutate({ channelId });
+  };
+
+  const handlePinMessage = (messageId: number, isPinned: boolean) => {
+    if (isPinned) {
+      unpinMessageMutation.mutate({ messageId });
+    } else {
+      pinMessageMutation.mutate({ messageId });
+    }
   };
 
   const filteredChannels = channels?.filter((channel) =>
@@ -275,7 +299,7 @@ export default function ChatModule() {
               ) : (
                 <div className="space-y-4">
                   {messagesData.messages.map((message) => (
-                    <div key={message.id} className="flex gap-3">
+                    <div key={message.id} className="flex gap-3 group">
                       <Avatar className="h-8 w-8 flex-shrink-0">
                         <AvatarImage src={message.user.profilePhotoUrl || undefined} />
                         <AvatarFallback>
@@ -288,10 +312,23 @@ export default function ChatModule() {
                           <span className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
                           </span>
+                          {/* Pin button (owner/admin only) */}
+                          {(currentUserRole === "owner" || currentUserRole === "admin" || user?.role === "admin") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handlePinMessage(message.id, message.isPinned)}
+                            >
+                              <Pin className={`h-3 w-3 ${message.isPinned ? 'fill-amber-500 text-amber-500' : ''}`} />
+                            </Button>
+                          )}
                         </div>
                         <div className="text-sm mt-1 whitespace-pre-wrap break-words">
                           {renderMentions(message.content)}
                         </div>
+                        {/* Message Reactions */}
+                        <MessageReactions messageId={message.id} currentUserId={user?.id} />
                       </div>
                     </div>
                   ))}
