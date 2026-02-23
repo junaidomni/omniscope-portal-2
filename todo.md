@@ -2943,3 +2943,11 @@
 - [x] Add filter tabs to sidebar (All, Messages, Deal Rooms)
 - [x] Update ChannelSidebar to filter based on selected tab
 - [ ] Test: Invite internal user → Invite external via link → Filter sidebar
+
+### Phase 6: Final Deal Room Completion
+- [x] Build DirectInviteDialog component (select internal users, add to channel)
+- [x] Add "Invite Users" button in channel header (next to invite link button)
+- [ ] Build member management UI (show member list in sidebar or modal)
+- [ ] Add change role functionality (member → admin, admin → member)
+- [ ] Add remove member functionality (with confirmation)
+- [ ] Test: Create deal room → Add sub-channels → Invite internal users → Invite external via link → Manage members

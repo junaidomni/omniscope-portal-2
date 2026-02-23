@@ -22,7 +22,8 @@ import {
   X,
   Link,
   Briefcase,
-  Shield
+  Shield,
+  UserPlus
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { MentionAutocomplete } from "@/components/MentionAutocomplete";
@@ -33,6 +34,7 @@ import { CreateChannelDialog } from "@/components/CreateChannelDialog";
 import { InviteLinkDialog } from "@/components/InviteLinkDialog";
 import { ChannelSidebar } from "@/components/ChannelSidebar";
 import { AddSubChannelDialog } from "@/components/AddSubChannelDialog";
+import { DirectInviteDialog } from "@/components/DirectInviteDialog";
 
 export default function ChatModule() {
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
@@ -43,6 +45,7 @@ export default function ChatModule() {
   const [showCreateChannelDialog, setShowCreateChannelDialog] = useState(false);
   const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
   const [showAddSubChannelDialog, setShowAddSubChannelDialog] = useState(false);
+  const [showDirectInviteDialog, setShowDirectInviteDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -187,6 +190,14 @@ export default function ChatModule() {
                       title="Add Channel"
                     >
                       <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => setShowDirectInviteDialog(true)}
+                      title="Invite Users"
+                    >
+                      <UserPlus className="h-4 w-4" />
                     </Button>
                     <Button 
                       size="sm" 
@@ -433,6 +444,16 @@ export default function ChatModule() {
           onChannelCreated={(channelId) => {
             setSelectedChannelId(channelId);
           }}
+        />
+      )}
+
+      {/* Direct Invite Dialog */}
+      {selectedChannelId && selectedChannel && (
+        <DirectInviteDialog
+          open={showDirectInviteDialog}
+          onOpenChange={setShowDirectInviteDialog}
+          channelId={selectedChannelId}
+          channelName={selectedChannel.name || "Unnamed Channel"}
         />
       )}
     </div>
