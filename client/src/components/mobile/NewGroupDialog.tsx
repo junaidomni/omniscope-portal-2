@@ -20,11 +20,15 @@ export function NewGroupDialog({ open, onOpenChange }: NewGroupDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [, setLocation] = useLocation();
 
-  // Load contacts
-  const { data: contacts, isLoading } = trpc.contacts.list.useQuery(
+  // Load platform users
+  const { data: users, isLoading } = trpc.users.list.useQuery(
     { search, limit: 50 },
     { enabled: open }
   );
+  
+  // Get current user to filter out from list
+  const { data: currentUser } = trpc.auth.me.useQuery();
+  const filteredUsers = users?.filter(u => u.id !== currentUser?.id) || [];
 
   // Create group mutation
   const createGroup = trpc.communications.createGroupChat.useMutation({
@@ -41,12 +45,12 @@ export function NewGroupDialog({ open, onOpenChange }: NewGroupDialogProps) {
     },
   });
 
-  const toggleContact = (contactId: number) => {
+  const toggleUser = (userId: number) => {
     const newSelected = new Set(selectedIds);
-    if (newSelected.has(contactId)) {
-      newSelected.delete(contactId);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
     } else {
-      newSelected.add(contactId);
+      newSelected.add(userId);
     }
     setSelectedIds(newSelected);
   };
@@ -91,11 +95,11 @@ export function NewGroupDialog({ open, onOpenChange }: NewGroupDialogProps) {
             rows={2}
           />
 
-          {/* Search Contacts */}
+          {/* Search Users */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search contacts..."
+              placeholder="Search users..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -117,18 +121,18 @@ export function NewGroupDialog({ open, onOpenChange }: NewGroupDialogProps) {
               </div>
             )}
 
-            {!isLoading && contacts && contacts.length === 0 && (
+            {!isLoading && filteredUsers.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                No contacts found
+                No users found
               </div>
             )}
 
-            {contacts?.map((contact: any) => {
-              const isSelected = selectedIds.has(contact.id);
+            {filteredUsers.map((user) => {
+              const isSelected = selectedIds.has(user.id);
               return (
                 <button
-                  key={contact.id}
-                  onClick={() => toggleContact(contact.id)}
+                  key={user.id}
+                  onClick={() => toggleUser(user.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${
                     isSelected ? "bg-primary/10" : "hover:bg-accent"
                   }`}
@@ -141,10 +145,10 @@ export function NewGroupDialog({ open, onOpenChange }: NewGroupDialogProps) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{contact.name}</div>
-                    {contact.email && (
+                    <div className="font-medium truncate">{user.name || 'Unknown User'}</div>
+                    {user.email && (
                       <div className="text-sm text-muted-foreground truncate">
-                        {contact.email}
+                        {user.email}
                       </div>
                     )}
                   </div>

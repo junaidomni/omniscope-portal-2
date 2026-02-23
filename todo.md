@@ -870,3 +870,27 @@
 - [x] Add proper error handling for empty contacts
 - [x] Integrate NewCallDialog into Calls tab
 - [x] Call flow: select contact → create DM → start call → navigate to chat
+
+
+## Desktop-Mobile Message Sync Investigation (Feb 23, 2026)
+
+### Desktop Data Source
+- [x] Check if desktop Communications uses same listChannels query as mobile
+- [x] Investigate if desktop has mock/test data that bypasses database
+- [x] ROOT CAUSE FOUND: Dialogs were using contacts.list (CRM contacts) instead of users.list (platform users)
+- [x] Fixed: Updated all three dialogs (NewDM, NewGroup, NewCall) to use users.list
+- [x] Verify both platforms use same tRPC endpoint
+
+### Seed Data Creation
+- [ ] Create initial test channels with proper memberships
+- [ ] Add sample DM between test users
+- [ ] Add sample group chat
+- [ ] Add sample announcement channel
+- [ ] Verify seed data appears on both mobile and desktop
+
+### Messaging Flow Testing
+- [ ] Test: Create DM from mobile → verify appears on desktop
+- [ ] Test: Send message from mobile → verify appears on desktop
+- [ ] Test: Create DM from desktop → verify appears on mobile
+- [ ] Test: Send message from desktop → verify appears on mobile
+- [ ] Test: Delete channel from either platform → verify syncs

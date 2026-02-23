@@ -17,10 +17,14 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
   
-  const { data: contactsData, isLoading } = trpc.contacts.list.useQuery({
+  const { data: usersData, isLoading } = trpc.users.list.useQuery({
     search: searchQuery || undefined,
     limit: 50,
   });
+  
+  // Get current user to filter out from list
+  const { data: currentUser } = trpc.auth.me.useQuery();
+  const filteredUsers = usersData?.filter(u => u.id !== currentUser?.id) || [];
   
   const createDM = trpc.communications.createDM.useMutation({
     onSuccess: (data) => {
@@ -48,18 +52,10 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
   
   const [callType, setCallType] = useState<"voice" | "video" | null>(null);
   
-  const handleStartCall = (contactId: number, type: "voice" | "video") => {
+  const handleStartCall = (userId: number, type: "voice" | "video") => {
     setCallType(type);
-    createDM.mutate({ recipientId: contactId });
+    createDM.mutate({ recipientId: userId });
   };
-  
-  const contacts = contactsData?.contacts || [];
-  const filteredContacts = searchQuery
-    ? contacts.filter(c => 
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.email?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : contacts;
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,7 +69,7 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search contacts..."
+              placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -88,14 +84,14 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
               </div>
             )}
             
-            {!isLoading && filteredContacts.length === 0 && (
+            {!isLoading && filteredUsers.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                {searchQuery ? "No contacts found" : "No contacts available"}
+                {searchQuery ? "No users found" : "No users available"}
               </div>
             )}
             
-            {filteredContacts.map((contact) => {
-              const initials = contact.name
+            {filteredUsers.map((user) => {
+              const initials = (user.name || 'U')
                 .split(" ")
                 .map(n => n[0])
                 .join("")
@@ -104,7 +100,7 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
               
               return (
                 <div
-                  key={contact.id}
+                  key={user.id}
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
                 >
                   <Avatar className="h-10 w-10 flex-none">
@@ -114,10 +110,10 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
                   </Avatar>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{contact.name}</div>
-                    {contact.email && (
+                    <div className="font-medium truncate">{user.name || 'Unknown User'}</div>
+                    {user.email && (
                       <div className="text-sm text-muted-foreground truncate">
-                        {contact.email}
+                        {user.email}
                       </div>
                     )}
                   </div>
@@ -126,7 +122,7 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleStartCall(contact.id, "voice")}
+                      onClick={() => handleStartCall(user.id, "voice")}
                       disabled={createDM.isPending || startCallMutation.isPending}
                       className="h-8 w-8 p-0"
                     >
@@ -140,7 +136,7 @@ export function NewCallDialog({ open, onOpenChange }: NewCallDialogProps) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleStartCall(contact.id, "video")}
+                      onClick={() => handleStartCall(user.id, "video")}
                       disabled={createDM.isPending || startCallMutation.isPending}
                       className="h-8 w-8 p-0"
                     >

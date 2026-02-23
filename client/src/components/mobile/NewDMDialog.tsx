@@ -16,11 +16,15 @@ export function NewDMDialog({ open, onOpenChange }: NewDMDialogProps) {
   const [search, setSearch] = useState("");
   const [, setLocation] = useLocation();
 
-  // Load contacts with search
-  const { data: contacts, isLoading } = trpc.contacts.list.useQuery(
+  // Load platform users with search
+  const { data: users, isLoading } = trpc.users.list.useQuery(
     { search, limit: 50 },
     { enabled: open }
   );
+  
+  // Get current user to filter out from list
+  const { data: currentUser } = trpc.auth.me.useQuery();
+  const filteredUsers = users?.filter(u => u.id !== currentUser?.id) || [];
 
   // Create DM mutation
   const createDM = trpc.communications.createDM.useMutation({
@@ -34,10 +38,8 @@ export function NewDMDialog({ open, onOpenChange }: NewDMDialogProps) {
     },
   });
 
-  const handleSelectContact = (contactId: number) => {
-    // Find user ID from contact (in real app, contacts would have userId field)
-    // For now, we'll use contactId as userId (this needs proper mapping in production)
-    createDM.mutate({ recipientId: contactId });
+  const handleSelectUser = (userId: number) => {
+    createDM.mutate({ recipientId: userId });
   };
 
   return (
@@ -52,7 +54,7 @@ export function NewDMDialog({ open, onOpenChange }: NewDMDialogProps) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search contacts..."
+              placeholder="Search users..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -67,16 +69,16 @@ export function NewDMDialog({ open, onOpenChange }: NewDMDialogProps) {
               </div>
             )}
 
-            {!isLoading && contacts && contacts.length === 0 && (
+            {!isLoading && filteredUsers.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                No contacts found
+                No users found
               </div>
             )}
 
-            {contacts?.map((contact: any) => (
+            {filteredUsers.map((user) => (
               <button
-                key={contact.id}
-                onClick={() => handleSelectContact(contact.id)}
+                key={user.id}
+                onClick={() => handleSelectUser(user.id)}
                 disabled={createDM.isPending}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left"
               >
@@ -84,15 +86,10 @@ export function NewDMDialog({ open, onOpenChange }: NewDMDialogProps) {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{contact.name}</div>
-                  {contact.email && (
+                  <div className="font-medium truncate">{user.name || 'Unknown User'}</div>
+                  {user.email && (
                     <div className="text-sm text-muted-foreground truncate">
-                      {contact.email}
-                    </div>
-                  )}
-                  {contact.organization && (
-                    <div className="text-xs text-muted-foreground truncate">
-                      {contact.organization}
+                      {user.email}
                     </div>
                   )}
                 </div>
