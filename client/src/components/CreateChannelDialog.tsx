@@ -48,6 +48,34 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
     },
   });
 
+  const createDirectMessage = trpc.communications.createDirectMessage.useMutation({
+    onSuccess: (data) => {
+      if (data.existed) {
+        toast.info("Opening existing conversation");
+      } else {
+        toast.success("Direct message created!");
+      }
+      utils.communications.listChannels.invalidate();
+      onChannelCreated?.(data.channelId);
+      handleClose();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create direct message");
+    },
+  });
+
+  const createGroupChat = trpc.communications.createGroupChat.useMutation({
+    onSuccess: (data) => {
+      toast.success("Group chat created!");
+      utils.communications.listChannels.invalidate();
+      onChannelCreated?.(data.channelId);
+      handleClose();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create group chat");
+    },
+  });
+
   const handleClose = () => {
     setStep("select");
     setSelectedType(null);
@@ -81,17 +109,19 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
         toast.error("Please select at least one person");
         return;
       }
-      // TODO: Implement group chat creation backend
-      toast.info("Group chat creation coming soon!");
-      handleClose();
+      createGroupChat.mutate({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        memberIds: Array.from(selectedUserIds),
+      });
     } else if (selectedType === "dm") {
       if (!selectedUserId) {
         toast.error("Please select a person");
         return;
       }
-      // TODO: Implement DM creation backend
-      toast.info("Direct message creation coming soon!");
-      handleClose();
+      createDirectMessage.mutate({
+        recipientId: selectedUserId,
+      });
     }
   };
 

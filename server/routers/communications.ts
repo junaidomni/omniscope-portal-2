@@ -489,6 +489,170 @@ export const communicationsRouter = router({
     }),
 
   // ============================================================================
+  // CHANNEL CREATION
+  // ============================================================================
+
+  /**
+   * Create a direct message channel (1-on-1)
+   */
+  createDirectMessage: protectedProcedure
+    .input(z.object({
+      recipientId: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const orgId = ctx.orgId;
+
+      // Check if DM already exists between these two users
+      const existingDM = await db.findDMChannel(userId, input.recipientId);
+      if (existingDM) {
+        return { channelId: existingDM.id, existed: true };
+      }
+
+      // Get recipient details
+      const recipient = await db.getUserById(input.recipientId);
+      if (!recipient) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Recipient not found",
+        });
+      }
+
+      // Create DM channel (orgId is NULL for cross-org DMs)
+      const channelId = await db.createChannel({
+        orgId: null, // DMs can be cross-org
+        type: "dm",
+        name: null, // DMs don't have names
+        description: null,
+        createdBy: userId,
+      });
+
+      if (!channelId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create DM channel",
+        });
+      }
+
+      // Add both users as members
+      await db.addChannelMember({
+        channelId,
+        userId,
+        role: "member",
+        isGuest: false,
+      });
+
+      await db.addChannelMember({
+        channelId,
+        userId: input.recipientId,
+        role: "member",
+        isGuest: false,
+      });
+
+      return { channelId, existed: false };
+    }),
+
+  /**
+   * Create a group chat channel (multi-user)
+   */
+  createGroupChat: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+      memberIds: z.array(z.number()).min(1), // At least one other member
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const orgId = ctx.orgId;
+
+      // Create group channel
+      const channelId = await db.createChannel({
+        orgId,
+        type: "group",
+        name: input.name,
+        description: input.description,
+        createdBy: userId,
+      });
+
+      if (!channelId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create group chat",
+        });
+      }
+
+      // Add creator as owner
+      await db.addChannelMember({
+        channelId,
+        userId,
+        role: "owner",
+        isGuest: false,
+      });
+
+      // Add all selected members
+      for (const memberId of input.memberIds) {
+        if (memberId !== userId) { // Don't add creator twice
+          await db.addChannelMember({
+            channelId,
+            userId: memberId,
+            role: "member",
+            isGuest: false,
+          });
+        }
+      }
+
+      return { channelId };
+    }),
+
+  /**
+   * Create a regular channel (team channel)
+   */
+  createChannel: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+      type: z.enum(["group", "announcement"]).default("group"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const orgId = ctx.orgId;
+
+      // Only admins can create team channels
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only administrators can create team channels",
+        });
+      }
+
+      // Create channel
+      const channelId = await db.createChannel({
+        orgId,
+        type: input.type,
+        name: input.name,
+        description: input.description,
+        createdBy: userId,
+      });
+
+      if (!channelId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create channel",
+        });
+      }
+
+      // Add creator as owner
+      await db.addChannelMember({
+        channelId,
+        userId,
+        role: "owner",
+        isGuest: false,
+      });
+
+      return { channelId };
+    }),
+
+  // ============================================================================
   // DEAL ROOMS
   // ============================================================================
 
