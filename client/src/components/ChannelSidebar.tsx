@@ -85,6 +85,14 @@ export function ChannelSidebar({
     dr.name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
+  // Calculate total unread counts for each filter
+  const dmUnreadCount = dmChannels.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const groupUnreadCount = regularChannels.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const channelUnreadCount = (dealRooms || []).reduce((sum, dr) => {
+    const subChannels = getSubChannels(dr.id);
+    return sum + subChannels.reduce((subSum, sc) => subSum + (sc.unreadCount || 0), 0);
+  }, 0);
+
   const renderChannel = (channel: any, indent = false) => (
     <button
       key={channel.id}
@@ -162,25 +170,40 @@ export function ChannelSidebar({
             size="sm"
             variant={filter === "messages" ? "default" : "outline"}
             onClick={() => setFilter("messages")}
-            className="flex-1"
+            className="flex-1 relative"
           >
             Messages
+            {dmUnreadCount > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-[20px] px-1">
+                {dmUnreadCount}
+              </Badge>
+            )}
           </Button>
           <Button
             size="sm"
             variant={filter === "groups" ? "default" : "outline"}
             onClick={() => setFilter("groups")}
-            className="flex-1"
+            className="flex-1 relative"
           >
             Groups
+            {groupUnreadCount > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-[20px] px-1">
+                {groupUnreadCount}
+              </Badge>
+            )}
           </Button>
           <Button
             size="sm"
             variant={filter === "channels" ? "default" : "outline"}
             onClick={() => setFilter("channels")}
-            className="flex-1"
+            className="flex-1 relative"
           >
             Channels
+            {channelUnreadCount > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-[20px] px-1">
+                {channelUnreadCount}
+              </Badge>
+            )}
           </Button>
         </div>
       </div>

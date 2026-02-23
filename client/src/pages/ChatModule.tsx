@@ -456,8 +456,20 @@ export default function ChatModule() {
 
             {/* Typing Indicator */}
             {userTyping.length > 0 && (
-              <div className="px-4 py-2 text-xs text-muted-foreground">
-                {userTyping.length === 1 ? "Someone is" : `${userTyping.length} people are`} typing...
+              <div className="px-4 py-2 text-xs text-muted-foreground italic flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="inline-block w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="inline-block w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="inline-block w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                {(() => {
+                  const typingUsers = channelDetails?.members?.filter(m => userTyping.includes(m.userId)) || [];
+                  const names = typingUsers.map(u => u.user.name).filter(Boolean);
+                  if (names.length === 0) return "Someone is typing...";
+                  if (names.length === 1) return `${names[0]} is typing...`;
+                  if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+                  return `${names[0]} and ${names.length - 1} others are typing...`;
+                })()}
               </div>
             )}
 

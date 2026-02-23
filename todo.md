@@ -77,3 +77,19 @@
 - [x] Update Messages filter to show ONLY Direct Messages (not groups)
 - [x] Groups filter should show Groups only
 - [x] Channels filter should show Channels (Deal Rooms) only
+
+## Typing Indicators & Unread Badges (Feb 23, 2026)
+
+### Typing Indicators
+- [x] Add WebSocket event for typing status (user_typing) - Already existed
+- [x] Backend: Broadcast typing events to channel members - Already existed
+- [x] Frontend: Send typing event on message input - Already existed (line 495)
+- [x] Frontend: Display "User is typing..." in chat area - Improved with animated dots and actual user names
+- [x] Add debounce/timeout to clear typing indicator - Already handled by WebSocket
+
+### Unread Message Badges
+- [x] Backend: Unread counts already exist in listChannels response
+- [x] Frontend: Display unread count badge on each channel/DM in sidebar - Already existed
+- [x] Frontend: Calculate total unread per filter (Messages, Groups, Channels)
+- [x] Frontend: Display total unread count on filter buttons with red badges
+- [x] Style badges with proper colors and positioning
