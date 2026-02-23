@@ -41,10 +41,13 @@ export function CallInterface({ channelId, callId, onLeave }: CallInterfaceProps
   const [screenSharing, setScreenSharing] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [remoteStreams, setRemoteStreams] = useState<Map<number, MediaStream>>(new Map());
+  const [isRecording, setIsRecording] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteVideoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   // WebRTC peer connection management
   const { isConnected } = useWebRTC({
@@ -71,8 +74,26 @@ export function CallInterface({ channelId, callId, onLeave }: CallInterfaceProps
     { refetchInterval: 2000 }
   );
 
+  const uploadRecordingMutation = trpc.communications.uploadCallRecording.useMutation();
+
   const leaveCallMutation = trpc.communications.leaveCall.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Stop recording and upload
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        // Wait for recording to finish and upload
+        await new Promise((resolve) => {
+          if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.onstop = async () => {
+              await handleRecordingUpload();
+              resolve(true);
+            };
+          } else {
+            resolve(true);
+          }
+        });
+      }
+      
       // Stop local media
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -80,6 +101,86 @@ export function CallInterface({ channelId, callId, onLeave }: CallInterfaceProps
       onLeave();
     },
   });
+
+  // Handle recording upload
+  const handleRecordingUpload = async () => {
+    if (recordedChunksRef.current.length === 0) return;
+
+    try {
+      const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        await uploadRecordingMutation.mutateAsync({
+          callId,
+          audioData: base64data,
+        });
+      };
+      
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error("Error uploading recording:", error);
+    }
+  };
+
+  // Start recording when call begins
+  useEffect(() => {
+    if (!localStreamRef.current || isRecording) return;
+
+    try {
+      // Create audio context to mix all streams
+      const audioContext = new AudioContext();
+      const destination = audioContext.createMediaStreamDestination();
+
+      // Add local audio
+      if (localStreamRef.current) {
+        const localAudioTracks = localStreamRef.current.getAudioTracks();
+        if (localAudioTracks.length > 0) {
+          const localSource = audioContext.createMediaStreamSource(
+            new MediaStream(localAudioTracks)
+          );
+          localSource.connect(destination);
+        }
+      }
+
+      // Add remote audio streams
+      remoteStreams.forEach((stream) => {
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const source = audioContext.createMediaStreamSource(
+            new MediaStream(audioTracks)
+          );
+          source.connect(destination);
+        }
+      });
+
+      // Create MediaRecorder
+      const mediaRecorder = new MediaRecorder(destination.stream, {
+        mimeType: "audio/webm",
+      });
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start(1000); // Collect data every second
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+
+      console.log("[CallInterface] Recording started");
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+
+    return () => {
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, [localStreamRef.current, remoteStreams.size]);
 
   // Initialize local media
   useEffect(() => {

@@ -1810,4 +1810,84 @@ export const communicationsRouter = router({
 
       return { summaryUrl, summary: summaryData };
     }),
+
+  /**
+   * Upload call recording and trigger transcription
+   */
+  uploadCallRecording: protectedProcedure
+    .input(
+      z.object({
+        callId: z.number(),
+        audioData: z.string(), // Base64 encoded audio
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Get call details
+      const call = await db.getCallById(input.callId);
+      if (!call) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Call not found",
+        });
+      }
+
+      // Check if user is member of the channel
+      const isMember = await db.isChannelMember(call.channelId, userId);
+      if (!isMember) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You must be a channel member to upload recordings",
+        });
+      }
+
+      // Convert base64 to buffer
+      const base64Data = input.audioData.split(",")[1];
+      const audioBuffer = Buffer.from(base64Data, "base64");
+
+      // Upload to S3
+      const { storagePut } = await import("../storage");
+      const { url: audioUrl } = await storagePut(
+        `call-recordings/${input.callId}-${Date.now()}.webm`,
+        audioBuffer,
+        "audio/webm"
+      );
+
+      // Update call with audio URL
+      await db.updateCall(input.callId, { audioUrl });
+
+      // Trigger automatic transcription
+      try {
+        const { transcribeAudio } = await import("../_core/voiceTranscription");
+        const transcription = await transcribeAudio({
+          audioUrl,
+          language: "en",
+        });
+
+        // Save transcript to S3
+        const transcriptData = {
+          text: transcription.text,
+          language: transcription.language,
+          segments: transcription.segments,
+          transcribedAt: Date.now(),
+        };
+
+        const transcriptJson = JSON.stringify(transcriptData);
+        const { url: transcriptUrl } = await storagePut(
+          `call-transcripts/${input.callId}-${Date.now()}.json`,
+          transcriptJson,
+          "application/json"
+        );
+
+        // Update call with transcript URL
+        await db.updateCall(input.callId, { transcriptUrl });
+
+        return { audioUrl, transcriptUrl, success: true };
+      } catch (error) {
+        console.error("Error transcribing audio:", error);
+        // Return success even if transcription fails
+        return { audioUrl, transcriptUrl: null, success: true };
+      }
+    }),
 });

@@ -50,6 +50,7 @@ import { MessageSearch } from "@/components/MessageSearch";
 import { MessageReactions } from "@/components/MessageReactions";
 import { CallInterface } from "@/components/CallInterface";
 import { CallHistoryPanel } from "@/components/CallHistoryPanel";
+import { CallNotificationBanner } from "@/components/communications/CallNotificationBanner";
 
 export default function ChatModule() {
   // Get current user
@@ -133,6 +134,12 @@ export default function ChatModule() {
   const { data: channelDetails } = trpc.communications.getChannel.useQuery(
     { channelId: selectedChannelId! },
     { enabled: !!selectedChannelId }
+  );
+
+  // Fetch active call in channel
+  const { data: activeCallData } = trpc.communications.getActiveCall.useQuery(
+    { channelId: selectedChannelId! },
+    { enabled: !!selectedChannelId, refetchInterval: 3000 }
   );
   
   // Auto-scroll to bottom when messages change
@@ -391,6 +398,20 @@ export default function ChatModule() {
 
             {/* Pinned Messages Banner */}
             <PinnedMessagesBanner channelId={selectedChannelId} />
+
+            {/* Call Notification Banner */}
+            {activeCallData && !inCall && (
+              <div className="px-4 pt-2">
+                <CallNotificationBanner
+                  callType={activeCallData.callType}
+                  participantCount={activeCallData.participants?.length || 0}
+                  onJoin={() => {
+                    setActiveCallId(activeCallData.id);
+                    joinCallMutation.mutate({ callId: activeCallData.id });
+                  }}
+                />
+              </div>
+            )}
 
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">

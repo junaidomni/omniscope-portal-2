@@ -4358,9 +4358,10 @@ export async function createCall(data: {
  * Get call by ID
  */
 export async function getCallById(callId: number) {
-  if (!db) throw new Error("Database not initialized");
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  const call = await db
+  const call = await dbConn
     .select()
     .from(callLogs)
     .where(eq(callLogs.id, callId))
@@ -4373,9 +4374,10 @@ export async function getCallById(callId: number) {
  * Get active call in a channel
  */
 export async function getActiveCall(channelId: number) {
-  if (!db) throw new Error("Database not initialized");
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  const call = await db
+  const call = await dbConn
     .select()
     .from(callLogs)
     .where(
@@ -4389,40 +4391,40 @@ export async function getActiveCall(channelId: number) {
   return call[0] || null;
 }
 
+// Alias for backward compatibility
+export const getActiveCallInChannel = getActiveCall;
+
 /**
  * Add participant to call
  */
-export async function addCallParticipant(data: {
-  callId: number;
-  userId: number;
-  role: "host" | "participant";
-  audioEnabled: boolean;
-  videoEnabled: boolean;
-}) {
-  if (!db) throw new Error("Database not initialized");
+export async function addCallParticipant(
+  callId: number,
+  userId: number,
+  role: "host" | "participant"
+) {
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  const [participant] = await db
+  const result = await dbConn
     .insert(callParticipants)
     .values({
-      callId: data.callId,
-      userId: data.userId,
-      role: data.role,
-      audioEnabled: data.audioEnabled,
-      videoEnabled: data.videoEnabled,
+      callId,
+      userId,
+      role,
       joinedAt: new Date(),
-    })
-    .returning();
+    });
   
-  return participant;
+  return result[0].insertId;
 }
 
 /**
  * Get call participant
  */
 export async function getCallParticipant(callId: number, userId: number) {
-  if (!db) throw new Error("Database not initialized");
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  const participant = await db
+  const participant = await dbConn
     .select()
     .from(callParticipants)
     .where(
@@ -4440,17 +4442,17 @@ export async function getCallParticipant(callId: number, userId: number) {
 /**
  * Get active participants in a call
  */
-export async function getActiveCallParticipants(callId: number) {
-  if (!db) throw new Error("Database not initialized");
+export async function getCallParticipants(callId: number) {
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  const participants = await db
+  const participants = await dbConn
     .select({
       id: callParticipants.id,
       userId: callParticipants.userId,
       role: callParticipants.role,
-      audioEnabled: callParticipants.audioEnabled,
-      videoEnabled: callParticipants.videoEnabled,
       joinedAt: callParticipants.joinedAt,
+      leftAt: callParticipants.leftAt,
       user: {
         id: users.id,
         name: users.name,
@@ -4460,12 +4462,7 @@ export async function getActiveCallParticipants(callId: number) {
     })
     .from(callParticipants)
     .leftJoin(users, eq(callParticipants.userId, users.id))
-    .where(
-      and(
-        eq(callParticipants.callId, callId),
-        isNull(callParticipants.leftAt)
-      )
-    );
+    .where(eq(callParticipants.callId, callId));
   
   return participants;
 }
@@ -4473,10 +4470,11 @@ export async function getActiveCallParticipants(callId: number) {
 /**
  * Mark participant as left
  */
-export async function leaveCall(callId: number, userId: number) {
-  if (!db) throw new Error("Database not initialized");
+export async function removeCallParticipant(callId: number, userId: number) {
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  await db
+  await dbConn
     .update(callParticipants)
     .set({ leftAt: new Date() })
     .where(
@@ -4492,7 +4490,8 @@ export async function leaveCall(callId: number, userId: number) {
  * End a call
  */
 export async function endCall(callId: number) {
-  if (!db) throw new Error("Database not initialized");
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
   const call = await getCallById(callId);
   if (!call) return;
@@ -4501,7 +4500,7 @@ export async function endCall(callId: number) {
     ? Math.floor((Date.now() - new Date(call.startedAt).getTime()) / 1000)
     : 0;
   
-  await db
+  await dbConn
     .update(callLogs)
     .set({
       status: "ended",
@@ -4515,9 +4514,10 @@ export async function endCall(callId: number) {
  * Update call with transcript/summary URLs
  */
 export async function updateCall(callId: number, updates: { transcriptUrl?: string; summaryUrl?: string; audioUrl?: string }) {
-  if (!db) throw new Error("Database not initialized");
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  await db
+  await dbConn
     .update(callLogs)
     .set(updates)
     .where(eq(callLogs.id, callId));
@@ -4527,27 +4527,23 @@ export async function updateCall(callId: number, updates: { transcriptUrl?: stri
  * Get call history for a channel
  */
 export async function getCallHistory(channelId: number) {
-  if (!db) throw new Error("Database not initialized");
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not initialized");
   
-  const calls = await db
+  const calls = await dbConn
     .select({
       id: callLogs.id,
-      type: callLogs.type,
+      callType: callLogs.callType,
       status: callLogs.status,
       startedAt: callLogs.startedAt,
       endedAt: callLogs.endedAt,
       duration: callLogs.duration,
-      recordingUrl: callLogs.recordingUrl,
+      audioUrl: callLogs.audioUrl,
       transcriptUrl: callLogs.transcriptUrl,
-      initiator: {
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        profilePhotoUrl: users.profilePhotoUrl,
-      },
+      summaryUrl: callLogs.summaryUrl,
+      startedBy: callLogs.startedBy,
     })
     .from(callLogs)
-    .leftJoin(users, eq(callLogs.initiatorId, users.id))
     .where(eq(callLogs.channelId, channelId))
     .orderBy(desc(callLogs.startedAt));
   

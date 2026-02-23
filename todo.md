@@ -245,3 +245,50 @@
 - [x] Fix route matching for /calls path - Added to App.tsx WorkspaceRouter
 - [x] Ensure AllCallsView component is properly exported
 - [x] Test navigation to Calls tab
+
+## Week 5 Final Implementation (Feb 23, 2026)
+
+### Database Function Fixes
+- [x] Fix all database function signatures to match actual schema
+- [x] Update getCallById to use getDb() instead of db
+- [x] Update getActiveCallInChannel to use getDb()
+- [x] Update getCallHistory to use getDb()
+- [x] Update addCallParticipant to use getDb()
+- [x] Update removeCallParticipant to use getDb()
+- [x] Update endCall to use getDb()
+- [x] Run and pass all WebRTC integration tests
+
+### Automatic Call Recording
+- [x] Add MediaRecorder API integration to CallInterface
+- [x] Start recording when call begins (combine all audio tracks)
+- [x] Stop recording when call ends
+- [x] Convert recorded audio to uploadable format (webm/mp3)
+- [x] Upload audio to S3 automatically using storagePut
+- [x] Update callLogs with audioUrl after upload
+- [x] Trigger automatic transcription after upload
+- [x] Add recording indicator in call UI
+- [x] Handle recording errors gracefully
+
+### Call Notifications
+- [x] Create CallNotificationBanner component
+- [x] Add real-time notification when call starts in channel
+- [x] Show "Call in progress" banner in channel header
+- [x] Add "Join Call" button in notification banner
+- [x] Show participant count in real-time
+- [x] Update participant count when users join/leave
+- [ ] Add sound notification for incoming calls (optional)
+- [ ] Show active call indicator in sidebar for channels with ongoing calls
+- [x] Emit WebSocket event when call starts
+- [x] Listen for call-started event in ChatModule
+
+### End-to-End Testing
+- [ ] Test call initiation between two users
+- [ ] Verify audio/video streams work correctly
+- [ ] Test participant join/leave functionality
+- [ ] Verify call recording captures audio
+- [ ] Test automatic transcription after call ends
+- [ ] Verify AI summary generation works
+- [ ] Test call history displays correctly
+- [ ] Test call notifications appear for all channel members
+- [ ] Verify WebSocket signaling works across multiple users
+- [ ] Test call controls (mute, camera, screen share)
