@@ -345,3 +345,19 @@
 - [x] Navigate to DM channel after starting call
 - [x] Create DM channel if it doesn't exist
 - [x] Show loading state during call initiation
+
+
+## Week 5 Final Polish (Feb 23, 2026 - Part 2)
+
+### Notification Settings Integration
+- [x] Find platform settings page/component
+- [x] Add NotificationSettings route or tab
+- [x] Add navigation link to notification settings
+- [x] Test settings page accessibility
+
+### Apply Preferences to Notifications
+- [x] Update useCallNotifications to load user preferences
+- [x] Apply soundVolume to audio playback
+- [x] Apply deliveryMethod to notification display logic
+- [x] Respect callNotifications toggle (skip if disabled)
+- [x] Test with different preference combinations

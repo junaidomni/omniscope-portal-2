@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { NotificationSettings as NotificationSettingsPanel } from "@/components/settings/NotificationSettings";
 
 type SettingsView = "main" | "appearance" | "general" | "security" | "notifications" | "domains" | "data";
 
@@ -60,13 +61,29 @@ export default function AdminHubSettings() {
     { id: "appearance", title: "Appearance & Design", description: "Platform theme, accent colors, and sidebar preferences", icon: Palette, ready: true },
     { id: "general", title: "General", description: "Platform name, branding, and default configuration", icon: Settings, ready: false },
     { id: "security", title: "Security & Access", description: "Authentication policies, session management, and access controls", icon: Shield, ready: false },
-    { id: "notifications", title: "Notifications", description: "Platform-wide notification preferences and channels", icon: Bell, ready: false },
+    { id: "notifications", title: "Notifications", description: "Call notifications, sound preferences, and delivery methods", icon: Bell, ready: true },
     { id: "domains", title: "Domains & DNS", description: "Custom domain configuration and SSL management", icon: Globe, ready: false },
     { id: "data", title: "Data & Storage", description: "Database management, backups, and storage quotas", icon: Database, ready: false },
   ];
 
   if (view === "appearance") {
     return <AppearanceSettings tokens={tokens} onBack={() => setView("main")} />;
+  }
+
+  if (view === "notifications") {
+    return (
+      <div className="p-8">
+        <button
+          onClick={() => setView("main")}
+          className="flex items-center gap-2 mb-6 transition-colors"
+          style={{ color: textSecondary }}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Settings
+        </button>
+        <NotificationSettingsPanel />
+      </div>
+    );
   }
 
   return (

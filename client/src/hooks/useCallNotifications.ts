@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChannelSocket } from "./useSocket";
+import { trpc } from "@/lib/trpc";
 
 interface CallNotificationData {
   channelId: number;
@@ -8,9 +9,36 @@ interface CallNotificationData {
   startedBy: string;
 }
 
+interface NotificationPreferences {
+  callNotifications: boolean;
+  soundVolume: number;
+  deliveryMethod: "browser" | "in-app" | "both";
+}
+
+const DEFAULT_PREFERENCES: NotificationPreferences = {
+  callNotifications: true,
+  soundVolume: 80,
+  deliveryMethod: "both",
+};
+
 export function useCallNotifications() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasPermission = useRef(false);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+
+  // Load user preferences
+  const { data: user } = trpc.auth.me.useQuery();
+
+  useEffect(() => {
+    if (user?.notificationPreferences) {
+      try {
+        const parsed = JSON.parse(user.notificationPreferences);
+        setPreferences({ ...DEFAULT_PREFERENCES, ...parsed });
+      } catch (error) {
+        console.error("Failed to parse notification preferences:", error);
+      }
+    }
+  }, [user]);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -37,16 +65,22 @@ export function useCallNotifications() {
   }, []);
 
   const showCallNotification = (data: CallNotificationData) => {
-    // Play sound
-    if (audioRef.current) {
+    // Check if call notifications are enabled
+    if (!preferences.callNotifications) {
+      return;
+    }
+
+    // Play sound if delivery method includes sound
+    if (audioRef.current && (preferences.deliveryMethod === "browser" || preferences.deliveryMethod === "both")) {
+      audioRef.current.volume = preferences.soundVolume / 100;
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch((error) => {
         console.error("Error playing notification sound:", error);
       });
     }
 
-    // Show browser notification
-    if (hasPermission.current && "Notification" in window) {
+    // Show browser notification if delivery method includes browser
+    if (hasPermission.current && "Notification" in window && (preferences.deliveryMethod === "browser" || preferences.deliveryMethod === "both")) {
       const notification = new Notification(
         `${data.callType === "video" ? "Video" : "Voice"} call in ${data.channelName}`,
         {
