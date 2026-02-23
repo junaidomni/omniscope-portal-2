@@ -3078,3 +3078,8 @@
 - [ ] Review WebRTC requirements
 - [ ] Plan voice/video calling architecture
 - [ ] Identify TURN server needs
+
+### DM User Selection Bug Fix
+- [x] Fix DM user list to be clickable (added type="button", cursor-pointer, preventDefault)
+- [x] Update ROADMAP.md to clarify all channel types are complete
+- [ ] Test DM creation end-to-end after fix

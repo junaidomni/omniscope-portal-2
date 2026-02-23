@@ -219,8 +219,11 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
                           )
                           .map((user) => (
                             <button
+                              type="button"
                               key={user.id}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 if (selectedType === "dm") {
                                   setSelectedUserId(user.id);
                                 } else {
@@ -235,7 +238,7 @@ export function CreateChannelDialog({ open, onOpenChange, onChannelCreated }: Cr
                                   });
                                 }
                               }}
-                              className={`w-full p-3 rounded-lg hover:bg-accent transition-colors flex items-center gap-3 ${
+                              className={`w-full p-3 rounded-lg hover:bg-accent transition-colors flex items-center gap-3 cursor-pointer ${
                                 selectedType === "dm"
                                   ? selectedUserId === user.id
                                     ? "bg-accent border-2 border-amber-500"

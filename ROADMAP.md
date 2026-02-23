@@ -35,15 +35,18 @@ OmniScope is a sovereign-grade intelligence and communications platform built fo
 - [x] Channel deletion with confirmation
 - [x] Platform owner oversight dashboard
 
-### Week 4: Channels & Deal Rooms ✅
-- [x] Direct messages (1-on-1, cross-org capable)
-- [x] Group chats (multi-user selection)
-- [x] Team channels (admin-only creation)
-- [x] Deal rooms with sub-channels
+### Week 4: All Channel Types ✅
+**ALL CHANNEL TYPES ARE FULLY BUILT AND WORKING:**
+- [x] **Direct messages** (1-on-1, cross-org capable) - Backend + UI complete
+- [x] **Group chats** (multi-user selection) - Backend + UI complete
+- [x] **Team channels** (admin-only creation) - Backend + UI complete
+- [x] **Deal rooms** with sub-channels - Backend + UI complete
 - [x] Channel invites (direct + link-based)
 - [x] Typing indicators (real-time)
 - [x] Unread message badges
 - [x] Notification system (toast alerts)
+
+**NOTE:** Week 5 adds VOICE/VIDEO CALLING to these existing channels, not new channel types.
 
 ### Additional Features Completed
 - [x] @mentions with autocomplete
