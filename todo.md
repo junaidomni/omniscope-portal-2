@@ -2787,11 +2787,11 @@
 - [ ] Test all rich features
 
 ### Phase 1: Week 4 - Deal Rooms + External Parties
-- [ ] Build deal room creation UI
-- [ ] Implement invite link generation for external parties
-- [ ] Build guest onboarding flow (create account, join deal room)
-- [ ] Add guest permissions (can message, can't see org data)
-- [ ] Build moderation tools (mute, kick, ban, delete messages)
+- [x] Build deal room creation UI (DealRoomDialog with vertical selection)
+- [x] Implement invite link generation for external parties (InviteLinkDialog with expiry and max uses)
+- [x] Build guest onboarding flow (acceptInvite procedure adds users as guests)
+- [x] Add guest permissions (isGuest flag in channel_members, role="guest")
+- [x] Build moderation tools (removeGuest procedure for admins/owners)
 - [ ] Add announcement channels (read-only for guests)
 - [ ] Build deal room management dashboard
 - [ ] Test external party invite and access controls

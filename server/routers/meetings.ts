@@ -10,6 +10,7 @@ export const meetingsRouter = router({
         startDate: z.string().optional(),
         endDate: z.string().optional(),
         primaryLead: z.string().optional(),
+        search: z.string().optional(),
         limit: z.number().min(1).max(100).default(20),
         offset: z.number().min(0).default(0),
       }).optional()
@@ -23,7 +24,19 @@ export const meetingsRouter = router({
         offset: input.offset,
         orgId: ctx.orgId ?? undefined,
       } : ctx.orgId ? { orgId: ctx.orgId } : undefined;
-      return await db.getAllMeetings(filters);
+      
+      let meetings = await db.getAllMeetings(filters);
+      
+      // Apply search filter if provided
+      if (input?.search) {
+        const searchLower = input.search.toLowerCase();
+        meetings = meetings.filter((meeting: any) =>
+          meeting.title?.toLowerCase().includes(searchLower) ||
+          meeting.primaryLead?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      return { meetings, total: meetings.length };
     }),
 
   getById: orgScopedProcedure

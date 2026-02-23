@@ -12,10 +12,28 @@ export const tasksRouter = router({
         assignedName: z.string().optional(),
         meetingId: z.number().optional(),
         category: z.string().optional(),
+        search: z.string().optional(),
+        limit: z.number().optional(),
       }).optional()
     )
     .query(async ({ input, ctx }) => {
-      return await db.getAllTasks(input ? { ...input, orgId: ctx.orgId ?? undefined } : { orgId: ctx.orgId ?? undefined });
+      let tasks = await db.getAllTasks(input ? { ...input, orgId: ctx.orgId ?? undefined } : { orgId: ctx.orgId ?? undefined });
+      
+      // Apply search filter if provided
+      if (input?.search) {
+        const searchLower = input.search.toLowerCase();
+        tasks = tasks.filter((task: any) =>
+          task.title?.toLowerCase().includes(searchLower) ||
+          task.description?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Apply limit if provided
+      if (input?.limit) {
+        tasks = tasks.slice(0, input.limit);
+      }
+      
+      return { tasks, total: tasks.length };
     }),
 
   getById: orgScopedProcedure

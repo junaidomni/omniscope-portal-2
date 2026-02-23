@@ -6,23 +6,46 @@ import { storagePut } from "../storage";
 import { z } from "zod";
 
 export const contactsRouter = router({
-  list: orgScopedProcedure.query(async ({ ctx }) => {
-    const allContacts = await db.getContactsWithCompany(ctx.orgId);
-    const enriched = await Promise.all(allContacts.map(async (c: any) => {
-      const contactMeetings = await db.getMeetingsForContact(c.id);
-      const lastMeetingDate = contactMeetings.length > 0 ? contactMeetings[0].meeting.meetingDate : null;
-      const daysSinceLastMeeting = lastMeetingDate
-        ? Math.floor((Date.now() - new Date(lastMeetingDate).getTime()) / 86400000)
-        : null;
-      return {
-        ...c,
-        meetingCount: contactMeetings.length,
-        lastMeetingDate,
-        daysSinceLastMeeting,
-      };
-    }));
-    return enriched;
-  }),
+  list: orgScopedProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        limit: z.number().optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      let allContacts = await db.getContactsWithCompany(ctx.orgId);
+      
+      // Apply search filter if provided
+      if (input?.search) {
+        const searchLower = input.search.toLowerCase();
+        allContacts = allContacts.filter((contact: any) =>
+          contact.name?.toLowerCase().includes(searchLower) ||
+          contact.email?.toLowerCase().includes(searchLower) ||
+          contact.company?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Apply limit if provided
+      if (input?.limit) {
+        allContacts = allContacts.slice(0, input.limit);
+      }
+      
+      const enriched = await Promise.all(allContacts.map(async (c: any) => {
+        const contactMeetings = await db.getMeetingsForContact(c.id);
+        const lastMeetingDate = contactMeetings.length > 0 ? contactMeetings[0].meeting.meetingDate : null;
+        const daysSinceLastMeeting = lastMeetingDate
+          ? Math.floor((Date.now() - new Date(lastMeetingDate).getTime()) / 86400000)
+          : null;
+        return {
+          ...c,
+          meetingCount: contactMeetings.length,
+          lastMeetingDate,
+          daysSinceLastMeeting,
+        };
+      }));
+      return enriched;
+    }),
 
   searchByName: orgScopedProcedure
     .input(z.object({ query: z.string().min(1), limit: z.number().min(1).max(50).default(10) }))

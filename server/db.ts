@@ -3410,7 +3410,7 @@ export async function getChannelMessages(channelId: number, limit = 50, beforeMe
         beforeMessageId ? sql`${messages.id} < ${beforeMessageId}` : undefined
       )
     )
-    .orderBy(desc(messages.createdAt))
+    .orderBy(asc(messages.createdAt))
     .limit(limit + 1);
   
   return query;
@@ -3710,4 +3710,74 @@ export async function getMessageReactions(messageId: number) {
     .from(messageReactions)
     .innerJoin(users, eq(messageReactions.userId, users.id))
     .where(eq(messageReactions.messageId, messageId));
+}
+
+
+// ============================================================================
+// DEAL ROOMS & INVITES
+// ============================================================================
+
+export async function createChannelInvite(data: {
+  channelId: number;
+  token: string;
+  createdBy: number;
+  expiresAt: Date | null;
+  maxUses: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(channelInvites).values({
+    channelId: data.channelId,
+    token: data.token,
+    createdBy: data.createdBy,
+    expiresAt: data.expiresAt,
+    maxUses: data.maxUses,
+    usedCount: 0,
+    isActive: true,
+  });
+  
+  return Number(result.insertId);
+}
+
+export async function getChannelInviteByToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select({
+      id: channelInvites.id,
+      channelId: channelInvites.channelId,
+      token: channelInvites.token,
+      expiresAt: channelInvites.expiresAt,
+      maxUses: channelInvites.maxUses,
+      usedCount: channelInvites.usedCount,
+      isActive: channelInvites.isActive,
+      channel: {
+        id: channels.id,
+        name: channels.name,
+        description: channels.description,
+      },
+      creator: {
+        id: users.id,
+        name: users.name,
+      },
+    })
+    .from(channelInvites)
+    .innerJoin(channels, eq(channelInvites.channelId, channels.id))
+    .innerJoin(users, eq(channelInvites.createdBy, users.id))
+    .where(eq(channelInvites.token, token))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+export async function incrementInviteUsedCount(inviteId: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db
+    .update(channelInvites)
+    .set({ usedCount: sql`${channelInvites.usedCount} + 1` })
+    .where(eq(channelInvites.id, inviteId));
 }

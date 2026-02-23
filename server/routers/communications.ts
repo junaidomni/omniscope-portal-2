@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure, orgScopedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
@@ -478,5 +478,196 @@ export const communicationsRouter = router({
     .input(z.object({ userIds: z.array(z.number()) }))
     .query(async ({ input }) => {
       return await db.getUsersPresence(input.userIds);
+    }),
+
+  // ============================================================================
+  // DEAL ROOMS
+  // ============================================================================
+
+  /**
+   * Create a deal room channel
+   */
+  createDealRoom: protectedProcedure
+    .input(z.object({
+      name: z.string(),
+      description: z.string().optional(),
+      vertical: z.string(), // e.g., "gold", "real-estate", "carbon-credits"
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const orgId = ctx.user.orgId;
+
+      // Create deal room channel
+      const channelId = await db.createChannel({
+        orgId,
+        type: "deal_room",
+        name: input.name,
+        description: input.description || `${input.vertical} deal room`,
+        createdBy: userId,
+      });
+
+      // Add creator as owner
+      await db.addChannelMember(channelId, userId, "owner", false);
+
+      return { channelId };
+    }),
+
+  /**
+   * Generate invite link for deal room
+   */
+  createInviteLink: protectedProcedure
+    .input(z.object({
+      channelId: z.number(),
+      expiresInDays: z.number().optional(), // NULL = never expires
+      maxUses: z.number().optional(), // NULL = unlimited
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+
+      // Check if user is admin/owner of this channel
+      const membership = await db.getChannelMembership(input.channelId, userId);
+      if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only channel owners/admins can create invite links",
+        });
+      }
+
+      // Generate secure token
+      const token = randomBytes(32).toString("hex");
+
+      // Calculate expiry
+      const expiresAt = input.expiresInDays
+        ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
+        : null;
+
+      // Create invite
+      const inviteId = await db.createChannelInvite({
+        channelId: input.channelId,
+        token,
+        createdBy: userId,
+        expiresAt,
+        maxUses: input.maxUses || null,
+      });
+
+      return {
+        inviteId,
+        token,
+        inviteUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/invite/${token}`,
+      };
+    }),
+
+  /**
+   * Get invite details (public - no auth required)
+   */
+  getInviteDetails: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const invite = await db.getChannelInviteByToken(input.token);
+
+      if (!invite) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invite not found",
+        });
+      }
+
+      // Check if expired
+      if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invite has expired",
+        });
+      }
+
+      // Check if max uses reached
+      if (invite.maxUses && invite.usedCount >= invite.maxUses) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invite has reached maximum uses",
+        });
+      }
+
+      // Check if active
+      if (!invite.isActive) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invite has been deactivated",
+        });
+      }
+
+      return {
+        channelName: invite.channel.name,
+        channelDescription: invite.channel.description,
+        createdBy: invite.creator.name,
+      };
+    }),
+
+  /**
+   * Accept invite and join deal room as guest
+   */
+  acceptInvite: protectedProcedure
+    .input(z.object({ token: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const invite = await db.getChannelInviteByToken(input.token);
+
+      if (!invite) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invite not found",
+        });
+      }
+
+      // Validate invite (same checks as getInviteDetails)
+      if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invite has expired" });
+      }
+      if (invite.maxUses && invite.usedCount >= invite.maxUses) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invite has reached maximum uses" });
+      }
+      if (!invite.isActive) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invite has been deactivated" });
+      }
+
+      // Check if already a member
+      const isMember = await db.isChannelMember(invite.channelId, userId);
+      if (isMember) {
+        return { channelId: invite.channelId, alreadyMember: true };
+      }
+
+      // Add user as guest
+      await db.addChannelMember(invite.channelId, userId, "guest", true);
+
+      // Increment used count
+      await db.incrementInviteUsedCount(invite.id);
+
+      return { channelId: invite.channelId, alreadyMember: false };
+    }),
+
+  /**
+   * Remove guest from deal room
+   */
+  removeGuest: protectedProcedure
+    .input(z.object({
+      channelId: z.number(),
+      userId: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const requesterId = ctx.user.id;
+
+      // Check if requester is admin/owner
+      const membership = await db.getChannelMembership(input.channelId, requesterId);
+      if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only channel owners/admins can remove guests",
+        });
+      }
+
+      // Remove member
+      await db.removeChannelMember(input.channelId, input.userId);
+
+      return { success: true };
     }),
 });

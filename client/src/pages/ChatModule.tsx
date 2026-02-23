@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,21 +19,34 @@ import {
   MoreVertical,
   Pin,
   Archive,
-  X
+  X,
+  Link
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { MentionAutocomplete } from "@/components/MentionAutocomplete";
 import { useMentions, renderMentions } from "@/hooks/useMentions";
 import { useChannelSocket } from "@/hooks/useSocket";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { DealRoomDialog } from "@/components/DealRoomDialog";
+import { InviteLinkDialog } from "@/components/InviteLinkDialog";
 
 export default function ChatModule() {
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [attachments, setAttachments] = useState<Array<{ id: number; url: string; fileName: string; mimeType: string; fileSize: number }>>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showDealRoomDialog, setShowDealRoomDialog] = useState(false);
+  const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // WebSocket for real-time updates
   const { isConnected, newMessage, userTyping, emitTyping } = useChannelSocket(selectedChannelId);
+  
+  // tRPC utils for invalidation
+  const utils = trpc.useUtils();
   
   // Mentions autocomplete
   const {
@@ -61,31 +74,39 @@ export default function ChatModule() {
     { channelId: selectedChannelId! },
     { enabled: !!selectedChannelId }
   );
+  
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messagesData?.messages]);
 
   // Send message mutation
   const sendMessageMutation = trpc.communications.sendMessage.useMutation({
     onSuccess: () => {
       setMessageInput("");
       // Refetch messages
-      trpc.useUtils().communications.listMessages.invalidate();
-      trpc.useUtils().communications.listChannels.invalidate();
+      utils.communications.listMessages.invalidate();
+      utils.communications.listChannels.invalidate();
     },
   });
 
   // Mark as read mutation
   const markReadMutation = trpc.communications.markRead.useMutation({
     onSuccess: () => {
-      trpc.useUtils().communications.listChannels.invalidate();
+      utils.communications.listChannels.invalidate();
     },
   });
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !selectedChannelId) return;
+    if ((!messageInput.trim() && attachments.length === 0) || !selectedChannelId) return;
 
     sendMessageMutation.mutate({
       channelId: selectedChannelId,
-      content: messageInput,
+      content: messageInput || "[File attachment]",
     });
+    
+    // Clear attachments after sending
+    setAttachments([]);
   };
 
   const handleChannelSelect = (channelId: number) => {
@@ -107,7 +128,7 @@ export default function ChatModule() {
         <div className="p-4 border-b space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Messages</h2>
-            <Button size="sm" variant="ghost">
+            <Button size="sm" variant="ghost" onClick={() => setShowDealRoomDialog(true)}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -211,6 +232,16 @@ export default function ChatModule() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {selectedChannel?.type === "deal_room" && (
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => setShowInviteLinkDialog(true)}
+                    title="Generate Invite Link"
+                  >
+                    <Link className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button size="sm" variant="ghost">
                   <Pin className="h-4 w-4" />
                 </Button>
@@ -249,6 +280,7 @@ export default function ChatModule() {
                       </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </ScrollArea>
@@ -257,6 +289,28 @@ export default function ChatModule() {
             {userTyping.length > 0 && (
               <div className="px-4 py-2 text-xs text-muted-foreground">
                 {userTyping.length === 1 ? "Someone is" : `${userTyping.length} people are`} typing...
+              </div>
+            )}
+
+            {/* Attachment Preview */}
+            {attachments.length > 0 && (
+              <div className="px-4 py-2 border-t bg-muted/30">
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((attachment, index) => (
+                    <div key={index} className="flex items-center gap-2 px-3 py-2 bg-background border rounded-lg">
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm truncate max-w-[200px]">{attachment.fileName}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -284,12 +338,44 @@ export default function ChatModule() {
                     rows={1}
                   />
                   <div className="absolute right-2 bottom-2 flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        // Convert to base64 and upload
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          const base64 = (reader.result as string).split(",")[1];
+                          try {
+                            const result = await trpc.fileUpload.uploadMessageAttachment.mutate({
+                              channelId: selectedChannelId!,
+                              fileName: file.name,
+                              fileData: base64,
+                              mimeType: file.type,
+                              fileSize: file.size,
+                            });
+                            setAttachments([...attachments, result]);
+                          } catch (error) {
+                            console.error("Upload failed:", error);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <Paperclip className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                      <Smile className="h-4 w-4" />
-                    </Button>
+                    <EmojiPicker onEmojiSelect={(emoji) => setMessageInput(messageInput + emoji)} />
                   </div>
                 </div>
                 <Button
@@ -358,6 +444,26 @@ export default function ChatModule() {
           position={mentionPosition}
           onSelect={handleMentionSelect}
           onClose={closeMentionAutocomplete}
+          channelId={selectedChannelId}
+        />
+      )}
+
+      {/* Deal Room Dialog */}
+      <DealRoomDialog
+        open={showDealRoomDialog}
+        onOpenChange={setShowDealRoomDialog}
+        onSuccess={(channelId) => {
+          setSelectedChannelId(channelId);
+        }}
+      />
+
+      {/* Invite Link Dialog */}
+      {selectedChannelId && selectedChannel && (
+        <InviteLinkDialog
+          open={showInviteLinkDialog}
+          onOpenChange={setShowInviteLinkDialog}
+          channelId={selectedChannelId}
+          channelName={selectedChannel.name || "Unnamed Channel"}
         />
       )}
     </div>
