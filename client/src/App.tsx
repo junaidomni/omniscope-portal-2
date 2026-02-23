@@ -187,6 +187,22 @@ function ShellSwitcher() {
 }
 
 function App() {
+  const [location] = useLocation();
+  
+  // /install route is PUBLIC - render without auth context
+  if (location === "/install") {
+    return (
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="dark">
+          <TooltipProvider>
+            <InstallPage />
+          </TooltipProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    );
+  }
+  
+  // All other routes require full auth context
   const { open, setOpen } = useGlobalSearch();
   
   return (

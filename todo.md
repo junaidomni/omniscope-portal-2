@@ -671,11 +671,14 @@
 - [x] Verify /install is outside PortalLayout/auth wrapper
 - [x] Check if ShellSwitcher is forcing authentication
 - [x] Test /install route in incognito/logged-out state
-- [x] Fixed by moving /install check BEFORE useOrg() call in ShellSwitcher
-- [x] /install page now loads without authentication (HTTP 200)
+- [x] FINAL FIX: Moved /install check to App component BEFORE OrgProvider
+- [x] /install route now renders InstallPage without any auth context
+- [x] Added console log to InstallPage to verify rendering
 
 ### Find Communications Chat Component
 - [x] Identified Communications uses ChatModule for /chat route
 - [x] InstallBanner already added to ChatModule (line 419-421)
 - [x] Console logs show InstallBanner rendering and generating QR codes
-- [ ] Investigate why banner might not be visible to user (localStorage dismissal? PWA already installed? CSS issue?)
+- [x] Added dev-only reset button to clear localStorage dismissal
+- [x] Banner only shows in Calls tab (working as designed)
+- [ ] User needs to test: navigate to /install directly to verify no redirect

@@ -9,6 +9,8 @@ export default function InstallPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   
+  console.log('[InstallPage] Component mounted - route is working!');
+  
   useEffect(() => {
     // Detect mobile - more comprehensive check
     const userAgent = navigator.userAgent.toLowerCase();
