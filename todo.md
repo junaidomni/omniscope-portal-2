@@ -43,3 +43,22 @@
 - [ ] Implement call initiation and answering
 - [ ] Add call history and logs
 - [ ] Integrate call recording and transcription
+
+## CRITICAL: DM System Audit & Fix (Feb 23, 2026)
+
+### Issues Reported
+- [x] DMs not appearing in sidebar at all (no "Direct Messages" section)
+- [x] New DMs still showing "Unnamed Channel" 
+- [x] Cannot find existing DM with Kyle
+- [x] Group chats showing under wrong section
+
+### Root Cause Found
+- [x] Admin users were calling `getAllChannels(orgId)` which filters by orgId
+- [x] DMs have `orgId = null` so they were excluded from the query
+- [x] Fixed by always using `getChannelsForUser(userId)` for all users
+
+### Fixes Applied
+- [x] Changed listChannels to always use getChannelsForUser (includes DMs)
+- [x] DM name personalization working (shows other person's name only)
+- [x] Group chat badge showing "Group" instead of "Channel"
+- [x] DMs now appear in "Direct Messages" section in sidebar

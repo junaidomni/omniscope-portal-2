@@ -17,12 +17,10 @@ export const communicationsRouter = router({
    */
   listChannels: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
-    const isPlatformOwner = ctx.user.role === "admin";
     
-    // Platform owners see ALL channels, regular users see only their channels
-    const userChannels = isPlatformOwner 
-      ? await db.getAllChannels(ctx.orgId)
-      : await db.getChannelsForUser(userId);
+    // Always use getChannelsForUser to include DMs (which have orgId = null)
+    // Platform owners will see all channels they're members of, including DMs
+    const userChannels = await db.getChannelsForUser(userId);
     
     // Enrich with unread counts and personalize DM names
     const enriched = await Promise.all(
