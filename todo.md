@@ -361,3 +361,41 @@
 - [x] Apply deliveryMethod to notification display logic
 - [x] Respect callNotifications toggle (skip if disabled)
 - [x] Test with different preference combinations
+
+
+## Full System Audit (Feb 23, 2026)
+
+### Critical Bug Fixes
+- [x] Fix ChatModule activeCallData initialization error
+- [x] Verify all queries are properly ordered before usage
+- [x] Check for any other initialization errors
+
+### Communication System Audit
+- [ ] Test channel creation and membership
+- [ ] Test message sending and receiving
+- [ ] Test direct messages (DMs)
+- [ ] Test group channels
+- [ ] Verify WebSocket connections
+- [ ] Test typing indicators
+- [ ] Test message reactions
+- [ ] Test message attachments
+- [ ] Test pinned messages
+
+### Calling System Audit
+- [ ] Test voice call initiation
+- [ ] Test video call initiation
+- [ ] Test call joining
+- [ ] Test call leaving
+- [ ] Test call recording
+- [ ] Test call transcription
+- [ ] Test call summaries
+- [ ] Test call notifications
+- [ ] Test call history
+
+### Contact Tagging System
+- [ ] Verify contact tags are saved correctly
+- [ ] Test tag filtering
+- [ ] Test tag search
+- [ ] Ensure tags sync across all features
+- [ ] Verify contact-meeting associations
+- [ ] Test contact-task associations

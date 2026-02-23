@@ -87,20 +87,6 @@ export default function ChatModule() {
   // Call notifications
   const { showCallNotification } = useCallNotifications();
   
-  // Listen for call-started events
-  useEffect(() => {
-    if (activeCallData && !inCall) {
-      // Show notification when a new call starts
-      const channelName = channels?.find(c => c.id === selectedChannelId)?.name || "Unknown Channel";
-      showCallNotification({
-        channelId: activeCallData.channelId,
-        channelName,
-        callType: activeCallData.callType,
-        startedBy: user?.name || "Someone",
-      });
-    }
-  }, [activeCallData?.id]);
-  
   // tRPC utils for invalidation
   const utils = trpc.useUtils();
 
@@ -159,6 +145,20 @@ export default function ChatModule() {
     { channelId: selectedChannelId! },
     { enabled: !!selectedChannelId, refetchInterval: 3000 }
   );
+  
+  // Listen for call-started events
+  useEffect(() => {
+    if (activeCallData && !inCall) {
+      // Show notification when a new call starts
+      const channelName = channels?.find(c => c.id === selectedChannelId)?.name || "Unknown Channel";
+      showCallNotification({
+        channelId: activeCallData.channelId,
+        channelName,
+        callType: activeCallData.callType,
+        startedBy: user?.name || "Someone",
+      });
+    }
+  }, [activeCallData?.id, inCall, selectedChannelId, channels, showCallNotification, user?.name]);
   
   // Auto-scroll to bottom when messages change
   useEffect(() => {
