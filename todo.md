@@ -840,3 +840,33 @@
 - [ ] If different users, need to log out and log in with same account
 - [ ] Test message creation from desktop → verify appears on mobile
 - [ ] Test message creation from mobile → verify appears on desktop
+
+
+## Deep Dive Fixes (Feb 23, 2026)
+
+### PWA Icon Update
+- [x] Copy gold OM logo to PWA icon locations
+- [x] Update manifest.json with new icon paths
+- [ ] Test icon appears correctly when installed (requires reinstall)
+
+### Message Sync Investigation
+- [x] Check actual tRPC response data structure
+- [x] Verify listChannels returns data on mobile (returns 0 channels)
+- [x] Compare desktop vs mobile channel data
+- [x] ROOT CAUSE: User has ZERO channel memberships in database
+- [x] Trace complete data flow from DB to UI
+- [x] Solution: Create channels with proper memberships using new createDM procedure
+
+### Chat Routing Fixes
+- [x] Fix "no path" error - added missing createDM tRPC procedure
+- [x] Verify /mobile/chat/:id route exists (already set up correctly)
+- [x] Fix ChatConversation to use listMessages instead of getMessages
+- [x] Fix channelId parsing (convert string to number)
+- [x] Test navigation from New DM dialog to chat
+
+### Contact Selection for Calls
+- [x] Create NewCallDialog component with contact picker
+- [x] Verify contacts.list query works
+- [x] Add proper error handling for empty contacts
+- [x] Integrate NewCallDialog into Calls tab
+- [x] Call flow: select contact → create DM → start call → navigate to chat

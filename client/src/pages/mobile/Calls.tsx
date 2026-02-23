@@ -3,9 +3,11 @@ import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { NewCallDialog } from "@/components/mobile/NewCallDialog";
 
 export default function MobileCalls() {
   const [, setLocation] = useLocation();
+  const [showNewCallDialog, setShowNewCallDialog] = useState(false);
   
   // Get user's channels to find call history
   const { data: channelsData } = trpc.communications.listChannels.useQuery();
@@ -61,7 +63,7 @@ export default function MobileCalls() {
       <div className="flex-none border-b border-[#D4AF37]/30 bg-black/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[#D4AF37]">Calls</h1>
         <button
-          onClick={() => toast.info("Select a channel from Messages to start a call")}
+          onClick={() => setShowNewCallDialog(true)}
           className="p-2 rounded-full bg-[#D4AF37] text-black hover:bg-[#F4D03F] active:bg-[#C9A428] transition-colors"
           title="New call"
         >
@@ -138,6 +140,12 @@ export default function MobileCalls() {
           </div>
         )}
       </div>
+      
+      {/* New Call Dialog */}
+      <NewCallDialog
+        open={showNewCallDialog}
+        onOpenChange={setShowNewCallDialog}
+      />
     </div>
   );
 }

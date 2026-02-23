@@ -11,12 +11,12 @@ export default function MobileChatConversation() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { data: channelData } = trpc.communications.getChannel.useQuery(
-    { channelId: channelId! },
+    { channelId: parseInt(channelId!) },
     { enabled: !!channelId }
   );
   
-  const { data: messagesData } = trpc.communications.getMessages.useQuery(
-    { channelId: channelId! },
+  const { data: messagesData } = trpc.communications.listMessages.useQuery(
+    { channelId: parseInt(channelId!), limit: 50 },
     { enabled: !!channelId, refetchInterval: 2000 }
   );
   
@@ -37,7 +37,7 @@ export default function MobileChatConversation() {
     if (!message.trim() || !channelId) return;
     
     sendMessageMutation.mutate({
-      channelId,
+      channelId: parseInt(channelId),
       content: message.trim(),
     });
   };

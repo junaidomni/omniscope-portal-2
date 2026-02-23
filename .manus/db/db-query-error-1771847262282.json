@@ -1,0 +1,14 @@
+{
+  "query": "SELECT COUNT(*) as total_channels FROM channels;\nSELECT COUNT(*) as total_memberships FROM channel_members;\nSELECT COUNT(*) as user1_memberships FROM channel_members WHERE cmUserId = 1;\nSELECT c.id, c.name, c.type, c.org_id FROM channels c LIMIT 10;\nSELECT cm.id, cm.cmChannelId, cm.cmUserId FROM channel_members cm WHERE cmUserId = 1 LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT COUNT(*) as total_channels FROM channels;\nSELECT COUNT(*) as total_memberships FROM channel_members;\nSELECT COUNT(*) as user1_memberships FROM channel_members WHERE cmUserId = 1;\nSELECT c.id, c.name, c.type, c.org_id FROM channels c LIMIT 10;\nSELECT cm.id, cm.cmChannelId, cm.cmUserId FROM channel_members cm WHERE cmUserId = 1 LIMIT 10;",
+  "returncode": 1,
+  "logs": [
+    "total_channels",
+    "74",
+    "total_memberships",
+    "64",
+    "user1_memberships",
+    "9",
+    "ERROR 1054 (42S22) at line 4: Unknown column 'c.name' in 'field list'"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "query": "SELECT COUNT(*) as total_channels FROM channels;\nSELECT COUNT(*) as total_memberships FROM channel_members;\nSELECT COUNT(*) as user1_memberships FROM channel_members WHERE cmUserId = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT COUNT(*) as total_channels FROM channels;\nSELECT COUNT(*) as total_memberships FROM channel_members;\nSELECT COUNT(*) as user1_memberships FROM channel_members WHERE cmUserId = 1;",
+  "rows": [
+    {
+      "total_channels": "74"
+    },
+    {
+      "total_channels": "total_memberships"
+    },
+    {
+      "total_channels": "64"
+    },
+    {
+      "total_channels": "user1_memberships"
+    },
+    {
+      "total_channels": "9"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_channels\n74\ntotal_memberships\n64\nuser1_memberships\n9\n",
+  "stderr": "",
+  "execution_time_ms": 474
+}

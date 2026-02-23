@@ -634,6 +634,63 @@ export const communicationsRouter = router({
     }),
 
   /**
+   * Create a direct message (DM) channel between two users
+   */
+  createDM: protectedProcedure
+    .input(z.object({
+      recipientId: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const { recipientId } = input;
+
+      if (recipientId === userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot create DM with yourself",
+        });
+      }
+
+      // Check if DM already exists between these two users
+      const existingDM = await db.findDMBetweenUsers(userId, recipientId);
+      if (existingDM) {
+        return { channelId: existingDM.id, existed: true };
+      }
+
+      // Create new DM channel (orgId = null for cross-org DMs)
+      const channelId = await db.createChannel({
+        orgId: null, // DMs are not org-specific
+        type: "dm",
+        name: null, // DM names are personalized per user
+        createdBy: userId,
+      });
+
+      if (!channelId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create DM",
+        });
+      }
+
+      // Add both users as members
+      await db.addChannelMember({
+        channelId,
+        userId,
+        role: "member",
+        isGuest: false,
+      });
+
+      await db.addChannelMember({
+        channelId,
+        userId: recipientId,
+        role: "member",
+        isGuest: false,
+      });
+
+      return { channelId, existed: false };
+    }),
+
+  /**
    * Create a group chat channel (multi-user)
    */
   createGroupChat: protectedProcedure

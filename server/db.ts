@@ -3333,6 +3333,37 @@ export async function getChannelById(channelId: number) {
 }
 
 /**
+ * Find existing DM channel between two users
+ */
+export async function findDMBetweenUsers(userId1: number, userId2: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Find DM channels where both users are members
+  const dmChannels = await db
+    .select({ channel: channels })
+    .from(channels)
+    .innerJoin(channelMembers, eq(channels.id, channelMembers.channelId))
+    .where(
+      and(
+        eq(channels.type, "dm"),
+        eq(channelMembers.userId, userId1)
+      )
+    );
+  
+  // Check if any of these DMs also has userId2 as a member
+  for (const { channel } of dmChannels) {
+    const members = await getChannelMembers(channel.id);
+    const memberIds = members.map(m => m.user.id);
+    if (memberIds.includes(userId2)) {
+      return channel;
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Get channel members
  */
 export async function getChannelMembers(channelId: number) {
