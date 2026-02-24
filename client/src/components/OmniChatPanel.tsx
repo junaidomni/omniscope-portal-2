@@ -46,7 +46,7 @@ interface ContextSuggestion {
 interface OmniChatPanelProps {
   open: boolean;
   onClose: () => void;
-  omniMode: "sigil" | "character" | "3d-character";
+  omniMode: "sigil" | "character";
   currentPage: string;
 }
 

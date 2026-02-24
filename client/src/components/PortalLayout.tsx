@@ -424,7 +424,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   // Omni state
   const [omniChatOpen, setOmniChatOpen] = useState(false);
   const [omniMode, setOmniMode] = useState<OmniMode>(() => {
-    try { return (localStorage.getItem(OMNI_MODE_KEY) as OmniMode) || "3d-character"; } catch { return "3d-character"; }
+    try { return (localStorage.getItem(OMNI_MODE_KEY) as OmniMode) || "sigil"; } catch { return "sigil"; }
   });
   const [omniSidebarVisible, setOmniSidebarVisible] = useState(() => {
     try { return localStorage.getItem(OMNI_SIDEBAR_KEY) !== "false"; } catch { return true; }

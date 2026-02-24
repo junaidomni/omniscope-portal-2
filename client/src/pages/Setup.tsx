@@ -1062,7 +1062,7 @@ function OmniTab() {
   const currentTheme = designPrefs?.theme || "obsidian";
 
   const [mode, setMode] = useState<OmniMode>(() => {
-    try { return (localStorage.getItem(OMNI_MODE_KEY) as OmniMode) || "3d-character"; } catch { return "3d-character"; }
+    try { return (localStorage.getItem(OMNI_MODE_KEY) as OmniMode) || "sigil"; } catch { return "sigil"; }
   });
   const [sidebarVisible, setSidebarVisible] = useState(() => {
     try { return localStorage.getItem(OMNI_SIDEBAR_KEY) !== "false"; } catch { return true; }
@@ -1075,8 +1075,7 @@ function OmniTab() {
     setMode(newMode);
     try { localStorage.setItem(OMNI_MODE_KEY, newMode); } catch {}
     window.dispatchEvent(new StorageEvent("storage", { key: OMNI_MODE_KEY, newValue: newMode }));
-    const modeLabel = newMode === "sigil" ? "Sigil" : newMode === "character" ? "Character" : newMode === "3d-character" ? "3D Character" : "Hidden";
-    toast.success(`Omni appearance set to ${modeLabel}`);
+    toast.success(`Omni appearance set to ${newMode === "sigil" ? "Sigil" : newMode === "character" ? "Character" : "Hidden"}`);
   };
 
   const handleSidebarToggle = (visible: boolean) => {
@@ -1093,7 +1092,6 @@ function OmniTab() {
   };
 
   const modes: { id: OmniMode; label: string; description: string }[] = [
-    { id: "3d-character", label: "3D Character", description: "Cute minimalist mascot — 8 emotional states, engaging animations" },
     { id: "sigil", label: "Sigil", description: "Concentric gold rings — institutional, geometric, premium" },
     { id: "character", label: "Character", description: "NOMI-inspired companion — expressive eyes, interactive personality" },
     { id: "hidden", label: "Hidden", description: "No floating avatar — access Omni only from sidebar or ⌘K" },
