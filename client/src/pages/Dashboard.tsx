@@ -695,6 +695,7 @@ export default function Dashboard() {
   };
 
   const urgentTasks = useMemo(() => {
+    if (!Array.isArray(allTasks)) return [];
     return allTasks
       .filter((t: any) => t.priority === "high" || (t.dueDate && new Date(t.dueDate) < new Date()))
       .slice(0, 5);

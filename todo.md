@@ -952,3 +952,37 @@
 - [x] Fixed: Changed count to match actual filtered tasks displayed
 - [x] Wrapped filter logic in IIFE to calculate highPriorityFiltered once and use for both count and display
 - [x] Test that high priority tasks show correctly
+
+
+## Meeting Intake Flow Documentation (Feb 23, 2026)
+
+### Fathom Integration
+- [ ] Document how Fathom connects to OmniScope (API keys, webhooks, polling)
+- [ ] Trace data import process (what fields come from Fathom)
+- [ ] Document meeting storage in database
+- [ ] Explain AI processing of Fathom transcripts
+
+### Plaud Integration
+- [ ] Document how Plaud connects to OmniScope
+- [ ] Trace data import process (audio files, transcripts)
+- [ ] Document meeting storage in database
+- [ ] Explain AI processing of Plaud recordings
+
+### Task Extraction & Assignment
+- [ ] Document AI task extraction logic
+- [ ] Explain how tasks are identified from transcripts
+- [ ] Document assignment logic (who gets assigned)
+- [ ] Explain notification system for assignees
+- [ ] Create flow diagram showing complete process
+
+### Deliverable
+- [ ] Create comprehensive MEETING_INTAKE_FLOW.md document
+- [ ] Include code references and examples
+- [ ] Add visual flow diagram
+
+
+## Mobile App Bug Fixes (Feb 23, 2026)
+
+- [x] Fix mobile Messages crash from null channel names
+- [x] Fix Dashboard overview tab allTasks.filter error
+- [x] Add array safety checks to prevent filter errors

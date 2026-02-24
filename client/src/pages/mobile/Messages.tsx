@@ -42,7 +42,7 @@ export default function MobileMessages() {
   
   // Filter by search query
   const filteredChannels = activeChannels.filter(channel =>
-    channel.name.toLowerCase().includes(searchQuery.toLowerCase())
+    channel.name && channel.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const deleteChannelMutation = trpc.communications.deleteChannel.useMutation({
