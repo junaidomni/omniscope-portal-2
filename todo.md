@@ -996,3 +996,13 @@
 - [x] Add custom CSS animations (float, shake, bounce-subtle)
 - [x] Update OmniChatPanel to support 3d-character mode
 - [x] Test character integration and animations
+
+
+## Enable 3D Character by Default & Settings UI
+
+- [x] Update PortalLayout.tsx to set 3d-character as default mode
+- [x] Update Setup.tsx OmniTab to include 3d-character mode option
+- [x] Add 3D Character as first option in mode selector
+- [x] Update toast messages to show correct mode labels
+- [x] Test mode switching functionality
+- [x] Save checkpoint with default mode and settings UI
