@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import Character3D from "./Character3D";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export type OmniMode = "sigil" | "character" | "hidden";
+export type OmniMode = "sigil" | "character" | "3d-character" | "hidden";
 
 export type OmniState =
   | "idle"
@@ -665,6 +666,8 @@ export default function OmniAvatar({ mode, state, size = 56, onClick, badge, cla
     >
       {mode === "sigil" ? (
         <SigilAvatar state={currentState} size={size} badge={badge} theme={theme} />
+      ) : mode === "3d-character" ? (
+        <Character3D state={currentState} size={size} badge={badge} />
       ) : (
         <CharacterAvatar state={currentState} size={size} badge={badge} theme={theme} />
       )}
