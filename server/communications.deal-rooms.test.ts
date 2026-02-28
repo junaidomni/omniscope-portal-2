@@ -1,6 +1,21 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createCaller } from "./_core/trpc";
+import { appRouter } from "./routers";
 import * as db from "./db";
+import type { TrpcContext } from "./_core/context";
+
+function createTestContext(user: any, orgId: number | null): TrpcContext {
+  return {
+    user,
+    orgId,
+    req: {
+      protocol: "https",
+      headers: {},
+    } as TrpcContext["req"],
+    res: {
+      clearCookie: () => {},
+    } as TrpcContext["res"],
+  };
+}
 
 describe("Communications - Deal Rooms", () => {
   let testUserId: number;
@@ -47,26 +62,41 @@ describe("Communications - Deal Rooms", () => {
     testOrgId = orgId;
 
     // Add users to org
-    await db.addOrgMembership({ userId: testUserId, orgId: testOrgId, role: "account_owner", isDefault: false });
-    await db.addOrgMembership({ userId: testUser2Id, orgId: testOrgId, role: "member", isDefault: false });
-
-    // Update users with orgId
-    await db.updateUser(testUserId, { orgId: testOrgId });
-    await db.updateUser(testUser2Id, { orgId: testOrgId });
+    await db.addOrgMembership({ userId: testUserId, organizationId: testOrgId, role: "account_owner", isDefault: false });
+    await db.addOrgMembership({ userId: testUser2Id, organizationId: testOrgId, role: "member", isDefault: false });
   });
+
+  function adminCaller() {
+    return appRouter.createCaller(createTestContext({
+      id: testUserId,
+      openId: "test-user-deal-rooms",
+      name: "Test User Deal Rooms",
+      email: "test-deal-rooms@omniscopex.ae",
+      role: "admin",
+      platformOwner: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    }, testOrgId));
+  }
+
+  function user2Caller() {
+    return appRouter.createCaller(createTestContext({
+      id: testUser2Id,
+      openId: "test-user-2-deal-rooms",
+      name: "Test User 2 Deal Rooms",
+      email: "test2-deal-rooms@omniscopex.ae",
+      role: "user",
+      platformOwner: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    }, testOrgId));
+  }
 
   describe("createDealRoom", () => {
     it("should create a deal room with correct type and description", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const result = await caller.communications.createDealRoom({
         name: "Gold Trading Q1 2026",
@@ -74,11 +104,11 @@ describe("Communications - Deal Rooms", () => {
         vertical: "gold",
       });
 
-      expect(result.channelId).toBeDefined();
-      expect(typeof result.channelId).toBe("number");
+      expect(result.dealRoomId).toBeDefined();
+      expect(typeof result.dealRoomId).toBe("number");
 
       // Verify channel was created correctly
-      const channel = await db.getChannelById(result.channelId);
+      const channel = await db.getChannelById(result.dealRoomId);
       expect(channel).toBeDefined();
       expect(channel?.type).toBe("deal_room");
       expect(channel?.name).toBe("Gold Trading Q1 2026");
@@ -86,31 +116,26 @@ describe("Communications - Deal Rooms", () => {
       expect(channel?.orgId).toBe(testOrgId);
 
       // Verify creator is added as owner
-      const membership = await db.getChannelMembership(result.channelId, testUserId);
+      const membership = await db.getChannelMembership(result.dealRoomId, testUserId);
       expect(membership).toBeDefined();
       expect(membership?.role).toBe("owner");
       expect(membership?.isGuest).toBe(false);
     });
 
-    it("should use default description if not provided", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+    it("should create general sub-channel automatically", async () => {
+      const caller = adminCaller();
 
       const result = await caller.communications.createDealRoom({
         name: "Real Estate Deal",
         vertical: "real-estate",
       });
 
-      const channel = await db.getChannelById(result.channelId);
-      expect(channel?.description).toBe("real-estate deal room");
+      expect(result.generalChannelId).toBeDefined();
+      if (result.generalChannelId) {
+        const generalChannel = await db.getChannelById(result.generalChannelId);
+        expect(generalChannel?.name).toBe("general");
+        expect(generalChannel?.type).toBe("group");
+      }
     });
   });
 
@@ -118,35 +143,16 @@ describe("Communications - Deal Rooms", () => {
     let dealRoomId: number;
 
     beforeEach(async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
-
+      const caller = adminCaller();
       const result = await caller.communications.createDealRoom({
         name: "Test Deal Room",
         vertical: "gold",
       });
-      dealRoomId = result.channelId;
+      dealRoomId = result.dealRoomId;
     });
 
     it("should generate invite link with expiry and max uses", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const result = await caller.communications.createInviteLink({
         channelId: dealRoomId,
@@ -162,16 +168,7 @@ describe("Communications - Deal Rooms", () => {
     });
 
     it("should generate invite link with no expiry or max uses", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const result = await caller.communications.createInviteLink({
         channelId: dealRoomId,
@@ -190,16 +187,7 @@ describe("Communications - Deal Rooms", () => {
     });
 
     it("should reject non-owner/admin from creating invite links", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUser2Id,
-          openId: "test-user-2-deal-rooms",
-          name: "Test User 2 Deal Rooms",
-          email: "test2-deal-rooms@omniscopex.ae",
-          role: "user",
-          orgId: testOrgId,
-        },
-      });
+      const caller = user2Caller();
 
       await expect(
         caller.communications.createInviteLink({
@@ -214,23 +202,14 @@ describe("Communications - Deal Rooms", () => {
     let inviteToken: string;
 
     beforeEach(async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const dealRoom = await caller.communications.createDealRoom({
         name: "Test Deal Room",
         description: "Test description",
         vertical: "gold",
       });
-      dealRoomId = dealRoom.channelId;
+      dealRoomId = dealRoom.dealRoomId;
 
       const invite = await caller.communications.createInviteLink({
         channelId: dealRoomId,
@@ -242,7 +221,7 @@ describe("Communications - Deal Rooms", () => {
 
     it("should return invite details for valid token (public endpoint)", async () => {
       // Public procedure - no auth required
-      const caller = createCaller({ user: undefined });
+      const caller = appRouter.createCaller(createTestContext(null, null));
 
       const result = await caller.communications.getInviteDetails({
         token: inviteToken,
@@ -254,7 +233,7 @@ describe("Communications - Deal Rooms", () => {
     });
 
     it("should reject invalid token", async () => {
-      const caller = createCaller({ user: undefined });
+      const caller = appRouter.createCaller(createTestContext(null, null));
 
       await expect(
         caller.communications.getInviteDetails({
@@ -265,7 +244,7 @@ describe("Communications - Deal Rooms", () => {
 
     it("should reject expired invite", async () => {
       // Create expired invite
-      const expiredToken = "expired-token-12345";
+      const expiredToken = `expired-token-${Date.now()}`;
       await db.createChannelInvite({
         channelId: dealRoomId,
         token: expiredToken,
@@ -274,7 +253,7 @@ describe("Communications - Deal Rooms", () => {
         maxUses: null,
       });
 
-      const caller = createCaller({ user: undefined });
+      const caller = appRouter.createCaller(createTestContext(null, null));
 
       await expect(
         caller.communications.getInviteDetails({
@@ -289,22 +268,13 @@ describe("Communications - Deal Rooms", () => {
     let inviteToken: string;
 
     beforeEach(async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const dealRoom = await caller.communications.createDealRoom({
         name: "Test Deal Room",
         vertical: "gold",
       });
-      dealRoomId = dealRoom.channelId;
+      dealRoomId = dealRoom.dealRoomId;
 
       const invite = await caller.communications.createInviteLink({
         channelId: dealRoomId,
@@ -315,16 +285,7 @@ describe("Communications - Deal Rooms", () => {
     });
 
     it("should add user as guest when accepting invite", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUser2Id,
-          openId: "test-user-2-deal-rooms",
-          name: "Test User 2 Deal Rooms",
-          email: "test2-deal-rooms@omniscopex.ae",
-          role: "user",
-          orgId: testOrgId,
-        },
-      });
+      const caller = user2Caller();
 
       const result = await caller.communications.acceptInvite({
         token: inviteToken,
@@ -344,16 +305,7 @@ describe("Communications - Deal Rooms", () => {
       const invite = await db.getChannelInviteByToken(inviteToken);
       const initialUsedCount = invite?.usedCount || 0;
 
-      const caller = createCaller({
-        user: {
-          id: testUser2Id,
-          openId: "test-user-2-deal-rooms",
-          name: "Test User 2 Deal Rooms",
-          email: "test2-deal-rooms@omniscopex.ae",
-          role: "user",
-          orgId: testOrgId,
-        },
-      });
+      const caller = user2Caller();
 
       await caller.communications.acceptInvite({
         token: inviteToken,
@@ -364,16 +316,7 @@ describe("Communications - Deal Rooms", () => {
     });
 
     it("should return alreadyMember=true if user is already a member", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const result = await caller.communications.acceptInvite({
         token: inviteToken,
@@ -385,31 +328,13 @@ describe("Communications - Deal Rooms", () => {
 
     it("should reject invite at max uses", async () => {
       // Create invite with maxUses=1
-      const limitedInvite = await createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      }).communications.createInviteLink({
+      const limitedInvite = await adminCaller().communications.createInviteLink({
         channelId: dealRoomId,
         maxUses: 1,
       });
 
       // Use the invite once
-      await createCaller({
-        user: {
-          id: testUser2Id,
-          openId: "test-user-2-deal-rooms",
-          name: "Test User 2 Deal Rooms",
-          email: "test2-deal-rooms@omniscopex.ae",
-          role: "user",
-          orgId: testOrgId,
-        },
-      }).communications.acceptInvite({
+      await user2Caller().communications.acceptInvite({
         token: limitedInvite.token,
       });
 
@@ -422,17 +347,20 @@ describe("Communications - Deal Rooms", () => {
       });
       const user3 = await db.getUserByOpenId("test-user-3-deal-rooms");
 
+      const user3Caller = appRouter.createCaller(createTestContext({
+        id: user3!.id,
+        openId: "test-user-3-deal-rooms",
+        name: "Test User 3",
+        email: "test3@omniscopex.ae",
+        role: "user",
+        platformOwner: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      }, testOrgId));
+
       await expect(
-        createCaller({
-          user: {
-            id: user3!.id,
-            openId: "test-user-3-deal-rooms",
-            name: "Test User 3",
-            email: "test3@omniscopex.ae",
-            role: "user",
-            orgId: testOrgId,
-          },
-        }).communications.acceptInvite({
+        user3Caller.communications.acceptInvite({
           token: limitedInvite.token,
         })
       ).rejects.toThrow("Invite has reached maximum uses");
@@ -445,38 +373,20 @@ describe("Communications - Deal Rooms", () => {
 
     beforeEach(async () => {
       // Create deal room
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const dealRoom = await caller.communications.createDealRoom({
         name: "Test Deal Room",
         vertical: "gold",
       });
-      dealRoomId = dealRoom.channelId;
+      dealRoomId = dealRoom.dealRoomId;
 
       // Create invite and add guest
       const invite = await caller.communications.createInviteLink({
         channelId: dealRoomId,
       });
 
-      await createCaller({
-        user: {
-          id: testUser2Id,
-          openId: "test-user-2-deal-rooms",
-          name: "Test User 2 Deal Rooms",
-          email: "test2-deal-rooms@omniscopex.ae",
-          role: "user",
-          orgId: testOrgId,
-        },
-      }).communications.acceptInvite({
+      await user2Caller().communications.acceptInvite({
         token: invite.token,
       });
 
@@ -484,16 +394,7 @@ describe("Communications - Deal Rooms", () => {
     });
 
     it("should allow owner to remove guest", async () => {
-      const caller = createCaller({
-        user: {
-          id: testUserId,
-          openId: "test-user-deal-rooms",
-          name: "Test User Deal Rooms",
-          email: "test-deal-rooms@omniscopex.ae",
-          role: "admin",
-          orgId: testOrgId,
-        },
-      });
+      const caller = adminCaller();
 
       const result = await caller.communications.removeGuest({
         channelId: dealRoomId,
@@ -517,19 +418,20 @@ describe("Communications - Deal Rooms", () => {
       });
       const user3 = await db.getUserByOpenId("test-user-3-deal-rooms");
 
-      const caller = createCaller({
-        user: {
-          id: user3!.id,
-          openId: "test-user-3-deal-rooms",
-          name: "Test User 3",
-          email: "test3@omniscopex.ae",
-          role: "user",
-          orgId: testOrgId,
-        },
-      });
+      const user3Caller = appRouter.createCaller(createTestContext({
+        id: user3!.id,
+        openId: "test-user-3-deal-rooms",
+        name: "Test User 3",
+        email: "test3@omniscopex.ae",
+        role: "user",
+        platformOwner: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      }, testOrgId));
 
       await expect(
-        caller.communications.removeGuest({
+        user3Caller.communications.removeGuest({
           channelId: dealRoomId,
           userId: guestUserId,
         })

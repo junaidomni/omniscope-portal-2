@@ -938,7 +938,7 @@ export const communicationsRouter = router({
       }
 
       // Add user as guest
-      await db.addChannelMember(invite.channelId, userId, "guest", true);
+      await db.addChannelMember({ channelId: invite.channelId, userId, role: "guest", isGuest: true });
 
       // Increment used count
       await db.incrementInviteUsedCount(invite.id);
@@ -1719,7 +1719,7 @@ export const communicationsRouter = router({
       }
 
       // Check if audio recording exists
-      if (!call.audioUrl) {
+      if (!call.recordingUrl) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "No audio recording available for this call",
@@ -1729,7 +1729,7 @@ export const communicationsRouter = router({
       // Transcribe using Whisper API
       const { transcribeAudio } = await import("../_core/voiceTranscription");
       const transcription = await transcribeAudio({
-        audioUrl: call.audioUrl,
+        audioUrl: call.recordingUrl,
         language: "en",
         prompt: "Transcribe this call conversation",
       });
@@ -1863,7 +1863,7 @@ export const communicationsRouter = router({
       );
 
       // Update call with summary URL
-      await db.updateCall(input.callId, { summaryUrl });
+      await db.updateCall(input.callId, { transcriptUrl: summaryUrl });
 
       return { summaryUrl, summary: summaryData };
     }),
@@ -1912,7 +1912,7 @@ export const communicationsRouter = router({
       );
 
       // Update call with audio URL
-      await db.updateCall(input.callId, { audioUrl });
+      await db.updateCall(input.callId, { recordingUrl: audioUrl });
 
       // Trigger automatic transcription
       try {
@@ -1940,11 +1940,11 @@ export const communicationsRouter = router({
         // Update call with transcript URL
         await db.updateCall(input.callId, { transcriptUrl });
 
-        return { audioUrl, transcriptUrl, success: true };
+        return { audioUrl: audioUrl, transcriptUrl, success: true };
       } catch (error) {
         console.error("Error transcribing audio:", error);
         // Return success even if transcription fails
-        return { audioUrl, transcriptUrl: null, success: true };
+        return { audioUrl: audioUrl, transcriptUrl: null, success: true };
       }
     }),
 
@@ -1967,7 +1967,7 @@ export const communicationsRouter = router({
         activeCalls.push({
           channelId,
           callId: activeCall.id,
-          callType: activeCall.callType,
+          callType: activeCall.type,
         });
       }
     }

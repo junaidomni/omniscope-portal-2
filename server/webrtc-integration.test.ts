@@ -56,7 +56,7 @@ describe("WebRTC Integration", () => {
       expect(call).toBeDefined();
       expect(call.id).toBeDefined();
       expect(call.channelId).toBe(channelId);
-      expect(call.callType).toBe("video");
+      expect(call.type).toBe("video");
       expect(call.status).toBe("ongoing");
       expect(call.startedAt).toBeDefined();
     });
@@ -272,8 +272,8 @@ describe("WebRTC Integration", () => {
         callType: "video",
       });
 
-      // Verify call has audioUrl field (initially null)
-      expect(call.audioUrl).toBeNull();
+          // Verify call has recordingUrl field (initially null)
+      expect(call.recordingUrl).toBeNull();
     });
 
     it("should update call with transcript URL", async () => {
@@ -298,14 +298,14 @@ describe("WebRTC Integration", () => {
         callType: "video",
       });
 
-      // Update call with transcript URL
+      // Update call with recording URL
       await db.updateCall(call.id, {
-        transcriptUrl: "https://example.com/transcript.json",
+        recordingUrl: "https://example.com/recording.webm",
       });
 
-      // Verify transcript URL was set
+      // Verify recording URL was set
       const updatedCall = await db.getCallById(call.id);
-      expect(updatedCall?.transcriptUrl).toBe("https://example.com/transcript.json");
+      expect(updatedCall?.recordingUrl).toBe("https://example.com/recording.webm");
     });
 
     it("should update call with summary URL", async () => {
@@ -330,14 +330,14 @@ describe("WebRTC Integration", () => {
         callType: "video",
       });
 
-      // Update call with summary URL
+      // Update call with recording URL
       await db.updateCall(call.id, {
-        summaryUrl: "https://example.com/summary.json",
+        recordingUrl: "https://example.com/recording.webm",
       });
 
-      // Verify summary URL was set
+      // Verify recording URL was set
       const updatedCall = await db.getCallById(call.id);
-      expect(updatedCall?.summaryUrl).toBe("https://example.com/summary.json");
+      expect(updatedCall?.recordingUrl).toBe("https://example.com/recording.webm");
     });
   });
 
@@ -363,7 +363,7 @@ describe("WebRTC Integration", () => {
         callType: "voice",
       });
 
-      expect(call.callType).toBe("voice");
+      expect(call.type).toBe("voice");
     });
 
     it("should support video calls", async () => {
@@ -387,7 +387,7 @@ describe("WebRTC Integration", () => {
         callType: "video",
       });
 
-      expect(call.callType).toBe("video");
+      expect(call.type).toBe("video");
     });
   });
 });

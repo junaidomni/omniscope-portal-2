@@ -106,15 +106,17 @@ describe("Portal Router Tests", () => {
       const ctx = createUserContext();
       const caller = appRouter.createCaller(ctx);
       const result = await caller.meetings.list({});
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveProperty("meetings");
+      expect(Array.isArray(result.meetings)).toBe(true);
     });
 
     it("supports limit parameter", async () => {
       const ctx = createUserContext();
       const caller = appRouter.createCaller(ctx);
       const result = await caller.meetings.list({ limit: 5 });
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(5);
+      expect(result).toHaveProperty("meetings");
+      expect(Array.isArray(result.meetings)).toBe(true);
+      expect(result.meetings.length).toBeLessThanOrEqual(5);
     });
   });
 
@@ -166,15 +168,17 @@ describe("Portal Router Tests", () => {
       const ctx = createUserContext();
       const caller = appRouter.createCaller(ctx);
       const result = await caller.tasks.list({});
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveProperty("tasks");
+      expect(Array.isArray(result.tasks)).toBe(true);
     });
 
     it("supports status filter", async () => {
       const ctx = createUserContext();
       const caller = appRouter.createCaller(ctx);
       const result = await caller.tasks.list({ status: "open" });
-      expect(Array.isArray(result)).toBe(true);
-      result.forEach(task => {
+      expect(result).toHaveProperty("tasks");
+      expect(Array.isArray(result.tasks)).toBe(true);
+      result.tasks.forEach((task: any) => {
         expect(task.status).toBe("open");
       });
     });

@@ -48,11 +48,19 @@ export async function getDashboardMetrics(orgId?: number | null): Promise<Dashbo
   const allOrganizations = new Set<string>();
   
   allMeetings.forEach(meeting => {
-    const participants = JSON.parse(meeting.participants || '[]');
-    participants.forEach((p: string) => allParticipants.add(p));
+    try {
+      const participants = JSON.parse(meeting.participants || '[]');
+      if (Array.isArray(participants)) {
+        participants.forEach((p: string) => allParticipants.add(p));
+      }
+    } catch (e) { /* skip invalid JSON */ }
     
-    const orgs = JSON.parse(meeting.organizations || '[]');
-    orgs.forEach((o: string) => allOrganizations.add(o));
+    try {
+      const orgs = JSON.parse(meeting.organizations || '[]');
+      if (Array.isArray(orgs)) {
+        orgs.forEach((o: string) => allOrganizations.add(o));
+      }
+    } catch (e) { /* skip invalid JSON */ }
   });
 
   // Get task metrics scoped to org
@@ -297,12 +305,33 @@ export async function getWeeklySummary(weekStart: Date, orgId?: number | null): 
   const allRisks: string[] = [];
   
   const meetingDetails = meetings.map(m => {
-    const participants = JSON.parse(m.participants || '[]');
-    const organizations = JSON.parse(m.organizations || '[]');
-    participants.forEach((p: string) => participantSet.add(p));
-    organizations.forEach((o: string) => organizationSet.add(o));
-    allOpportunities.push(...JSON.parse(m.opportunities || '[]'));
-    allRisks.push(...JSON.parse(m.risks || '[]'));
+    let participants: string[] = [];
+    let organizations: string[] = [];
+    let opportunities: string[] = [];
+    let risks: string[] = [];
+    let keyHighlights: string[] = [];
+    try {
+      participants = JSON.parse(m.participants || '[]');
+      if (!Array.isArray(participants)) participants = [];
+      participants.forEach((p: string) => participantSet.add(p));
+    } catch (e) { participants = []; }
+    try {
+      organizations = JSON.parse(m.organizations || '[]');
+      if (!Array.isArray(organizations)) organizations = [];
+      organizations.forEach((o: string) => organizationSet.add(o));
+    } catch (e) { organizations = []; }
+    try {
+      opportunities = JSON.parse(m.opportunities || '[]');
+      if (Array.isArray(opportunities)) allOpportunities.push(...opportunities);
+    } catch (e) { /* skip */ }
+    try {
+      risks = JSON.parse(m.risks || '[]');
+      if (Array.isArray(risks)) allRisks.push(...risks);
+    } catch (e) { /* skip */ }
+    try {
+      keyHighlights = JSON.parse(m.strategicHighlights || '[]');
+      if (!Array.isArray(keyHighlights)) keyHighlights = [];
+    } catch (e) { keyHighlights = []; }
     return {
       id: m.id,
       title: m.meetingTitle || participants.join(', ') || 'Untitled Meeting',
@@ -310,7 +339,7 @@ export async function getWeeklySummary(weekStart: Date, orgId?: number | null): 
       participants,
       organizations,
       summary: m.executiveSummary,
-      keyHighlights: JSON.parse(m.strategicHighlights || '[]'),
+      keyHighlights,
       sourceType: m.sourceType,
     };
   });

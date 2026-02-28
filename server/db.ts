@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like, lte, or, sql, inArray, asc } from "drizzle-orm";
+import { and, desc, eq, gte, like, lte, or, sql, inArray, asc, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, meetings, tasks, tags, meetingTags, contacts, meetingContacts, InsertMeeting, InsertTask, InsertTag, InsertMeetingTag, InsertContact, InsertMeetingContact, contactNotes, InsertContactNote, contactDocuments, InsertContactDocument, employees, InsertEmployee, payrollRecords, InsertPayrollRecord, hrDocuments, InsertHrDocument, companies, InsertCompany, interactions, InsertInteraction, userProfiles, InsertUserProfile, emailStars, InsertEmailStar, emailCompanyLinks, InsertEmailCompanyLink, emailThreadSummaries, InsertEmailThreadSummary, emailMessages, pendingSuggestions, InsertPendingSuggestion, activityLog, InsertActivityLog, contactAliases, InsertContactAlias, companyAliases, InsertCompanyAlias, documents, InsertDocument, documentEntityLinks, InsertDocumentEntityLink, documentFolders, InsertDocumentFolder, documentAccess, InsertDocumentAccess, documentFavorites, InsertDocumentFavorite, documentTemplates, InsertDocumentTemplate, signingProviders, InsertSigningProvider, signingEnvelopes, InsertSigningEnvelope, documentNotes, integrations, InsertIntegration, featureToggles, InsertFeatureToggle, designPreferences, InsertDesignPreference, accounts, InsertAccount, organizations, InsertOrganization, orgMemberships, InsertOrgMembership, plans, InsertPlan, subscriptions, InsertSubscription, planFeatures, InsertPlanFeature, billingEvents, InsertBillingEvent, platformAuditLog, InsertPlatformAuditLogEntry, loginHistory, InsertLoginHistory, workspaces, InsertWorkspace, Workspace, channels, channelMembers, messages, messageReactions, messageAttachments, userPresence, typingIndicators, callLogs, callParticipants, channelInvites } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -1216,14 +1216,14 @@ export async function globalSearch(query: string, orgId?: number) {
     }
 
     // Search call transcripts
-    const callsResult = await db.select().from(callLogs).where(like(callLogs.transcript, q)).limit(10);
+    const callsResult = await db.select().from(callLogs).where(like(callLogs.transcriptUrl, q)).limit(10);
     for (const call of callsResult) {
       const channel = await getChannelById(call.channelId);
       results.push({
         type: "call",
         id: call.id,
-        title: `${call.callType === "video" ? "Video" : "Voice"} Call`,
-        content: call.transcript?.substring(0, 150),
+        title: `${call.type === "video" ? "Video" : "Voice"} Call`,
+        content: call.transcriptUrl?.substring(0, 150),
         subtitle: channel?.name || "Unknown Channel",
         metadata: new Date(call.startedAt).toLocaleDateString(),
         relevance: 0.7,
@@ -4446,8 +4446,8 @@ export async function createCall(data: {
     .insert(callLogs)
     .values({
       channelId: data.channelId,
-      startedBy: data.startedBy,
-      callType: data.callType,
+      initiatorId: data.startedBy,
+      type: data.callType,
       status: "ongoing",
       startedAt: new Date(),
     });
@@ -4604,7 +4604,7 @@ export async function endCall(callId: number) {
   if (!call) return;
   
   const duration = call.startedAt 
-    ? Math.floor((Date.now() - new Date(call.startedAt).getTime()) / 1000)
+    ? Math.max(0, Math.floor((Date.now() - new Date(call.startedAt).getTime()) / 1000))
     : 0;
   
   await dbConn
@@ -4620,14 +4620,20 @@ export async function endCall(callId: number) {
 /**
  * Update call with transcript/summary URLs
  */
-export async function updateCall(callId: number, updates: { transcriptUrl?: string; summaryUrl?: string; audioUrl?: string }) {
+export async function updateCall(callId: number, updates: { transcriptUrl?: string; recordingUrl?: string }) {
   const dbConn = await getDb();
   if (!dbConn) throw new Error("Database not initialized");
   
-  await dbConn
-    .update(callLogs)
-    .set(updates)
-    .where(eq(callLogs.id, callId));
+  const setData: Record<string, any> = {};
+  if (updates.transcriptUrl !== undefined) setData.transcriptUrl = updates.transcriptUrl;
+  if (updates.recordingUrl !== undefined) setData.recordingUrl = updates.recordingUrl;
+  
+  if (Object.keys(setData).length > 0) {
+    await dbConn
+      .update(callLogs)
+      .set(setData)
+      .where(eq(callLogs.id, callId));
+  }
 }
 
 /**
@@ -4640,15 +4646,14 @@ export async function getCallHistory(channelId: number) {
   const calls = await dbConn
     .select({
       id: callLogs.id,
-      callType: callLogs.callType,
+      type: callLogs.type,
       status: callLogs.status,
       startedAt: callLogs.startedAt,
       endedAt: callLogs.endedAt,
       duration: callLogs.duration,
-      audioUrl: callLogs.audioUrl,
+      recordingUrl: callLogs.recordingUrl,
       transcriptUrl: callLogs.transcriptUrl,
-      summaryUrl: callLogs.summaryUrl,
-      startedBy: callLogs.startedBy,
+      initiatorId: callLogs.initiatorId,
     })
     .from(callLogs)
     .where(eq(callLogs.channelId, channelId))

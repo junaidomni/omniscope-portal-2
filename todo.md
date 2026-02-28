@@ -986,3 +986,37 @@
 - [x] Fix mobile Messages crash from null channel names
 - [x] Fix Dashboard overview tab allTasks.filter error
 - [x] Add array safety checks to prevent filter errors
+
+
+## Full Platform Audit & Bug Fixes (Feb 28, 2026)
+
+### Architecture Guardrails Test Fixes
+- [x] Fix ctx destructuring false positives - improved look-ahead to stop at procedure boundaries
+- [x] Add communications.ts to PLATFORM_ROUTERS (DMs/channels are cross-org by design)
+
+### Intelligence Test Fixes
+- [x] Fix meetings.list assertion - returns { meetings, total } not array
+- [x] Fix tasks.list assertion - returns { tasks, total } not array
+- [x] Fix tasks.list({ status: "open" }) assertion - same return format
+- [x] Add orgId to test context (required by orgScopedProcedure)
+
+### Communications Full Test Fixes
+- [x] Fix createUser → upsertUser + getUserByOpenId (createUser doesn't exist in db.ts)
+- [x] Fix editMessage signature - takes (messageId, content) not (messageId, userId, content)
+- [x] Fix deleteMessage signature - takes (messageId) not (messageId, userId)
+- [x] Fix changeChannelMemberRole - function doesn't exist, use direct Drizzle update
+
+### Communications Integration Test Fixes
+- [x] Fix organizationMembers → orgMemberships (correct table name)
+- [x] Fix organizations.createdAt type - uses timestamp (Date) not bigint (number)
+- [x] Add accounts table creation (organizations require accountId FK)
+- [x] Fix org membership role values - use "org_admin"/"member" not "admin"/"member"
+- [x] Fix createdAt in user context objects - use new Date() not Date.now()
+- [x] Fix addedCount → invited (inviteUsers returns { invited } not { addedCount })
+- [x] Fix getMessages → listMessages (correct procedure name)
+- [x] Fix listMessages return format - returns { messages, nextCursor } not array
+- [x] Fix sub-channel ID assertion - use .some() instead of exact [0].id match
+
+### Final Test Results
+- [x] All 1,284 tests passing across 57 test files
+- [x] 0 failures, 1 skipped (intentional)

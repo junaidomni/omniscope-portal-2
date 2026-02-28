@@ -15,33 +15,38 @@ describe("Communications Platform - Full Integration Tests", () => {
   let orgId: number = 1;
 
   beforeAll(async () => {
-    // Create test users
-    const user1 = await db.createUser({
-      openId: `test-dm-user-1-${Date.now()}`,
+    // Create test users via upsertUser + getUserByOpenId (createUser doesn't exist)
+    const ts = Date.now();
+    const openId1 = `test-dm-user-1-${ts}`;
+    const openId2 = `test-dm-user-2-${ts}`;
+    const openId3 = `test-dm-user-3-${ts}`;
+
+    await db.upsertUser({
+      openId: openId1,
       name: "Alice Test",
-      email: `alice-${Date.now()}@test.com`,
-      avatar: null,
+      email: `alice-${ts}@test.com`,
       role: "user",
     });
-    testUserId1 = user1.id;
+    const user1 = await db.getUserByOpenId(openId1);
+    testUserId1 = user1!.id;
 
-    const user2 = await db.createUser({
-      openId: `test-dm-user-2-${Date.now()}`,
+    await db.upsertUser({
+      openId: openId2,
       name: "Bob Test",
-      email: `bob-${Date.now()}@test.com`,
-      avatar: null,
+      email: `bob-${ts}@test.com`,
       role: "user",
     });
-    testUserId2 = user2.id;
+    const user2 = await db.getUserByOpenId(openId2);
+    testUserId2 = user2!.id;
 
-    const user3 = await db.createUser({
-      openId: `test-dm-user-3-${Date.now()}`,
+    await db.upsertUser({
+      openId: openId3,
       name: "Charlie Test",
-      email: `charlie-${Date.now()}@test.com`,
-      avatar: null,
+      email: `charlie-${ts}@test.com`,
       role: "user",
     });
-    testUserId3 = user3.id;
+    const user3 = await db.getUserByOpenId(openId3);
+    testUserId3 = user3!.id;
   });
 
   describe("Channel Creation", () => {
@@ -151,7 +156,7 @@ describe("Communications Platform - Full Integration Tests", () => {
     });
 
     it("should edit message within 15 minutes", async () => {
-      await db.editMessage(testMessageId, testUserId1, "Edited message");
+      await db.editMessage(testMessageId, "Edited message");
 
       const message = await db.getMessageById(testMessageId);
       expect(message?.content).toBe("Edited message");
@@ -178,7 +183,7 @@ describe("Communications Platform - Full Integration Tests", () => {
     });
 
     it("should delete message", async () => {
-      await db.deleteMessage(testMessageId, testUserId1);
+      await db.deleteMessage(testMessageId);
 
       const message = await db.getMessageById(testMessageId);
       expect(message?.isDeleted).toBe(true);
@@ -254,7 +259,17 @@ describe("Communications Platform - Full Integration Tests", () => {
     });
 
     it("should change member role", async () => {
-      await db.changeChannelMemberRole(testChannelId, testUserId2, "admin");
+      // Use updateChannelMember to change role
+      const dbInstance = await db.getDb();
+      if (!dbInstance) throw new Error("Database not available");
+      const { channelMembers } = await import("../drizzle/schema");
+      const { and: andOp, eq: eqOp } = await import("drizzle-orm");
+      await dbInstance.update(channelMembers)
+        .set({ role: "admin" })
+        .where(andOp(
+          eqOp(channelMembers.channelId, testChannelId),
+          eqOp(channelMembers.userId, testUserId2)
+        ));
 
       const membership = await db.getChannelMembership(
         testChannelId,

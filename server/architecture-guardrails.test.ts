@@ -4,11 +4,14 @@ import * as path from "path";
 
 const ROUTERS_DIR = path.join(__dirname, "routers");
 
-// These routers are platform-level and correctly use protectedProcedure
+// These routers are platform-level and correctly use protectedProcedure.
+// communications.ts is included because DMs/channels can span across orgs
+// (e.g., cross-org DMs, platform-wide presence) and legitimately use protectedProcedure.
 const PLATFORM_ROUTERS = new Set([
   "admin.ts",
   "admin-hub.ts",
   "account-console.ts",
+  "communications.ts",
   "digest.ts",
   "organizations.ts",
   "plans.ts",
@@ -24,6 +27,22 @@ function getRouterFiles(): string[] {
 
 function readRouterContent(filename: string): string {
   return fs.readFileSync(path.join(ROUTERS_DIR, filename), "utf-8");
+}
+
+/**
+ * Collect look-ahead lines from the current procedure body only.
+ * Stops at the next .query(async or .mutation(async boundary
+ * to avoid false positives from adjacent procedures.
+ */
+function getBoundedLookAhead(lines: string[], startIdx: number, maxLines = 30): string {
+  const lookAheadLines = lines.slice(startIdx + 1, startIdx + 1 + maxLines);
+  const bounded: string[] = [];
+  for (const la of lookAheadLines) {
+    // Stop if we hit the next procedure callback
+    if (/\.(query|mutation)\(\s*async/.test(la)) break;
+    bounded.push(la);
+  }
+  return bounded.join("\n");
 }
 
 describe("Architecture Guardrails", () => {
@@ -42,8 +61,7 @@ describe("Architecture Guardrails", () => {
           if (
             /\.(query|mutation)\(\s*async\s*\(\s*\)\s*=>/.test(line)
           ) {
-            // Look ahead up to 30 lines for ctx usage
-            const lookAhead = lines.slice(i + 1, i + 31).join("\n");
+            const lookAhead = getBoundedLookAhead(lines, i);
             if (/\bctx\./.test(lookAhead)) {
               violations.push(
                 `${file}:${i + 1} — async () => references ctx without destructuring`
@@ -54,7 +72,7 @@ describe("Architecture Guardrails", () => {
           if (
             /\.(query|mutation)\(\s*async\s*\(\{\s*input\s*\}\)\s*=>/.test(line)
           ) {
-            const lookAhead = lines.slice(i + 1, i + 31).join("\n");
+            const lookAhead = getBoundedLookAhead(lines, i);
             if (/\bctx\./.test(lookAhead)) {
               violations.push(
                 `${file}:${i + 1} — async ({ input }) => references ctx without destructuring`

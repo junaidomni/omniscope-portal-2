@@ -273,7 +273,8 @@ describe("tasks.list", () => {
     const result = await caller.tasks.list();
     
     expect(result).toBeDefined();
-    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveProperty("tasks");
+    expect(Array.isArray(result.tasks)).toBe(true);
   });
 
   it("requires authentication", async () => {
@@ -359,7 +360,8 @@ describe("meetings.list", () => {
     });
     
     expect(result).toBeDefined();
-    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveProperty("meetings");
+    expect(Array.isArray(result.meetings)).toBe(true);
   });
 
   it("requires authentication", async () => {

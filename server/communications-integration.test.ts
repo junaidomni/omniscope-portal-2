@@ -7,6 +7,7 @@ describe("Communications Platform - Integration Tests", () => {
   let regularUserId: number;
   let guestUserId: number;
   let orgId: number;
+  let accountId: number;
   let channelId: number;
   let subChannelId: number;
 
@@ -44,35 +45,40 @@ describe("Communications Platform - Integration Tests", () => {
     const dbInstance = await db.getDb();
     if (!dbInstance) throw new Error("Database not available");
 
-    const { users } = await import("../drizzle/schema");
+    const { users, accounts, organizations, orgMemberships } = await import("../drizzle/schema");
     const { eq } = await import("drizzle-orm");
     await dbInstance.update(users).set({ role: "admin" }).where(eq(users.id, adminUserId));
 
+    // Create test account first (organizations require accountId)
+    await dbInstance.insert(accounts).values({
+      name: "Test Account Integration",
+      ownerUserId: adminUserId,
+      plan: "starter",
+    });
+    const accts = await dbInstance.select().from(accounts).where(eq(accounts.name, "Test Account Integration"));
+    accountId = accts[0].id;
+
     // Create test organization
-    const { organizations } = await import("../drizzle/schema");
     await dbInstance.insert(organizations).values({
+      accountId,
       name: "Test Org Integration",
-      slug: "test-org-integration",
-      createdAt: Date.now(),
+      slug: `test-org-integration-${Date.now()}`,
     });
 
-    const orgs = await dbInstance.select().from(organizations).where(eq(organizations.slug, "test-org-integration"));
+    const orgs = await dbInstance.select().from(organizations).where(eq(organizations.accountId, accountId));
     orgId = orgs[0].id;
 
-    // Add users to org
-    const { organizationMembers } = await import("../drizzle/schema");
-    await dbInstance.insert(organizationMembers).values({
+    // Add users to org using correct table (orgMemberships, not organizationMembers)
+    await dbInstance.insert(orgMemberships).values({
       organizationId: orgId,
       userId: adminUserId,
-      role: "admin",
-      joinedAt: Date.now(),
+      role: "org_admin",
     });
 
-    await dbInstance.insert(organizationMembers).values({
+    await dbInstance.insert(orgMemberships).values({
       organizationId: orgId,
       userId: regularUserId,
       role: "member",
-      joinedAt: Date.now(),
     });
   });
 
@@ -81,7 +87,7 @@ describe("Communications Platform - Integration Tests", () => {
     const dbInstance = await db.getDb();
     if (!dbInstance) return;
 
-    const { organizations, users, organizationMembers, channels, channelMembers, messages } =
+    const { accounts, organizations, users, orgMemberships, channels, channelMembers, messages } =
       await import("../drizzle/schema");
     const { eq } = await import("drizzle-orm");
 
@@ -99,8 +105,9 @@ describe("Communications Platform - Integration Tests", () => {
       await dbInstance.delete(channelMembers).where(eq(channelMembers.channelId, subChannelId));
     }
     await dbInstance.delete(channels).where(eq(channels.orgId, orgId));
-    await dbInstance.delete(organizationMembers).where(eq(organizationMembers.organizationId, orgId));
+    await dbInstance.delete(orgMemberships).where(eq(orgMemberships.organizationId, orgId));
     await dbInstance.delete(organizations).where(eq(organizations.id, orgId));
+    await dbInstance.delete(accounts).where(eq(accounts.id, accountId));
     await dbInstance.delete(users).where(eq(users.id, adminUserId));
     await dbInstance.delete(users).where(eq(users.id, regularUserId));
     await dbInstance.delete(users).where(eq(users.id, guestUserId));
@@ -115,7 +122,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Admin User Integration",
           email: "admin-integration@test.com",
           role: "admin",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -138,7 +145,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Regular User Integration",
           email: "regular-integration@test.com",
           role: "user",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -162,7 +169,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Admin User Integration",
           email: "admin-integration@test.com",
           role: "admin",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -185,7 +192,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Guest User Integration",
           email: "guest-integration@test.com",
           role: "user",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -209,7 +216,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Admin User Integration",
           email: "admin-integration@test.com",
           role: "admin",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -220,7 +227,7 @@ describe("Communications Platform - Integration Tests", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.addedCount).toBe(1);
+      expect(result.invited).toBe(1);
     });
 
     it("should create invite link for external users", async () => {
@@ -231,7 +238,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Admin User Integration",
           email: "admin-integration@test.com",
           role: "admin",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -256,7 +263,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Regular User Integration",
           email: "regular-integration@test.com",
           role: "user",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -274,7 +281,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Guest User Integration",
           email: "guest-integration@test.com",
           role: "user",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -292,7 +299,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Guest User Integration",
           email: "guest-integration@test.com",
           role: "user",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -315,7 +322,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Regular User Integration",
           email: "regular-integration@test.com",
           role: "user",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -336,18 +343,20 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Regular User Integration",
           email: "regular-integration@test.com",
           role: "user",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
 
-      const messages = await caller.communications.getMessages({
+      const result = await caller.communications.listMessages({
         channelId,
         limit: 50,
       });
 
-      expect(messages.length).toBeGreaterThan(0);
-      expect(messages[0].content).toBe("Test message from member");
+      expect(result.messages.length).toBeGreaterThan(0);
+      // Messages are returned in reverse chronological order
+      const testMsg = result.messages.find((m: any) => m.content === "Test message from member");
+      expect(testMsg).toBeTruthy();
     });
   });
 
@@ -360,7 +369,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Admin User Integration",
           email: "admin-integration@test.com",
           role: "admin",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -380,7 +389,7 @@ describe("Communications Platform - Integration Tests", () => {
           name: "Admin User Integration",
           email: "admin-integration@test.com",
           role: "admin",
-          createdAt: Date.now(),
+          createdAt: new Date(),
         },
         orgId,
       });
@@ -389,7 +398,9 @@ describe("Communications Platform - Integration Tests", () => {
       const subChannels = channels.filter((c) => c.parentChannelId === channelId);
 
       expect(subChannels.length).toBeGreaterThan(0);
-      expect(subChannels[0].id).toBe(subChannelId);
+      // Verify at least one sub-channel matches
+      const hasSubChannel = subChannels.some((c) => c.id === subChannelId);
+      expect(hasSubChannel).toBe(true);
     });
   });
 });

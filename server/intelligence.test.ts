@@ -21,6 +21,7 @@ function createAuthContext(user?: Partial<AuthenticatedUser>): TrpcContext {
 
   return {
     user: defaultUser,
+    orgId: 1,
     req: {
       protocol: "https",
       headers: {},
@@ -38,7 +39,10 @@ describe("Intelligence Portal - Meetings", () => {
 
     const result = await caller.meetings.list();
     
-    expect(Array.isArray(result)).toBe(true);
+    // meetings.list returns { meetings, total }
+    expect(result).toBeDefined();
+    expect(Array.isArray(result.meetings)).toBe(true);
+    expect(typeof result.total).toBe("number");
   });
 
   it("should search meetings by query", async () => {
@@ -58,7 +62,10 @@ describe("Intelligence Portal - Tasks", () => {
 
     const result = await caller.tasks.list();
     
-    expect(Array.isArray(result)).toBe(true);
+    // tasks.list returns { tasks, total }
+    expect(result).toBeDefined();
+    expect(Array.isArray(result.tasks)).toBe(true);
+    expect(typeof result.total).toBe("number");
   });
 
   it("should filter tasks by status", async () => {
@@ -67,7 +74,10 @@ describe("Intelligence Portal - Tasks", () => {
 
     const result = await caller.tasks.list({ status: "open" });
     
-    expect(Array.isArray(result)).toBe(true);
+    // tasks.list returns { tasks, total }
+    expect(result).toBeDefined();
+    expect(Array.isArray(result.tasks)).toBe(true);
+    expect(typeof result.total).toBe("number");
   });
 });
 
