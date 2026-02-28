@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as db from "./db";
 import { channels, users, channelMembers, messages } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
@@ -47,6 +47,39 @@ describe("Communications Platform - Full Integration Tests", () => {
     });
     const user3 = await db.getUserByOpenId(openId3);
     testUserId3 = user3!.id;
+  });
+
+  afterAll(async () => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return;
+    const { channels: chTable, channelMembers: cmTable, messages: msgTable, messageReactions: mrTable, callLogs: clTable, callParticipants: cpTable, users: uTable } = await import("../drizzle/schema");
+    const { eq, inArray, or, sql } = await import("drizzle-orm");
+    try {
+      const testUserIds = [testUserId1, testUserId2, testUserId3];
+      // Get channels created by test users
+      const chRows = await dbInstance.select({ id: chTable.id }).from(chTable).where(inArray(chTable.createdBy, testUserIds));
+      const chIds = chRows.map(r => r.id);
+      if (chIds.length > 0) {
+        const msgRows = await dbInstance.select({ id: msgTable.id }).from(msgTable).where(inArray(msgTable.channelId, chIds));
+        if (msgRows.length > 0) {
+          await dbInstance.delete(mrTable).where(inArray(mrTable.messageId, msgRows.map(r => r.id)));
+        }
+        await dbInstance.delete(msgTable).where(inArray(msgTable.channelId, chIds));
+        await dbInstance.delete(cmTable).where(inArray(cmTable.channelId, chIds));
+        const callRows = await dbInstance.select({ id: clTable.id }).from(clTable).where(inArray(clTable.channelId, chIds));
+        if (callRows.length > 0) {
+          await dbInstance.delete(cpTable).where(inArray(cpTable.callId, callRows.map(r => r.id)));
+        }
+        await dbInstance.delete(clTable).where(inArray(clTable.channelId, chIds));
+        // Sub-channels first
+        await dbInstance.execute(sql`DELETE FROM channels WHERE channelParentId IS NOT NULL AND channelCreatedBy IN (${sql.join(testUserIds.map(id => sql`${id}`), sql`, `)})`);
+        await dbInstance.delete(chTable).where(inArray(chTable.id, chIds));
+      }
+      // Delete test users
+      await dbInstance.delete(uTable).where(inArray(uTable.id, testUserIds));
+    } catch (e) {
+      console.warn("Communications full test cleanup warning:", e);
+    }
   });
 
   describe("Channel Creation", () => {

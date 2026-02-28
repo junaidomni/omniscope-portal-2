@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as db from "./db";
 
 describe("WebRTC Integration", () => {
@@ -25,6 +25,37 @@ describe("WebRTC Integration", () => {
       testOrgId = orgs[0].id;
     } else {
       throw new Error("No organization found");
+    }
+  });
+
+  afterAll(async () => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return;
+    const { channels, channelMembers, messages, messageReactions, callLogs, callParticipants, users } = await import("../drizzle/schema");
+    const { eq, inArray, sql } = await import("drizzle-orm");
+    try {
+      // Get all channels created by the test user
+      const chRows = await dbInstance.select({ id: channels.id }).from(channels).where(eq(channels.createdBy, testUserId));
+      const chIds = chRows.map(r => r.id);
+      if (chIds.length > 0) {
+        const msgRows = await dbInstance.select({ id: messages.id }).from(messages).where(inArray(messages.channelId, chIds));
+        if (msgRows.length > 0) {
+          await dbInstance.delete(messageReactions).where(inArray(messageReactions.messageId, msgRows.map(r => r.id)));
+        }
+        await dbInstance.delete(messages).where(inArray(messages.channelId, chIds));
+        await dbInstance.delete(channelMembers).where(inArray(channelMembers.channelId, chIds));
+        const callRows = await dbInstance.select({ id: callLogs.id }).from(callLogs).where(inArray(callLogs.channelId, chIds));
+        if (callRows.length > 0) {
+          await dbInstance.delete(callParticipants).where(inArray(callParticipants.callId, callRows.map(r => r.id)));
+        }
+        await dbInstance.delete(callLogs).where(inArray(callLogs.channelId, chIds));
+        await dbInstance.execute(sql`DELETE FROM channels WHERE channelParentId IS NOT NULL AND channelCreatedBy = ${testUserId}`);
+        await dbInstance.delete(channels).where(inArray(channels.id, chIds));
+      }
+      // Delete test user
+      await dbInstance.delete(users).where(eq(users.id, testUserId));
+    } catch (e) {
+      console.warn("WebRTC test cleanup warning:", e);
     }
   });
 

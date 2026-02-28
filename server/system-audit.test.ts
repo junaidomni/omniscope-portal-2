@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getDb } from "./db";
 import * as db from "./db";
 
@@ -44,6 +44,41 @@ describe("System Audit - Full Integration Test", () => {
       organizationId: testOrgId,
       role: "member",
     });
+  });
+
+  afterAll(async () => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return;
+    const { channels, channelMembers, channelInvites, messages, messageReactions, callLogs, callParticipants, organizations, accounts, orgMemberships, contacts, users } = await import("../drizzle/schema");
+    const { eq, inArray, sql } = await import("drizzle-orm");
+    try {
+      // Clean up channels in test org
+      const chRows = await dbInstance.select({ id: channels.id }).from(channels).where(eq(channels.orgId, testOrgId));
+      const chIds = chRows.map(r => r.id);
+      if (chIds.length > 0) {
+        const msgRows = await dbInstance.select({ id: messages.id }).from(messages).where(inArray(messages.channelId, chIds));
+        if (msgRows.length > 0) {
+          await dbInstance.delete(messageReactions).where(inArray(messageReactions.messageId, msgRows.map(r => r.id)));
+        }
+        await dbInstance.delete(messages).where(inArray(messages.channelId, chIds));
+        await dbInstance.delete(channelMembers).where(inArray(channelMembers.channelId, chIds));
+        const callRows = await dbInstance.select({ id: callLogs.id }).from(callLogs).where(inArray(callLogs.channelId, chIds));
+        if (callRows.length > 0) {
+          await dbInstance.delete(callParticipants).where(inArray(callParticipants.callId, callRows.map(r => r.id)));
+        }
+        await dbInstance.delete(callLogs).where(inArray(callLogs.channelId, chIds));
+        await dbInstance.execute(sql`DELETE FROM channels WHERE channelParentId IS NOT NULL AND channelOrgId = ${testOrgId}`);
+        await dbInstance.delete(channels).where(eq(channels.orgId, testOrgId));
+      }
+      // Clean up contacts
+      if (testContactId) await dbInstance.delete(contacts).where(eq(contacts.id, testContactId));
+      await dbInstance.delete(orgMemberships).where(eq(orgMemberships.organizationId, testOrgId));
+      await dbInstance.delete(organizations).where(eq(organizations.id, testOrgId));
+      await dbInstance.delete(accounts).where(eq(accounts.id, testAccountId));
+      await dbInstance.delete(users).where(eq(users.id, testUserId));
+    } catch (e) {
+      console.warn("System audit test cleanup warning:", e);
+    }
   });
 
   describe("Communication System", () => {

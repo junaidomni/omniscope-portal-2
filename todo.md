@@ -1033,3 +1033,9 @@
 - [x] Verify no orphaned data remains (0 orphans found)
 - [x] Run full test suite - 1,284 tests passing, 0 failures
 - [x] Verify UI shows only real data (1 org, 1 account, 4 users, 12 channels)
+
+## Bug Fix: Organizations page still showing test data (Feb 28, 2026)
+
+- [x] Investigate Organizations page data source for remaining test org deal rooms (15 more test orgs created by test suite)
+- [x] Fix Organizations page to only show OmniScope (added afterAll/afterEach cleanup to 6 test files)
+- [x] Verify fix in UI — DB clean after full test suite: 1 org, 1 account, 4 users, 12 channels

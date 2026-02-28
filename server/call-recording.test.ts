@@ -33,9 +33,32 @@ describe("Call Recording & Notifications", () => {
   });
 
   afterAll(async () => {
-    // Cleanup
-    if (channelId) {
-      await db.deleteChannel(channelId);
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return;
+    const { channels, channelMembers, messages, messageReactions, callLogs, callParticipants, users } = await import("../drizzle/schema");
+    const { eq, inArray } = await import("drizzle-orm");
+    try {
+      if (channelId) {
+        // Clean up call data
+        const callRows = await dbInstance.select({ id: callLogs.id }).from(callLogs).where(eq(callLogs.channelId, channelId));
+        if (callRows.length > 0) {
+          await dbInstance.delete(callParticipants).where(inArray(callParticipants.callId, callRows.map(r => r.id)));
+        }
+        await dbInstance.delete(callLogs).where(eq(callLogs.channelId, channelId));
+        const msgRows = await dbInstance.select({ id: messages.id }).from(messages).where(eq(messages.channelId, channelId));
+        if (msgRows.length > 0) {
+          await dbInstance.delete(messageReactions).where(inArray(messageReactions.messageId, msgRows.map(r => r.id)));
+        }
+        await dbInstance.delete(messages).where(eq(messages.channelId, channelId));
+        await dbInstance.delete(channelMembers).where(eq(channelMembers.channelId, channelId));
+        await dbInstance.delete(channels).where(eq(channels.id, channelId));
+      }
+      // Delete test user
+      if (testUserId) {
+        await dbInstance.delete(users).where(eq(users.id, testUserId));
+      }
+    } catch (e) {
+      console.warn("Call recording test cleanup warning:", e);
     }
   });
 

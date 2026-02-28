@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { appRouter } from "./routers";
 import * as db from "./db";
 import type { TrpcContext } from "./_core/context";
@@ -64,6 +64,48 @@ describe("Communications - Deal Rooms", () => {
     // Add users to org
     await db.addOrgMembership({ userId: testUserId, organizationId: testOrgId, role: "account_owner", isDefault: false });
     await db.addOrgMembership({ userId: testUser2Id, organizationId: testOrgId, role: "member", isDefault: false });
+  });
+
+  afterEach(async () => {
+    // Clean up test data in correct FK order
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return;
+    const { channels, channelMembers, channelInvites, messages, messageReactions, callLogs, callParticipants, organizations, accounts, orgMemberships, users } = await import("../drizzle/schema");
+    const { eq, inArray, sql } = await import("drizzle-orm");
+    try {
+      // Get all channels in this test org
+      const chRows = await dbInstance.select({ id: channels.id }).from(channels).where(eq(channels.orgId, testOrgId));
+      const chIds = chRows.map(r => r.id);
+      if (chIds.length > 0) {
+        // Delete reactions, messages, members, invites, call data for these channels
+        const msgRows = await dbInstance.select({ id: messages.id }).from(messages).where(inArray(messages.channelId, chIds));
+        if (msgRows.length > 0) {
+          await dbInstance.delete(messageReactions).where(inArray(messageReactions.messageId, msgRows.map(r => r.id)));
+        }
+        await dbInstance.delete(messages).where(inArray(messages.channelId, chIds));
+        await dbInstance.delete(channelMembers).where(inArray(channelMembers.channelId, chIds));
+        await dbInstance.delete(channelInvites).where(inArray(channelInvites.channelId, chIds));
+        const callRows = await dbInstance.select({ id: callLogs.id }).from(callLogs).where(inArray(callLogs.channelId, chIds));
+        if (callRows.length > 0) {
+          await dbInstance.delete(callParticipants).where(inArray(callParticipants.callId, callRows.map(r => r.id)));
+        }
+        await dbInstance.delete(callLogs).where(inArray(callLogs.channelId, chIds));
+        // Delete sub-channels first, then parent channels
+        await dbInstance.execute(sql`DELETE FROM channels WHERE channelParentId IS NOT NULL AND channelOrgId = ${testOrgId}`);
+        await dbInstance.delete(channels).where(eq(channels.orgId, testOrgId));
+      }
+      await dbInstance.delete(orgMemberships).where(eq(orgMemberships.organizationId, testOrgId));
+      await dbInstance.delete(organizations).where(eq(organizations.id, testOrgId));
+      await dbInstance.delete(accounts).where(eq(accounts.id, testAccountId));
+      // Clean up all test users
+      const user3 = await db.getUserByOpenId("test-user-3-deal-rooms");
+      if (user3) await dbInstance.delete(users).where(eq(users.id, user3.id));
+      await dbInstance.delete(users).where(eq(users.id, testUserId));
+      await dbInstance.delete(users).where(eq(users.id, testUser2Id));
+    } catch (e) {
+      // Cleanup errors shouldn't fail tests
+      console.warn("Deal rooms test cleanup warning:", e);
+    }
   });
 
   function adminCaller() {

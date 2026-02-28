@@ -1,0 +1,122 @@
+{
+  "query": "SELECT id, orgName, orgSlug, orgAccountId, orgStatus FROM organizations ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, orgName, orgSlug, orgAccountId, orgStatus FROM organizations ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "orgName": "OmniScope",
+      "orgSlug": "junaid-qureshi-workspace",
+      "orgAccountId": "2",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180105",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314366767",
+      "orgAccountId": "150105",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180107",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314366885",
+      "orgAccountId": "150107",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180108",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314366986",
+      "orgAccountId": "150108",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180109",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314367105",
+      "orgAccountId": "150109",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180110",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314367246",
+      "orgAccountId": "150110",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180111",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314367379",
+      "orgAccountId": "150111",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180112",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314367534",
+      "orgAccountId": "150112",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180113",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314367656",
+      "orgAccountId": "150113",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180114",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314367788",
+      "orgAccountId": "150114",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180115",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314367959",
+      "orgAccountId": "150115",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180116",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314368130",
+      "orgAccountId": "150116",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180117",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314368267",
+      "orgAccountId": "150117",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180118",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314368483",
+      "orgAccountId": "150118",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180119",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772314368661",
+      "orgAccountId": "150119",
+      "orgStatus": "active"
+    },
+    {
+      "id": "180120",
+      "orgName": "Test Org for Audit",
+      "orgSlug": "test-audit-1772314375606",
+      "orgAccountId": "150120",
+      "orgStatus": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\torgName\torgSlug\torgAccountId\torgStatus\n1\tOmniScope\tjunaid-qureshi-workspace\t2\tactive\n180105\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314366767\t150105\tactive\n180107\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314366885\t150107\tactive\n180108\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314366986\t150108\tactive\n180109\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314367105\t150109\tactive\n180110\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314367246\t150110\tactive\n180111\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314367379\t150111\tactive\n180112\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314367534\t150112\tactive\n180113\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314367656\t150113\tactive\n180114\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314367788\t150114\tactive\n180115\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314367959\t150115\tactive\n180116\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314368130\t150116\tactive\n180117\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314368267\t150117\tactive\n180118\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314368483\t150118\tactive\n180119\tTest Org Deal Rooms\ttest-org-deal-rooms-1772314368661\t150119\tactive\n180120\tTest Org for Audit\ttest-audit-1772314375606\t150120\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 80
+}

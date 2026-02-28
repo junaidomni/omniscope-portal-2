@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as db from "./db";
 
 describe("Communications Backend - Week 1 Verification", () => {
@@ -29,6 +29,39 @@ describe("Communications Backend - Week 1 Verification", () => {
 
     testUserId1 = user1.id;
     testUserId2 = user2.id;
+  });
+
+  afterAll(async () => {
+    const dbInstance = await db.getDb();
+    if (!dbInstance) return;
+    const { channels, channelMembers, messages, messageReactions, callLogs, callParticipants, users, userPresence } = await import("../drizzle/schema");
+    const { eq, inArray } = await import("drizzle-orm");
+    try {
+      const testUserIds = [testUserId1, testUserId2];
+      // Get channels created by test users
+      const chRows = await dbInstance.select({ id: channels.id }).from(channels).where(inArray(channels.createdBy, testUserIds));
+      const chIds = chRows.map(r => r.id);
+      if (chIds.length > 0) {
+        const msgRows = await dbInstance.select({ id: messages.id }).from(messages).where(inArray(messages.channelId, chIds));
+        if (msgRows.length > 0) {
+          await dbInstance.delete(messageReactions).where(inArray(messageReactions.messageId, msgRows.map(r => r.id)));
+        }
+        await dbInstance.delete(messages).where(inArray(messages.channelId, chIds));
+        await dbInstance.delete(channelMembers).where(inArray(channelMembers.channelId, chIds));
+        const callRows = await dbInstance.select({ id: callLogs.id }).from(callLogs).where(inArray(callLogs.channelId, chIds));
+        if (callRows.length > 0) {
+          await dbInstance.delete(callParticipants).where(inArray(callParticipants.callId, callRows.map(r => r.id)));
+        }
+        await dbInstance.delete(callLogs).where(inArray(callLogs.channelId, chIds));
+        await dbInstance.delete(channels).where(inArray(channels.id, chIds));
+      }
+      // Clean up presence
+      await dbInstance.delete(userPresence).where(inArray(userPresence.userId, testUserIds));
+      // Delete test users
+      await dbInstance.delete(users).where(inArray(users.id, testUserIds));
+    } catch (e) {
+      console.warn("Communications test cleanup warning:", e);
+    }
   });
 
   describe("Channel Management", () => {
