@@ -1,0 +1,15 @@
+{
+  "query": "SELECT \n  COUNT(*) as total_orgs,\n  SUM(CASE WHEN orgName LIKE '%test%' OR orgName LIKE '%Test%' OR orgSlug LIKE '%test%' THEN 1 ELSE 0 END) as test_orgs,\n  SUM(CASE WHEN orgName NOT LIKE '%test%' AND orgName NOT LIKE '%Test%' AND orgSlug NOT LIKE '%test%' THEN 1 ELSE 0 END) as real_orgs\nFROM organizations;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT \n  COUNT(*) as total_orgs,\n  SUM(CASE WHEN orgName LIKE '%test%' OR orgName LIKE '%Test%' OR orgSlug LIKE '%test%' THEN 1 ELSE 0 END) as test_orgs,\n  SUM(CASE WHEN orgName NOT LIKE '%test%' AND orgName NOT LIKE '%Test%' AND orgSlug NOT LIKE '%test%' THEN 1 ELSE 0 END) as real_orgs\nFROM organizations;",
+  "rows": [
+    {
+      "total_orgs": "393",
+      "test_orgs": "392",
+      "real_orgs": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_orgs\ttest_orgs\treal_orgs\n393\t392\t1\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

@@ -1,0 +1,22 @@
+{
+  "query": "SELECT DISTINCT orgName, COUNT(*) as cnt FROM organizations GROUP BY orgName ORDER BY cnt DESC LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT DISTINCT orgName, COUNT(*) as cnt FROM organizations GROUP BY orgName ORDER BY cnt DESC LIMIT 30;",
+  "rows": [
+    {
+      "orgName": "Test Org Deal Rooms",
+      "cnt": "378"
+    },
+    {
+      "orgName": "Test Org for Audit",
+      "cnt": "14"
+    },
+    {
+      "orgName": "OmniScope",
+      "cnt": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "orgName\tcnt\nTest Org Deal Rooms\t378\nTest Org for Audit\t14\nOmniScope\t1\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

@@ -1,0 +1,28 @@
+{
+  "query": "SELECT orgName, COUNT(*) as cnt, MIN(id) as min_id, MAX(id) as max_id FROM organizations GROUP BY orgName ORDER BY cnt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT orgName, COUNT(*) as cnt, MIN(id) as min_id, MAX(id) as max_id FROM organizations GROUP BY orgName ORDER BY cnt DESC;",
+  "rows": [
+    {
+      "orgName": "Test Org Deal Rooms",
+      "cnt": "378",
+      "min_id": "120001",
+      "max_id": "180103"
+    },
+    {
+      "orgName": "Test Org for Audit",
+      "cnt": "14",
+      "min_id": "180001",
+      "max_id": "180104"
+    },
+    {
+      "orgName": "OmniScope",
+      "cnt": "1",
+      "min_id": "1",
+      "max_id": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "orgName\tcnt\tmin_id\tmax_id\nTest Org Deal Rooms\t378\t120001\t180103\nTest Org for Audit\t14\t180001\t180104\nOmniScope\t1\t1\t1\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

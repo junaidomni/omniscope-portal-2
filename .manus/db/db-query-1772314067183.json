@@ -1,0 +1,360 @@
+{
+  "query": "SELECT id, orgName, orgSlug, orgStatus, orgAccountId FROM organizations WHERE orgName LIKE '%test%' OR orgName LIKE '%Test%' OR orgSlug LIKE '%test%' ORDER BY id LIMIT 50;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2U3q1dt8GKGPLLB.root --database WN9ut9YEufdDjevBezkAVQ --execute SELECT id, orgName, orgSlug, orgStatus, orgAccountId FROM organizations WHERE orgName LIKE '%test%' OR orgName LIKE '%Test%' OR orgSlug LIKE '%test%' ORDER BY id LIMIT 50;",
+  "rows": [
+    {
+      "id": "120001",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797422",
+      "orgStatus": "active",
+      "orgAccountId": "90001"
+    },
+    {
+      "id": "120002",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797512",
+      "orgStatus": "active",
+      "orgAccountId": "90002"
+    },
+    {
+      "id": "120003",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797564",
+      "orgStatus": "active",
+      "orgAccountId": "90003"
+    },
+    {
+      "id": "120004",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797615",
+      "orgStatus": "active",
+      "orgAccountId": "90004"
+    },
+    {
+      "id": "120005",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797674",
+      "orgStatus": "active",
+      "orgAccountId": "90005"
+    },
+    {
+      "id": "120006",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797729",
+      "orgStatus": "active",
+      "orgAccountId": "90006"
+    },
+    {
+      "id": "120007",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797778",
+      "orgStatus": "active",
+      "orgAccountId": "90007"
+    },
+    {
+      "id": "120008",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797826",
+      "orgStatus": "active",
+      "orgAccountId": "90008"
+    },
+    {
+      "id": "120009",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797879",
+      "orgStatus": "active",
+      "orgAccountId": "90009"
+    },
+    {
+      "id": "120010",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797932",
+      "orgStatus": "active",
+      "orgAccountId": "90010"
+    },
+    {
+      "id": "120011",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255797984",
+      "orgStatus": "active",
+      "orgAccountId": "90011"
+    },
+    {
+      "id": "120012",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255798034",
+      "orgStatus": "active",
+      "orgAccountId": "90012"
+    },
+    {
+      "id": "120013",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255798082",
+      "orgStatus": "active",
+      "orgAccountId": "90013"
+    },
+    {
+      "id": "120014",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255798131",
+      "orgStatus": "active",
+      "orgAccountId": "90014"
+    },
+    {
+      "id": "120015",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255825869",
+      "orgStatus": "active",
+      "orgAccountId": "90015"
+    },
+    {
+      "id": "120016",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255825946",
+      "orgStatus": "active",
+      "orgAccountId": "90016"
+    },
+    {
+      "id": "120017",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826006",
+      "orgStatus": "active",
+      "orgAccountId": "90017"
+    },
+    {
+      "id": "120018",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826063",
+      "orgStatus": "active",
+      "orgAccountId": "90018"
+    },
+    {
+      "id": "120019",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826112",
+      "orgStatus": "active",
+      "orgAccountId": "90019"
+    },
+    {
+      "id": "120020",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826160",
+      "orgStatus": "active",
+      "orgAccountId": "90020"
+    },
+    {
+      "id": "120021",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826207",
+      "orgStatus": "active",
+      "orgAccountId": "90021"
+    },
+    {
+      "id": "120022",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826253",
+      "orgStatus": "active",
+      "orgAccountId": "90022"
+    },
+    {
+      "id": "120023",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826308",
+      "orgStatus": "active",
+      "orgAccountId": "90023"
+    },
+    {
+      "id": "120024",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826357",
+      "orgStatus": "active",
+      "orgAccountId": "90024"
+    },
+    {
+      "id": "120025",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826406",
+      "orgStatus": "active",
+      "orgAccountId": "90025"
+    },
+    {
+      "id": "120026",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826458",
+      "orgStatus": "active",
+      "orgAccountId": "90026"
+    },
+    {
+      "id": "120027",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826508",
+      "orgStatus": "active",
+      "orgAccountId": "90027"
+    },
+    {
+      "id": "120028",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255826557",
+      "orgStatus": "active",
+      "orgAccountId": "90028"
+    },
+    {
+      "id": "120029",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856420",
+      "orgStatus": "active",
+      "orgAccountId": "90029"
+    },
+    {
+      "id": "120030",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856505",
+      "orgStatus": "active",
+      "orgAccountId": "90030"
+    },
+    {
+      "id": "120031",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856562",
+      "orgStatus": "active",
+      "orgAccountId": "90031"
+    },
+    {
+      "id": "120032",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856612",
+      "orgStatus": "active",
+      "orgAccountId": "90032"
+    },
+    {
+      "id": "120033",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856666",
+      "orgStatus": "active",
+      "orgAccountId": "90033"
+    },
+    {
+      "id": "120034",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856718",
+      "orgStatus": "active",
+      "orgAccountId": "90034"
+    },
+    {
+      "id": "120035",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856769",
+      "orgStatus": "active",
+      "orgAccountId": "90035"
+    },
+    {
+      "id": "120036",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856821",
+      "orgStatus": "active",
+      "orgAccountId": "90036"
+    },
+    {
+      "id": "120037",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856873",
+      "orgStatus": "active",
+      "orgAccountId": "90037"
+    },
+    {
+      "id": "120038",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856924",
+      "orgStatus": "active",
+      "orgAccountId": "90038"
+    },
+    {
+      "id": "120039",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255856976",
+      "orgStatus": "active",
+      "orgAccountId": "90039"
+    },
+    {
+      "id": "120040",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255857026",
+      "orgStatus": "active",
+      "orgAccountId": "90040"
+    },
+    {
+      "id": "120041",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255857074",
+      "orgStatus": "active",
+      "orgAccountId": "90041"
+    },
+    {
+      "id": "120042",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255857135",
+      "orgStatus": "active",
+      "orgAccountId": "90042"
+    },
+    {
+      "id": "120043",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255883674",
+      "orgStatus": "active",
+      "orgAccountId": "90043"
+    },
+    {
+      "id": "120044",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255883756",
+      "orgStatus": "active",
+      "orgAccountId": "90044"
+    },
+    {
+      "id": "120045",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255883814",
+      "orgStatus": "active",
+      "orgAccountId": "90045"
+    },
+    {
+      "id": "120046",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255883869",
+      "orgStatus": "active",
+      "orgAccountId": "90046"
+    },
+    {
+      "id": "120047",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255883922",
+      "orgStatus": "active",
+      "orgAccountId": "90047"
+    },
+    {
+      "id": "120048",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255883971",
+      "orgStatus": "active",
+      "orgAccountId": "90048"
+    },
+    {
+      "id": "120049",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255884023",
+      "orgStatus": "active",
+      "orgAccountId": "90049"
+    },
+    {
+      "id": "120050",
+      "orgName": "Test Org Deal Rooms",
+      "orgSlug": "test-org-deal-rooms-1772255884069",
+      "orgStatus": "active",
+      "orgAccountId": "90050"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\torgName\torgSlug\torgStatus\torgAccountId\n120001\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797422\tactive\t90001\n120002\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797512\tactive\t90002\n120003\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797564\tactive\t90003\n120004\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797615\tactive\t90004\n120005\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797674\tactive\t90005\n120006\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797729\tactive\t90006\n120007\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797778\tactive\t90007\n120008\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797826\tactive\t90008\n120009\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797879\tactive\t90009\n120010\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797932\tactive\t90010\n120011\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255797984\tactive\t90011\n120012\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255798034\tactive\t90012\n120013\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255798082\tactive\t90013\n120014\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255798131\tactive\t90014\n120015\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255825869\tactive\t90015\n120016\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255825946\tactive\t90016\n120017\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826006\tactive\t90017\n120018\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826063\tactive\t90018\n120019\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826112\tactive\t90019\n120020\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826160\tactive\t90020\n120021\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826207\tactive\t90021\n120022\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826253\tactive\t90022\n120023\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826308\tactive\t90023\n120024\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826357\tactive\t90024\n120025\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826406\tactive\t90025\n120026\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826458\tactive\t90026\n120027\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826508\tactive\t90027\n120028\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255826557\tactive\t90028\n120029\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856420\tactive\t90029\n120030\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856505\tactive\t90030\n120031\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856562\tactive\t90031\n120032\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856612\tactive\t90032\n120033\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856666\tactive\t90033\n120034\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856718\tactive\t90034\n120035\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856769\tactive\t90035\n120036\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856821\tactive\t90036\n120037\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856873\tactive\t90037\n120038\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856924\tactive\t90038\n120039\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255856976\tactive\t90039\n120040\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255857026\tactive\t90040\n120041\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255857074\tactive\t90041\n120042\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255857135\tactive\t90042\n120043\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255883674\tactive\t90043\n120044\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255883756\tactive\t90044\n120045\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255883814\tactive\t90045\n120046\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255883869\tactive\t90046\n120047\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255883922\tactive\t90047\n120048\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255883971\tactive\t90048\n120049\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255884023\tactive\t90049\n120050\tTest Org Deal Rooms\ttest-org-deal-rooms-1772255884069\tactive\t90050\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}
