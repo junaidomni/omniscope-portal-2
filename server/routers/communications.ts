@@ -821,6 +821,7 @@ export const communicationsRouter = router({
       channelId: z.number(),
       expiresInDays: z.number().optional(), // NULL = never expires
       maxUses: z.number().optional(), // NULL = unlimited
+      origin: z.string().optional(), // Frontend origin for invite URL
     }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.user.id;
@@ -854,7 +855,7 @@ export const communicationsRouter = router({
       return {
         inviteId,
         token,
-        inviteUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/invite/${token}`,
+        inviteUrl: `${input.origin || process.env.VITE_APP_URL || ''}/invite/${token}`,
       };
     }),
 

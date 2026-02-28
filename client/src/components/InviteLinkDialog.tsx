@@ -50,6 +50,7 @@ export function InviteLinkDialog({ open, onOpenChange, channelId, channelName }:
       channelId,
       expiresInDays: expiresInDays ? parseInt(expiresInDays) : undefined,
       maxUses: maxUses ? parseInt(maxUses) : undefined,
+      origin: window.location.origin,
     });
   };
 

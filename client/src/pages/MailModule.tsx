@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import DOMPurify from "dompurify";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -445,7 +446,7 @@ function ComposeModal({
             <div className="text-[10px] text-zinc-600 mb-1">Signature</div>
             <div
               className="text-xs text-zinc-500 border-t border-zinc-800/40 pt-2"
-              dangerouslySetInnerHTML={{ __html: signatureQuery.data.html }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signatureQuery.data.html) }}
             />
           </div>
         )}
@@ -1439,7 +1440,7 @@ function ThreadView({
               {msg.bodyHtml ? (
                 <div
                   className="text-sm text-zinc-300 leading-relaxed [&_a]:text-yellow-500 [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_table]:border-collapse [&_td]:p-1 [&_th]:p-1 overflow-hidden"
-                  dangerouslySetInnerHTML={{ __html: msg.bodyHtml }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.bodyHtml, { ADD_TAGS: ['style'], ADD_ATTR: ['target'] }) }}
                 />
               ) : (
                 <pre className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans">
