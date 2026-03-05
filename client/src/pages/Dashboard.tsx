@@ -606,8 +606,10 @@ function QuickActionsWidget() {
 
 export default function Dashboard() {
   const { data: metrics, isLoading: metricsLoading } = trpc.analytics.dashboard.useQuery();
-  const { data: allMeetings = [] } = trpc.meetings.list.useQuery({ limit: 10 });
-  const { data: allTasks = [] } = trpc.tasks.list.useQuery({ status: "open" });
+  const { data: meetingsData } = trpc.meetings.list.useQuery({ limit: 10 });
+  const allMeetings = meetingsData?.meetings ?? [];
+  const { data: tasksData } = trpc.tasks.list.useQuery({ status: "open" });
+  const allTasks = tasksData?.tasks ?? [];
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
