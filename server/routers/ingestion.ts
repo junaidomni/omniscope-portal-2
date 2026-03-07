@@ -1,4 +1,3 @@
-import * as fathomIntegration from "../fathomIntegration";
 import { TRPCError } from "@trpc/server";
 import { processIntelligenceData, validateIntelligenceData } from "../ingestion";
 import { processManualTranscript } from "../manualTranscriptProcessor";
@@ -8,6 +7,7 @@ import { z } from "zod";
 import * as db from "../db";
 import { users, orgMemberships } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { importFathomMeetings } from "../fathomIntegration";
 
 export const ingestionRouter = router({
   webhook: publicProcedure
@@ -29,7 +29,7 @@ export const ingestionRouter = router({
       }
       try {
         (globalThis as any).__lastFathomSync = now;
-        const result = await fathomIntegration.importFathomMeetings({ limit: 10, orgId: ctx.orgId ?? undefined });
+        const result = await importFathomMeetings({ limit: 10, orgId: ctx.orgId ?? undefined });
         return { success: true, imported: result.imported, skipped: result.skipped, errors: result.errors };
       } catch (error: any) {
         console.error("[Fathom Sync] Error:", error.message);
@@ -91,17 +91,23 @@ export const ingestionRouter = router({
 
   /** Zapier + Plaud webhook: ingest meeting transcript, summary, and action items */
   plaudWebhook: publicProcedure
-    .input(z.object({
-      plaudWebhookSecret: z.string(),
-      title: z.string(),
-      summary: z.string(),
-      transcript: z.string().optional(), // Full transcript if available
-      createdAt: z.string(), // ISO timestamp
-    }))
+    .input(z.any()) // Accept any input format
     .mutation(async ({ input }) => {
+      // Parse input: when called via HTTP (like from Zapier), input is the direct JSON
+      // When called via tRPC client, input is also the direct JSON (tRPC handles wrapping)
+      const parsedInput = input;
+
+      // Extract fields
+      const { title, summary, transcript, createdAt, plaudWebhookSecret } = parsedInput;
+
+      // Validate required fields
+      if (!parsedInput.title || !parsedInput.summary || !parsedInput.createdAt || !parsedInput.plaudWebhookSecret) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Missing required fields: title, summary, createdAt, plaudWebhookSecret" });
+      }
+
       // Verify webhook secret
       const webhookSecret = process.env.PLAUD_WEBHOOK_SECRET;
-      if (!webhookSecret || input.plaudWebhookSecret !== webhookSecret) {
+      if (!webhookSecret || plaudWebhookSecret !== webhookSecret) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid webhook secret" });
       }
 
@@ -125,15 +131,15 @@ export const ingestionRouter = router({
         // Create intelligence data for ingestion pipeline
         const sourceId = `plaud-${Date.now()}-${Math.random().toString(36).substring(7)}`;
         const intelligenceData = {
-          meetingTitle: input.title,
-          meetingDate: input.createdAt,
+          meetingTitle: title,
+          meetingDate: createdAt,
           primaryLead: "Kyle Jackson",
           participants: [], // Plaud doesn't provide participant list via Zapier
-          executiveSummary: input.summary,
+          executiveSummary: summary,
           sourceType: "plaud" as const,
           sourceId,
           actionItems: [], // Plaud doesn't provide action items via Zapier
-          fullTranscript: input.transcript, // Include full transcript if provided
+          fullTranscript: transcript, // Include full transcript if provided
         };
 
         // Process through standard ingestion pipeline
@@ -143,7 +149,7 @@ export const ingestionRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Ingestion failed: ${result.reason}` });
         }
 
-        console.log(`[Plaud Webhook] Successfully ingested meeting ${result.meetingId}: "${input.title}"`);
+        console.log(`[Plaud Webhook] Successfully ingested meeting ${result.meetingId}: "${title}"`);
         return { success: true, meetingId: result.meetingId };
       } catch (error: any) {
         console.error("[Plaud Webhook] Error:", error.message);
@@ -154,3 +160,5 @@ export const ingestionRouter = router({
       }
     }),
 });
+
+
