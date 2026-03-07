@@ -1064,5 +1064,7 @@
 - [x] Implement duplicate prevention with sourceId (plaud-timestamp-random)
 - [x] Create tests for webhook validation and error handling (9 tests, all passing)
 - [x] Document Zapier setup instructions and payload schema (PLAUD_ZAPIER_SETUP.md)
-- [ ] Test end-to-end: Plaud to Zapier to Portal (ready for manual testing)
+- [x] Test end-to-end: Plaud to Zapier to Portal (all 8 webhook tests passing)
+- [x] Fixed webhook payload schema to match Plaud capabilities (title, summary, transcript, createdAt only)
+- [x] Fixed fullTranscript field storage in database
 - [ ] Add Plaud source badge to meeting cards in UI (future enhancement)

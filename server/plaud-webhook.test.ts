@@ -38,12 +38,8 @@ describe("Plaud Webhook Integration", () => {
     plaudWebhookSecret: webhookSecret,
     title: "Test Meeting - Plaud Webhook",
     summary: "This is a test meeting summary from Plaud.",
+    transcript: "Full transcript of the meeting goes here...",
     createdAt: new Date().toISOString(),
-    participants: ["Kyle Jackson", "John Smith"],
-    actionItems: [
-      { item: "Follow up on proposal", assignee: "Kyle Jackson", dueDate: "2026-03-15" },
-      { item: "Send contract" },
-    ],
   };
 
   it("should accept a valid Plaud webhook payload", async () => {
@@ -105,7 +101,7 @@ describe("Plaud Webhook Integration", () => {
     // The duplicate prevention works on sourceId, not on content
   });
 
-  it("should handle missing optional fields", async () => {
+  it("should accept minimal payload with only required fields", async () => {
     const ctx = createContext();
     const caller = appRouter.createCaller(ctx);
     const minimalPayload = {
@@ -134,7 +130,7 @@ describe("Plaud Webhook Integration", () => {
     expect(meeting?.primaryLead).toBe("Kyle Jackson");
   });
 
-  it("should parse participants correctly", async () => {
+  it("should store transcript when provided", async () => {
     const ctx = createContext();
     const caller = appRouter.createCaller(ctx);
     const result = await caller.ingestion.plaudWebhook(validPayload);
@@ -142,20 +138,19 @@ describe("Plaud Webhook Integration", () => {
 
     const meeting = await db.getMeetingById(result.meetingId);
     expect(meeting).toBeDefined();
-    const participants = JSON.parse(meeting?.participants || "[]");
-    expect(participants).toEqual(validPayload.participants);
+    expect(meeting?.fullTranscript).toBe(validPayload.transcript);
   });
 
-  it("should handle empty action items", async () => {
+  it("should handle missing optional transcript", async () => {
     const ctx = createContext();
     const caller = appRouter.createCaller(ctx);
-    const payloadNoActions = {
+    const payloadNoTranscript = {
       plaudWebhookSecret: webhookSecret,
-      title: "Meeting with no actions",
-      summary: "Summary only.",
+      title: "Meeting without transcript",
+      summary: "Summary only, no transcript.",
       createdAt: new Date().toISOString(),
     };
-    const result = await caller.ingestion.plaudWebhook(payloadNoActions);
+    const result = await caller.ingestion.plaudWebhook(payloadNoTranscript);
     expect(result.success).toBe(true);
     expect(result.meetingId).toBeDefined();
   });

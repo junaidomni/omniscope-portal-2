@@ -95,13 +95,8 @@ export const ingestionRouter = router({
       plaudWebhookSecret: z.string(),
       title: z.string(),
       summary: z.string(),
+      transcript: z.string().optional(), // Full transcript if available
       createdAt: z.string(), // ISO timestamp
-      participants: z.array(z.string()).optional().default([]),
-      actionItems: z.array(z.object({
-        item: z.string(),
-        assignee: z.string().optional(),
-        dueDate: z.string().optional(),
-      })).optional().default([]),
     }))
     .mutation(async ({ input }) => {
       // Verify webhook secret
@@ -133,11 +128,12 @@ export const ingestionRouter = router({
           meetingTitle: input.title,
           meetingDate: input.createdAt,
           primaryLead: "Kyle Jackson",
-          participants: input.participants,
+          participants: [], // Plaud doesn't provide participant list via Zapier
           executiveSummary: input.summary,
           sourceType: "plaud" as const,
           sourceId,
-          actionItems: input.actionItems.map(item => item.item),
+          actionItems: [], // Plaud doesn't provide action items via Zapier
+          fullTranscript: input.transcript, // Include full transcript if provided
         };
 
         // Process through standard ingestion pipeline
