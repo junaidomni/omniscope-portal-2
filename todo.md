@@ -1055,3 +1055,14 @@
 - [x] Investigate Overview tab component and identify the bug (meetings.slice is not a function - data was object not array)
 - [x] Fix Overview tab rendering (extract .meetings and .tasks from paginated response objects)
 - [x] Verify all Command Center tabs work correctly (no errors after HMR update)
+
+
+## Zapier + Plaud Webhook Integration (Mar 7, 2026)
+
+- [x] Build plaudWebhook mutation in ingestion router (Title + Summary + Time + Action Items)
+- [x] Add PLAUD_WEBHOOK_SECRET to environment (auto-generated secure secret)
+- [x] Implement duplicate prevention with sourceId (plaud-timestamp-random)
+- [x] Create tests for webhook validation and error handling (9 tests, all passing)
+- [x] Document Zapier setup instructions and payload schema (PLAUD_ZAPIER_SETUP.md)
+- [ ] Test end-to-end: Plaud to Zapier to Portal (ready for manual testing)
+- [ ] Add Plaud source badge to meeting cards in UI (future enhancement)

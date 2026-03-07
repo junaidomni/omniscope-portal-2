@@ -5,6 +5,9 @@ import { processManualTranscript } from "../manualTranscriptProcessor";
 import { storagePut } from "../storage";
 import { publicProcedure, orgScopedProcedure, planGatedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
+import * as db from "../db";
+import { users, orgMemberships } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export const ingestionRouter = router({
   webhook: publicProcedure
@@ -82,6 +85,75 @@ export const ingestionRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to upload audio file",
+        });
+      }
+    }),
+
+  /** Zapier + Plaud webhook: ingest meeting transcript, summary, and action items */
+  plaudWebhook: publicProcedure
+    .input(z.object({
+      plaudWebhookSecret: z.string(),
+      title: z.string(),
+      summary: z.string(),
+      createdAt: z.string(), // ISO timestamp
+      participants: z.array(z.string()).optional().default([]),
+      actionItems: z.array(z.object({
+        item: z.string(),
+        assignee: z.string().optional(),
+        dueDate: z.string().optional(),
+      })).optional().default([]),
+    }))
+    .mutation(async ({ input }) => {
+      // Verify webhook secret
+      const webhookSecret = process.env.PLAUD_WEBHOOK_SECRET;
+      if (!webhookSecret || input.plaudWebhookSecret !== webhookSecret) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid webhook secret" });
+      }
+
+      try {
+        // Find Kyle Jackson's user ID (default source for Plaud meetings)
+        const database = await db.getDb();
+        if (!database) throw new Error("Database not available");
+        
+        const kyleUser = await database.select().from(users).where(eq(users.email, "kyle@omniscopex.ae")).limit(1);
+        const createdBy = kyleUser.length > 0 ? kyleUser[0].id : undefined;
+
+        // Get Kyle's organization
+        let orgId: number | null = null;
+        if (createdBy) {
+          const membership = await database.select().from(orgMemberships).where(eq(orgMemberships.userId, createdBy)).limit(1);
+          if (membership.length > 0) {
+            orgId = membership[0].orgId;
+          }
+        }
+
+        // Create intelligence data for ingestion pipeline
+        const sourceId = `plaud-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const intelligenceData = {
+          meetingTitle: input.title,
+          meetingDate: input.createdAt,
+          primaryLead: "Kyle Jackson",
+          participants: input.participants,
+          executiveSummary: input.summary,
+          sourceType: "plaud" as const,
+          sourceId,
+          actionItems: input.actionItems.map(item => item.item),
+        };
+
+        // Process through standard ingestion pipeline
+        const result = await processIntelligenceData(intelligenceData, createdBy, orgId ?? undefined);
+
+        if (!result.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Ingestion failed: ${result.reason}` });
+        }
+
+        console.log(`[Plaud Webhook] Successfully ingested meeting ${result.meetingId}: "${input.title}"`);
+        return { success: true, meetingId: result.meetingId };
+      } catch (error: any) {
+        console.error("[Plaud Webhook] Error:", error.message);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message || "Failed to ingest Plaud meeting",
         });
       }
     }),
