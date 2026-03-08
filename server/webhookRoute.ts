@@ -3,6 +3,8 @@ import { validateIntelligenceData, processIntelligenceData } from "./ingestion";
 import { isFathomWebhookPayload, processFathomWebhook } from "./fathomIntegration";
 import { generateMeetingPDF, generateDailyBriefPDF } from "./pdfGenerator";
 import * as db from "./db";
+import { users, orgMemberships } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export const webhookRouter = Router();
 
@@ -67,7 +69,9 @@ webhookRouter.get("/daily-brief/pdf", async (req, res) => {
 
 /**
  * Webhook endpoint for Plaud integration via Zapier
- * Receives Plaud recording data: sourceId, meetingDate, primaryLead, participants, executiveSummary, transcript, tags
+ * Accepts Zapier's flat key-value format
+ * Required fields: title, summary, createdAt, plaudWebhookSecret
+ * Optional: transcript
  */
 webhookRouter.post("/webhook/plaud", async (req, res) => {
   try {
@@ -75,42 +79,63 @@ webhookRouter.post("/webhook/plaud", async (req, res) => {
     
     const payload = req.body;
     
+    // Validate webhook secret
+    const webhookSecret = process.env.PLAUD_WEBHOOK_SECRET;
+    if (!webhookSecret || payload.plaudWebhookSecret !== webhookSecret) {
+      console.error("[Webhook:Plaud] Invalid webhook secret");
+      return res.status(401).json({
+        success: false,
+        error: "Invalid webhook secret"
+      });
+    }
+    
     // Validate required fields from Zapier Plaud format
-    if (!payload.sourceId || !payload.meetingDate || !payload.executiveSummary) {
+    if (!payload.title || !payload.summary || !payload.createdAt) {
       console.error("[Webhook:Plaud] Missing required fields");
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: sourceId, meetingDate, executiveSummary"
+        error: "Missing required fields: title, summary, createdAt"
       });
     }
 
-    // Extract meeting title from Plaud title field or generate from participants
-    const meetingTitle = payload.plaud?.title || 
-                        (payload.participants ? `Meeting with ${payload.participants}` : "Plaud Recording");
+    // Find Kyle Jackson's user ID (default source for Plaud meetings)
+    const database = await db.getDb();
+    if (!database) throw new Error("Database not available");
+    
+    const kyleUser = await database.select().from(users).where(eq(users.email, "kyle@omniscopex.ae")).limit(1);
+    const createdBy = kyleUser.length > 0 ? kyleUser[0].id : undefined;
 
-    // Transform Zapier Plaud format to OmniScope intelligence format
+    // Get Kyle's organization
+    let orgId: number | null = null;
+    if (createdBy) {
+      const membership = await database.select().from(orgMemberships).where(eq(orgMemberships.userId, createdBy)).limit(1);
+      if (membership.length > 0) {
+        orgId = membership[0].orgId;
+      }
+    }
+
+    // Create intelligence data for ingestion pipeline
+    const sourceId = `plaud-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const intelligenceData = {
-      sourceId: payload.sourceId,
+      meetingTitle: payload.title,
+      meetingDate: payload.createdAt,
+      primaryLead: "Kyle Jackson",
+      participants: [], // Plaud doesn't provide participant list via Zapier
+      executiveSummary: payload.summary,
       sourceType: "plaud" as const,
-      meetingTitle,
-      meetingDate: payload.meetingDate,
-      primaryLead: payload.primaryLead || "Unknown",
-      participants: payload.participants || [],
-      executiveSummary: payload.executiveSummary,
-      transcript: payload.transcript || "",
-      tags: payload.tags || ["plaud"],
-      // Optional fields
-      strategicHighlights: [],
-      opportunities: [],
-      risks: [],
-      keyQuotes: [],
-      actionItems: [],
-      organizations: [],
-      jurisdictions: [],
+      sourceId,
+      actionItems: [], // Plaud doesn't provide action items via Zapier
+      fullTranscript: payload.transcript || undefined, // Include full transcript if provided
     };
 
     // Process through standard ingestion pipeline
-    const result = await processIntelligenceData(intelligenceData);
+    const result = await processIntelligenceData(intelligenceData, createdBy, orgId ?? undefined);
+
+    if (!result.success) {
+      throw new Error(`Ingestion failed: ${result.reason}`);
+    }
+    
+    console.log(`[Plaud Webhook] Successfully ingested meeting ${result.meetingId}: "${payload.title}"`);
     
     return res.status(200).json({
       success: true,
