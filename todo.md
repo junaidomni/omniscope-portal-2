@@ -1068,3 +1068,12 @@
 - [x] Fixed webhook payload schema to match Plaud capabilities (title, summary, transcript, createdAt only)
 - [x] Fixed fullTranscript field storage in database
 - [ ] Add Plaud source badge to meeting cards in UI (future enhancement)
+
+
+## Phase 1: Plaud Intel Report + Calendar Reminder (Mar 12, 2026)
+
+- [x] Build Intel Report PDF generator from meeting title, summary, transcript (using pdf-lib)
+- [x] Add calendar reminder email notification to kyle@omniscopex.ae (for next day)
+- [x] Integrate PDF generation and email into Plaud webhook handler
+- [x] Test end-to-end: Plaud webhook → PDF generated → Email sent (meeting 1230001 confirmed)
+- [x] Save checkpoint with Phase 1 complete

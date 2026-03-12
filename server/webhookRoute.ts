@@ -2,6 +2,8 @@ import { Router } from "express";
 import { validateIntelligenceData, processIntelligenceData } from "./ingestion";
 import { isFathomWebhookPayload, processFathomWebhook } from "./fathomIntegration";
 import { generateMeetingPDF, generateDailyBriefPDF } from "./pdfGenerator";
+import { generateIntelReport } from "./intelReportGenerator";
+import { sendMeetingIngestedNotification, sendCalendarReminder } from "./calendarReminderService";
 import * as db from "./db";
 import { users, orgMemberships } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -137,10 +139,55 @@ webhookRouter.post("/webhook/plaud", async (req, res) => {
     
     console.log(`[Plaud Webhook] Successfully ingested meeting ${result.meetingId}: "${payload.title}"`);
     
+    // Generate Intel Report PDF
+    let intelReportUrl: string | undefined;
+    try {
+      intelReportUrl = await generateIntelReport({
+        meetingTitle: payload.title,
+        meetingDate: new Date(payload.createdAt),
+        executiveSummary: payload.summary,
+        fullTranscript: payload.transcript,
+        sourceType: "plaud",
+        sourceId,
+      });
+      console.log(`[Plaud Webhook] Generated Intel Report: ${intelReportUrl}`);
+    } catch (error) {
+      console.error("[Plaud Webhook] Failed to generate Intel Report:", error);
+      // Continue even if PDF generation fails
+    }
+    
+    // Send immediate notification about meeting ingestion
+    try {
+      await sendMeetingIngestedNotification({
+        meetingTitle: payload.title,
+        meetingDate: new Date(payload.createdAt),
+        recipientName: "Kyle",
+        intelReportUrl,
+      });
+      console.log(`[Plaud Webhook] Sent meeting ingested notification`);
+    } catch (error) {
+      console.error("[Plaud Webhook] Failed to send meeting ingested notification:", error);
+    }
+    
+    // Schedule calendar reminder for next day
+    try {
+      await sendCalendarReminder({
+        meetingTitle: payload.title,
+        meetingDate: new Date(payload.createdAt),
+        recipientEmail: "kyle@omniscopex.ae",
+        recipientName: "Kyle",
+        intelReportUrl,
+      });
+      console.log(`[Plaud Webhook] Scheduled calendar reminder`);
+    } catch (error) {
+      console.error("[Plaud Webhook] Failed to send calendar reminder:", error);
+    }
+    
     return res.status(200).json({
       success: true,
       meetingId: result.meetingId,
-      message: "Plaud recording imported successfully"
+      message: "Plaud recording imported successfully",
+      intelReportUrl,
     });
     
   } catch (error) {
